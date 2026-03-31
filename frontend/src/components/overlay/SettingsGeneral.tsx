@@ -1,0 +1,138 @@
+'use client';
+
+import { useTheme } from 'next-themes';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+
+const THEME_OPTIONS = [
+  { value: 'light', label: '라이트' },
+  { value: 'dark', label: '다크' },
+  { value: 'system', label: '시스템 따르기' },
+] as const;
+
+function ThemePreview({ mode }: { mode: 'light' | 'dark' }) {
+  const isLight = mode === 'light';
+  return (
+    <div
+      className={cn(
+        'flex h-12 w-full max-w-20 flex-col gap-1.5 rounded-md border p-2',
+        isLight ? 'border-gray-200 bg-gray-100' : 'border-gray-700 bg-gray-800',
+      )}
+    >
+      <div className={cn('h-1.5 w-3/4 rounded-sm', isLight ? 'bg-gray-300' : 'bg-gray-600')} />
+      <div className={cn('h-1.5 w-1/2 rounded-sm', isLight ? 'bg-gray-300' : 'bg-gray-600')} />
+      <div className={cn('h-1.5 w-2/3 rounded-sm', isLight ? 'bg-gray-300' : 'bg-gray-600')} />
+    </div>
+  );
+}
+
+function SystemThemePreview() {
+  return (
+    <div className='flex h-12 w-full overflow-hidden rounded-md border border-gray-500'>
+      <div className='flex w-1/2 flex-col gap-1.5 bg-gray-100 p-2'>
+        <div className='h-1.5 w-3/4 rounded-sm bg-gray-300' />
+        <div className='h-1.5 w-1/2 rounded-sm bg-gray-300' />
+        <div className='h-1.5 w-2/3 rounded-sm bg-gray-300' />
+      </div>
+      <div className='flex w-1/2 flex-col gap-1.5 bg-gray-800 p-2'>
+        <div className='h-1.5 w-3/4 rounded-sm bg-gray-600' />
+        <div className='h-1.5 w-1/2 rounded-sm bg-gray-600' />
+        <div className='h-1.5 w-2/3 rounded-sm bg-gray-600' />
+      </div>
+    </div>
+  );
+}
+
+export function SettingsGeneral() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className='flex flex-col gap-6'>
+      <div>
+        <h3 className='text-fg-primary mb-4 text-sm font-semibold'>일반</h3>
+        <div className='flex flex-col gap-4'>
+          <div className='flex items-center justify-between'>
+            <Label className='text-fg-secondary text-sm'>언어</Label>
+            <Select defaultValue='ko'>
+              <SelectTrigger className='w-[160px]'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='ko'>한국어</SelectItem>
+                <SelectItem value='en'>English</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className='text-fg-primary mb-4 text-sm font-semibold'>외관</h3>
+        <div className='grid grid-cols-3 gap-3 px-4'>
+          {THEME_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type='button'
+              onClick={() => setTheme(value)}
+              className={cn(
+                'flex flex-col items-center gap-2 rounded-lg p-2 transition-colors',
+                theme === value
+                  ? 'ring-accent-primary bg-canvas-surface ring-2'
+                  : 'hover:bg-canvas-surface/50',
+              )}
+            >
+              {value === 'system' ? <SystemThemePreview /> : <ThemePreview mode={value} />}
+              <span
+                className={cn(
+                  'text-xs',
+                  theme === value ? 'text-accent-primary font-medium' : 'text-fg-secondary',
+                )}
+              >
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className='text-fg-primary mb-4 text-sm font-semibold'>알림</h3>
+        <div className='flex flex-col gap-4'>
+          <div className='flex items-center justify-between'>
+            <Label className='text-fg-secondary text-sm'>앱 알림</Label>
+            <Switch defaultChecked />
+          </div>
+          <div className='flex items-center justify-between'>
+            <Label className='text-fg-secondary text-sm'>이메일 알림</Label>
+            <Switch />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className='text-fg-primary mb-4 text-sm font-semibold'>모델</h3>
+        <div className='flex items-center justify-between'>
+          <Label className='text-fg-secondary text-sm'>기본 모델</Label>
+          <Select defaultValue='gpt-4o'>
+            <SelectTrigger className='w-[160px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='gpt-4o'>GPT-5.4</SelectItem>
+              <SelectItem value='claude-sonnet'>Claude Sonnet</SelectItem>
+              <SelectItem value='claude-opus'>Claude Opus</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+}

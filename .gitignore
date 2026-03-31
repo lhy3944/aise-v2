@@ -1,0 +1,55 @@
+# === General ===
+.DS_Store
+*.pem
+.env*
+
+# === Backend (Python/UV) ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# === Frontend (Next.js) ===
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.*
+frontend/.yarn/*
+!frontend/.yarn/patches
+!frontend/.yarn/plugins
+!frontend/.yarn/releases
+!frontend/.yarn/versions
+frontend/coverage/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# === Backend Logs ===
+backend/var/logs/
+
+# === Docker ===
+postgres_data/
+
+# === Debug logs ===
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# === 임시 작업 폴더 ===
+_workspace/
+
+# === Agent Skills (외부 설치) ===
+.agents/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo

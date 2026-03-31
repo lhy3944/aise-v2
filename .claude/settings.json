@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(/.claude/skills/**)",
+      "WebSearch",
+      "WebFetch(domain:www.autosad.ai)",
+      "WebFetch(domain:app.autosad.ai)",
+      "WebFetch(domain:autosad.ai)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.langchain.com)",
+      "WebFetch(domain:blog.langchain.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:developers.openai.com)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(uv:*)",
+      "Bash(chmod +x:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git pull:*)",
+      "Bash(git status:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(pkill:*)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/aiqa/source/aise2.0/backend && [ -d tests ] && uv run pytest tests/ -q --tb=line 2>&1 | tail -5 || true",
+            "statusMessage": "테스트 실행 중...",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
