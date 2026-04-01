@@ -26,12 +26,12 @@ export default function ProjectDetailLayout({ children, params }: Props) {
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
-  const maxW = fullWidthMode ? 'max-w-[1800px]' : 'max-w-6xl';
+  const maxW = fullWidthMode ? 'max-w-[2160px]' : 'max-w-6xl';
 
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
       {/* Tab Navigation */}
-      <div className='bg-canvas-primary px-6'>
+      <div className='bg-canvas-primary px-6 pt-6'>
         <div
           className={cn(
             'border-line-primary mx-auto flex border-b transition-[max-width] duration-300 ease-in-out',
