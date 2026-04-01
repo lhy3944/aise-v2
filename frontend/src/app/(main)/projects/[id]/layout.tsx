@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, FileText } from 'lucide-react';
+import { BookOpen, FolderOpen, Info } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { use } from 'react';
@@ -24,8 +24,9 @@ export default function ProjectDetailLayout({ children, params }: Props) {
   const maxW = fullWidthMode ? 'max-w-full' : 'max-w-6xl';
 
   const tabs = [
-    { href: `/projects/${id}/requirements`, label: '요구사항', icon: FileText },
-    { href: `/projects/${id}/glossary`, label: 'Glossary', icon: BookOpen },
+    { href: `/projects/${id}`, label: '개요', icon: Info },
+    { href: `/projects/${id}/glossary`, label: '용어사전', icon: BookOpen },
+    { href: `/projects/${id}/knowledge-sources`, label: '지식 소스', icon: FolderOpen },
   ];
 
   return (

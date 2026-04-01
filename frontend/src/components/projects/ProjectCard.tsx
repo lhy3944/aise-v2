@@ -18,7 +18,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
   return (
     <div className='group relative'>
       <Link
-        href={`/projects/${project.project_id}/requirements`}
+        href={`/projects/${project.project_id}`}
         className='border-line-primary bg-card/30 dark:bg-card group-hover:border-accent-primary/50 block rounded-lg border p-5 transition-all group-hover:shadow-md'
       >
         <div className='mb-3 flex items-center gap-2.5'>

@@ -2,7 +2,7 @@
 
 import { Send, Bot, User } from 'lucide-react';
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { ExtractedRequirementList } from '@/components/projects/ExtractedRequirementList';
+import { ExtractedRequirementList } from '@/components/requirements/ExtractedRequirementList';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
