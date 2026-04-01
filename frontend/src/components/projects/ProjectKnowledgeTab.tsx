@@ -72,7 +72,7 @@ const MOCK_SOURCES: KnowledgeSource[] = [
   },
 ];
 
-export default function KnowledgeSourcesPage() {
+export function ProjectKnowledgeTab() {
   const [sources, setSources] = useState<KnowledgeSource[]>(MOCK_SOURCES);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

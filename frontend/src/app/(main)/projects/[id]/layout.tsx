@@ -1,11 +1,20 @@
 'use client';
 
 import { BookOpen, FolderOpen, Info } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { use } from 'react';
+import { use, useState } from 'react';
+import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
+import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
+import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
+
+type TabId = 'overview' | 'glossary' | 'knowledge';
+
+const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
+  { id: 'overview', label: '개요', icon: Info },
+  { id: 'glossary', label: '용어사전', icon: BookOpen },
+  { id: 'knowledge', label: '지식 소스', icon: FolderOpen },
+];
 
 interface Props {
   children: React.ReactNode;
@@ -14,16 +23,10 @@ interface Props {
 
 export default function ProjectDetailLayout({ children, params }: Props) {
   const { id } = use(params);
-  const pathname = usePathname();
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   const maxW = fullWidthMode ? 'max-w-full' : 'max-w-6xl';
-
-  const tabs = [
-    { href: `/projects/${id}`, label: '개요', icon: Info },
-    { href: `/projects/${id}/glossary`, label: '용어사전', icon: BookOpen },
-    { href: `/projects/${id}/knowledge-sources`, label: '지식 소스', icon: FolderOpen },
-  ];
 
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
@@ -35,12 +38,12 @@ export default function ProjectDetailLayout({ children, params }: Props) {
             maxW,
           )}
         >
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
             return (
-              <Link
-                key={tab.href}
-                href={tab.href}
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
                   isActive
@@ -50,7 +53,7 @@ export default function ProjectDetailLayout({ children, params }: Props) {
               >
                 <tab.icon className='size-4' />
                 {tab.label}
-              </Link>
+              </button>
             );
           })}
         </div>
@@ -61,7 +64,9 @@ export default function ProjectDetailLayout({ children, params }: Props) {
         <div
           className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
         >
-          {children}
+          {activeTab === 'overview' && <ProjectOverviewTab projectId={id} />}
+          {activeTab === 'glossary' && <ProjectGlossaryTab projectId={id} />}
+          {activeTab === 'knowledge' && <ProjectKnowledgeTab />}
         </div>
       </div>
     </div>
