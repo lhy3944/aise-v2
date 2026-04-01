@@ -2,9 +2,10 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { Button } from '../ui/button';
 
 // === 데이터 모델 정의 ===
-type OrchestrationMode = 'planning' | 'development' | 'validation';
+type OrchestrationMode = 'requirements' | 'design' | 'testing';
 
 interface ModeDetails {
   id: OrchestrationMode;
@@ -15,23 +16,24 @@ interface ModeDetails {
 
 const MODES: ModeDetails[] = [
   {
-    id: 'planning',
-    title: 'Requirement & Design',
-    description: 'SRS 문서를 기반으로 요구사항을 분석하고 최적의 SW 설계를 도출합니다.',
-    badges: ['요구사항 명세 (SRS)', '아키텍처 설계', '자동화된 기획'],
-  },
-  {
-    id: 'development',
-    title: 'Implementation Flow',
-    description: '설계된 구조에 맞춰 코드를 생성하고, 오픈소스 정책 검토를 병렬 수행합니다.',
-    badges: ['코드 생성', '오픈소스 (OSS) 검증', '협업 워크플로우'],
-  },
-  {
-    id: 'validation',
-    title: 'QA & Security',
+    id: 'requirements',
+    title: 'Requirements & SRS',
     description:
-      '작성된 코드의 정적 분석 및 보안 취약점을 점검하고, 테스트 케이스를 자동 생성합니다.',
-    badges: ['정적 분석', '보안 취약점 스캔', '테스트 케이스 생성'],
+      '자연어로 요구사항을 입력하면 AI가 구조화하고, Review를 거쳐 고품질 SRS를 생성합니다.',
+    badges: ['요구사항 정제', 'AI Review', 'SRS 자동 생성'],
+  },
+  {
+    id: 'design',
+    title: 'Design & SAD',
+    description:
+      '요구사항 기반으로 Use Case, Interaction Diagram, 논리/물리 모델을 자동 설계합니다.',
+    badges: ['Use Case Diagram', 'System Architecture', 'SAD 생성'],
+  },
+  {
+    id: 'testing',
+    title: 'Test Case Generation',
+    description: '요구사항과 설계를 기반으로 테스트 케이스를 자동 생성하고 추적성을 관리합니다.',
+    badges: ['요구사항 기반 TC', '독립모드 TC', '추적성 매트릭스'],
   },
 ];
 
@@ -39,12 +41,12 @@ const MODES: ModeDetails[] = [
 const CENTER_NODE = { x: 200, y: 200, label: 'AISE' };
 
 const NODES = {
-  srs: { x: 200, y: 50, label: 'SRS' },
-  design: { x: 70, y: 130, label: 'Design' },
-  developer: { x: 330, y: 130, label: 'Developer' },
-  oss: { x: 60, y: 270, label: 'Open Source' },
-  security: { x: 340, y: 270, label: 'Security' },
-  qa: { x: 200, y: 350, label: 'Testcase' },
+  requirements: { x: 200, y: 50, label: 'Requirements' },
+  srs: { x: 70, y: 130, label: 'SRS' },
+  design: { x: 330, y: 130, label: 'Design' },
+  sad: { x: 60, y: 270, label: 'SAD' },
+  testcase: { x: 340, y: 270, label: 'Testcase' },
+  review: { x: 200, y: 350, label: 'AI Review' },
 };
 
 export interface OrchestrationShowcaseProps {
@@ -58,7 +60,7 @@ export function OrchestrationShowcase({
   autoPlay = false,
   interval = 5000,
 }: OrchestrationShowcaseProps) {
-  const [activeMode, setActiveMode] = useState<OrchestrationMode>('planning');
+  const [activeMode, setActiveMode] = useState<OrchestrationMode>('requirements');
 
   useEffect(() => {
     if (!autoPlay) return;
@@ -85,7 +87,7 @@ export function OrchestrationShowcase({
           <motion.div
             animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className={`pointer-events-none absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-colors duration-500 ${activeMode === 'planning' ? 'bg-blue-500/20 dark:bg-blue-500/30' : ''} ${activeMode === 'development' ? 'bg-teal-500/20 dark:bg-teal-500/30' : ''} ${activeMode === 'validation' ? 'bg-purple-500/20 dark:bg-purple-500/30' : ''} `}
+            className={`pointer-events-none absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-colors duration-500 ${activeMode === 'requirements' ? 'bg-blue-500/20 dark:bg-blue-500/30' : ''} ${activeMode === 'design' ? 'bg-teal-500/20 dark:bg-teal-500/30' : ''} ${activeMode === 'testing' ? 'bg-purple-500/20 dark:bg-purple-500/30' : ''} `}
           />
 
           <svg viewBox='0 0 400 400' className='h-auto w-full max-w-[400px] overflow-visible'>
@@ -98,9 +100,9 @@ export function OrchestrationShowcase({
 
             {/* 1. 연결 선 (Edges) */}
             <AnimatePresence mode='popLayout'>
-              {activeMode === 'planning' && (
+              {activeMode === 'requirements' && (
                 <motion.g
-                  key='planning-lines'
+                  key='requirements-lines'
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.2 } }}
@@ -108,8 +110,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.srs.x}
-                    y2={NODES.srs.y}
+                    x2={NODES.requirements.x}
+                    y2={NODES.requirements.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-blue-500 dark:text-blue-400'
@@ -122,8 +124,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.design.x}
-                    y2={NODES.design.y}
+                    x2={NODES.srs.x}
+                    y2={NODES.srs.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-blue-500 dark:text-blue-400'
@@ -138,10 +140,10 @@ export function OrchestrationShowcase({
                     }}
                   />
                   <motion.line
-                    x1={NODES.srs.x}
-                    y1={NODES.srs.y}
-                    x2={NODES.design.x}
-                    y2={NODES.design.y}
+                    x1={NODES.requirements.x}
+                    y1={NODES.requirements.y}
+                    x2={NODES.srs.x}
+                    y2={NODES.srs.y}
                     stroke='currentColor'
                     strokeWidth='1'
                     className='text-blue-500/50 dark:text-blue-400/50'
@@ -156,9 +158,9 @@ export function OrchestrationShowcase({
                   />
                 </motion.g>
               )}
-              {activeMode === 'development' && (
+              {activeMode === 'design' && (
                 <motion.g
-                  key='development-lines'
+                  key='design-lines'
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.2 } }}
@@ -166,8 +168,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.developer.x}
-                    y2={NODES.developer.y}
+                    x2={NODES.design.x}
+                    y2={NODES.design.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-teal-500 dark:text-teal-400'
@@ -179,8 +181,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.oss.x}
-                    y2={NODES.oss.y}
+                    x2={NODES.sad.x}
+                    y2={NODES.sad.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-teal-500 dark:text-teal-400'
@@ -194,10 +196,10 @@ export function OrchestrationShowcase({
                     }}
                   />
                   <motion.line
-                    x1={NODES.design.x}
-                    y1={NODES.design.y}
-                    x2={NODES.developer.x}
-                    y2={NODES.developer.y}
+                    x1={NODES.srs.x}
+                    y1={NODES.srs.y}
+                    x2={NODES.design.x}
+                    y2={NODES.design.y}
                     stroke='currentColor'
                     strokeWidth='1'
                     className='text-teal-500/60 dark:text-teal-400/60'
@@ -211,9 +213,9 @@ export function OrchestrationShowcase({
                   />
                 </motion.g>
               )}
-              {activeMode === 'validation' && (
+              {activeMode === 'testing' && (
                 <motion.g
-                  key='validation-lines'
+                  key='testing-lines'
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.2 } }}
@@ -221,8 +223,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.security.x}
-                    y2={NODES.security.y}
+                    x2={NODES.testcase.x}
+                    y2={NODES.testcase.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-purple-500 dark:text-purple-400'
@@ -234,8 +236,8 @@ export function OrchestrationShowcase({
                   <motion.line
                     x1={CENTER_NODE.x}
                     y1={CENTER_NODE.y}
-                    x2={NODES.qa.x}
-                    y2={NODES.qa.y}
+                    x2={NODES.review.x}
+                    y2={NODES.review.y}
                     stroke='currentColor'
                     strokeWidth='2'
                     className='text-purple-500 dark:text-purple-400'
@@ -245,10 +247,10 @@ export function OrchestrationShowcase({
                     transition={{ duration: 0.8 }}
                   />
                   <motion.line
-                    x1={NODES.developer.x}
-                    y1={NODES.developer.y}
-                    x2={NODES.security.x}
-                    y2={NODES.security.y}
+                    x1={NODES.design.x}
+                    y1={NODES.design.y}
+                    x2={NODES.testcase.x}
+                    y2={NODES.testcase.y}
                     stroke='currentColor'
                     strokeWidth='1'
                     className='text-purple-500/60 dark:text-purple-400/60'
@@ -257,10 +259,10 @@ export function OrchestrationShowcase({
                     transition={{ duration: 1, delay: 0.3 }}
                   />
                   <motion.line
-                    x1={NODES.developer.x}
-                    y1={NODES.developer.y}
-                    x2={NODES.qa.x}
-                    y2={NODES.qa.y}
+                    x1={NODES.srs.x}
+                    y1={NODES.srs.y}
+                    x2={NODES.testcase.x}
+                    y2={NODES.testcase.y}
                     stroke='currentColor'
                     strokeWidth='1'
                     className='text-purple-500/60 dark:text-purple-400/60'
@@ -278,7 +280,7 @@ export function OrchestrationShowcase({
               cy={CENTER_NODE.y}
               r='48'
               fill='currentColor'
-              className={`transition-colors duration-500 ${activeMode === 'planning' ? 'text-blue-500/10' : ''} ${activeMode === 'development' ? 'text-teal-500/10' : ''} ${activeMode === 'validation' ? 'text-purple-500/10' : ''} `}
+              className={`transition-colors duration-500 ${activeMode === 'requirements' ? 'text-blue-500/10' : ''} ${activeMode === 'design' ? 'text-teal-500/10' : ''} ${activeMode === 'testing' ? 'text-purple-500/10' : ''} `}
               animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.8, 0.3] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               filter='url(#glow)'
@@ -290,7 +292,7 @@ export function OrchestrationShowcase({
               fill='var(--bg-primary)'
               stroke='currentColor'
               strokeWidth='2'
-              className={`transition-colors duration-500 ${activeMode === 'planning' ? 'text-blue-500 dark:text-blue-400' : ''} ${activeMode === 'development' ? 'text-teal-500 dark:text-teal-400' : ''} ${activeMode === 'validation' ? 'text-purple-500 dark:text-purple-400' : ''} `}
+              className={`transition-colors duration-500 ${activeMode === 'requirements' ? 'text-blue-500 dark:text-blue-400' : ''} ${activeMode === 'design' ? 'text-teal-500 dark:text-teal-400' : ''} ${activeMode === 'testing' ? 'text-purple-500 dark:text-purple-400' : ''} `}
               filter='url(#glow)'
             />
             <text
@@ -304,74 +306,85 @@ export function OrchestrationShowcase({
             </text>
 
             {/* 3. 각 모드에 해당하는 주변 노드 표기 */}
-            {[NODES.srs, NODES.design, NODES.developer, NODES.oss, NODES.security, NODES.qa].map(
-              (node) => {
-                // 노드의 활성화 여부 계산 (현재 모드에 맞춰 색상 다르게)
-                const isActiveInPlanning =
-                  activeMode === 'planning' && (node === NODES.srs || node === NODES.design);
-                const isActiveInDev =
-                  activeMode === 'development' &&
-                  (node === NODES.developer || node === NODES.oss || node === NODES.design);
-                const isActiveInVal =
-                  activeMode === 'validation' &&
-                  (node === NODES.security || node === NODES.qa || node === NODES.developer);
+            {[
+              NODES.requirements,
+              NODES.srs,
+              NODES.design,
+              NODES.sad,
+              NODES.testcase,
+              NODES.review,
+            ].map((node) => {
+              // 노드의 활성화 여부 계산 (현재 모드에 맞춰 색상 다르게)
+              const isActiveInRequirements =
+                activeMode === 'requirements' &&
+                (node === NODES.requirements || node === NODES.srs || node === NODES.review);
+              const isActiveInDesign =
+                activeMode === 'design' &&
+                (node === NODES.srs || node === NODES.design || node === NODES.sad);
+              const isActiveInTesting =
+                activeMode === 'testing' &&
+                (node === NODES.testcase ||
+                  node === NODES.review ||
+                  node === NODES.design ||
+                  node === NODES.srs);
 
-                const isActive = isActiveInPlanning || isActiveInDev || isActiveInVal;
+              const isActive = isActiveInRequirements || isActiveInDesign || isActiveInTesting;
 
-                const activeColorClass = isActiveInPlanning
-                  ? 'text-blue-500 dark:text-blue-400'
-                  : isActiveInDev
-                    ? 'text-teal-500 dark:text-teal-400'
-                    : isActiveInVal
-                      ? 'text-purple-500 dark:text-purple-400'
-                      : 'text-line-primary dark:text-line-subtle';
+              const activeColorClass = isActiveInRequirements
+                ? 'text-blue-500 dark:text-blue-400'
+                : isActiveInDesign
+                  ? 'text-teal-500 dark:text-teal-400'
+                  : isActiveInTesting
+                    ? 'text-purple-500 dark:text-purple-400'
+                    : 'text-line-primary dark:text-line-subtle';
 
-                return (
-                  <motion.g
-                    key={node.label}
-                    initial={{ opacity: isActive ? 1 : 0.4 }}
-                    animate={{ opacity: isActive ? 1 : 0.4 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {/* 활성화된 노드의 펄스 효과 */}
-                    {isActive && (
-                      <motion.circle
-                        cx={node.x}
-                        cy={node.y}
-                        r='30'
-                        fill='currentColor'
-                        className={activeColorClass}
-                        initial={{ opacity: 0.4, scale: 1 }}
-                        animate={{ opacity: 0, scale: 1.6 }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: 'easeOut',
-                        }}
-                      />
-                    )}
+              const labelSizeClass = node.label.length > 5 ? 'text-[10px]' : 'text-xs';
+
+              return (
+                <motion.g
+                  key={node.label}
+                  initial={{ opacity: isActive ? 1 : 0.4 }}
+                  animate={{ opacity: isActive ? 1 : 0.4 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {/* 활성화된 노드의 펄스 효과 */}
+                  {isActive && (
                     <motion.circle
                       cx={node.x}
                       cy={node.y}
                       r='30'
-                      fill='transparent'
-                      stroke='currentColor'
-                      strokeWidth='2'
+                      fill='currentColor'
                       className={activeColorClass}
-                      filter={isActive ? 'url(#glow)' : undefined}
+                      initial={{ opacity: 0.4, scale: 1 }}
+                      animate={{ opacity: 0, scale: 1.6 }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: 'easeOut',
+                      }}
                     />
-                    <text
-                      x={node.x}
-                      y={node.y - 40}
-                      textAnchor='middle'
-                      className={`text-xs font-semibold ${isActive ? 'fill-fg-primary' : 'fill-fg-secondary'}`}
-                    >
-                      {node.label}
-                    </text>
-                  </motion.g>
-                );
-              },
-            )}
+                  )}
+                  <motion.circle
+                    cx={node.x}
+                    cy={node.y}
+                    r='30'
+                    fill='transparent'
+                    stroke='currentColor'
+                    strokeWidth='2'
+                    className={activeColorClass}
+                    filter={isActive ? 'url(#glow)' : undefined}
+                  />
+                  <text
+                    x={node.x}
+                    y={node.y - 40}
+                    textAnchor='middle'
+                    className={`${labelSizeClass} font-semibold ${isActive ? 'fill-fg-primary' : 'fill-fg-secondary'}`}
+                  >
+                    {node.label}
+                  </text>
+                </motion.g>
+              );
+            })}
           </svg>
 
           {/* 모바일 화면을 위해 하단에 현재 모드 이름 표기 (데스크탑에선 생략) */}
@@ -387,11 +400,14 @@ export function OrchestrationShowcase({
             {MODES.map((mode) => {
               const isActive = activeMode === mode.id;
               return (
-                <button
+                <Button
+                  variant={'ghost'}
                   key={mode.id}
                   onClick={() => setActiveMode(mode.id)}
-                  className={`relative z-10 rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors duration-200 sm:px-6 sm:text-sm ${
-                    isActive ? 'text-canvas-primary' : 'text-fg-secondary hover:text-fg-primary'
+                  className={`relative z-10 rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors duration-200 sm:px-6 sm:text-xs ${
+                    isActive
+                      ? 'text-canvas-primary hover:text-canvas-primary'
+                      : 'text-fg-secondary hover:text-fg-primary'
                   }`}
                 >
                   {isActive && (
@@ -406,7 +422,7 @@ export function OrchestrationShowcase({
                     />
                   )}
                   {mode.title}
-                </button>
+                </Button>
               );
             })}
           </div>

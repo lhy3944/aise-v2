@@ -196,6 +196,42 @@ export interface ChatResponse {
   extracted_requirements: ExtractedRequirement[];
 }
 
+// --- Review ---
+
+export interface ReviewRequest {
+  requirement_ids: string[];
+}
+
+export interface ReviewIssue {
+  issue_id: string;
+  type: 'conflict' | 'duplicate';
+  description: string;
+  related_requirements: string[];
+  hint: string; // 해결 힌트 1줄
+}
+
+export interface ReviewSummary {
+  total_issues: number;
+  conflicts: number;
+  duplicates: number;
+  ready_for_next: boolean;
+  feedback: string;
+}
+
+export interface ReviewResponse {
+  review_id: string;
+  issues: ReviewIssue[];
+  summary: ReviewSummary;
+}
+
+export interface LatestReviewResponse {
+  review_id: string;
+  created_at: string;
+  reviewed_requirement_ids: string[];
+  issues: ReviewIssue[];
+  summary: ReviewSummary;
+}
+
 // --- Common ---
 
 export interface ErrorDetail {

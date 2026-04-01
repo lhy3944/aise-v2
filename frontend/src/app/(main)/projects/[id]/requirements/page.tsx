@@ -1,21 +1,22 @@
 'use client';
 
-import { Save, Sparkles, List, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useState, use } from 'react';
-import { ChatPanel } from '@/components/projects/ChatPanel';
-import { RefineCompare } from '@/components/projects/RefineCompare';
-import { RequirementInput } from '@/components/projects/RequirementInput';
-import { RequirementTable } from '@/components/projects/RequirementTable';
-import { SuggestionPanel } from '@/components/projects/SuggestionPanel';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ApiError } from '@/lib/api';
-import { showToast } from '@/lib/toast';
-import { assistService } from '@/services/assist-service';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RequirementTable } from '@/components/projects/RequirementTable';
+import { RequirementInput } from '@/components/projects/RequirementInput';
+import { RefineCompare } from '@/components/projects/RefineCompare';
+import { SuggestionPanel } from '@/components/projects/SuggestionPanel';
+import { ChatPanel } from '@/components/projects/ChatPanel';
 import { requirementService } from '@/services/requirement-service';
 import { sectionService } from '@/services/section-service';
+import { assistService } from '@/services/assist-service';
+import { ReviewModal } from '@/components/projects/ReviewModal';
 import { useOverlayStore } from '@/stores/overlay-store';
+import { useReview } from '@/hooks/useReview';
+import { ApiError } from '@/lib/api';
+import { Save, Sparkles, List, MessageSquare, ClipboardCheck, Loader2 } from 'lucide-react';
 import type {
   Requirement,
   RequirementType,
@@ -30,7 +31,7 @@ interface Props {
 
 export default function RequirementsPage({ params }: Props) {
   const { id: projectId } = use(params);
-  const { showConfirm } = useOverlayStore();
+  const { showAlert, showConfirm } = useOverlayStore();
 
   const [mode, setMode] = useState<'structured' | 'chat'>('structured');
   const [activeTab, setActiveTab] = useState<RequirementType>('fr');
@@ -62,15 +63,37 @@ export default function RequirementsPage({ params }: Props) {
       setSections(secData.sections);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 목록을 불러올 수 없습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, showAlert]);
 
   useEffect(() => {
     fetchRequirements();
   }, [fetchRequirements]);
+
+  // Review hook
+  const review = useReview({
+    projectId,
+    showAlert,
+  });
+
+  // --- Review handler: Include된 요구사항만 전달 ---
+  const handleRunReview = () => {
+    const includedIds = requirements.filter((r) => r.is_selected).map((r) => r.requirement_id);
+
+    if (includedIds.length === 0) {
+      showAlert({
+        type: 'warning',
+        description:
+          'Include된 요구사항이 없습니다. 요구사항을 추가하거나 Include 상태를 확인해주세요.',
+      });
+      return;
+    }
+
+    review.runReview(includedIds);
+  };
 
   // --- Requirement Handlers ---
 
@@ -83,7 +106,7 @@ export default function RequirementsPage({ params }: Props) {
       setRequirements((prev) => [...prev, created]);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 추가에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
@@ -97,7 +120,7 @@ export default function RequirementsPage({ params }: Props) {
       );
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 수정에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
@@ -112,7 +135,7 @@ export default function RequirementsPage({ params }: Props) {
           setRequirements((prev) => prev.filter((r) => r.requirement_id !== requirementId));
         } catch (err) {
           const msg = err instanceof ApiError ? err.message : '삭제에 실패했습니다.';
-          showToast.error(msg);
+          showAlert({ type: 'error', description: msg });
         }
       },
     });
@@ -158,10 +181,13 @@ export default function RequirementsPage({ params }: Props) {
     setSaving(true);
     try {
       const result = await requirementService.save(projectId);
-      showToast.success(`버전 ${result.version}이 저장되었습니다. (${result.saved_count}건)`);
+      showAlert({
+        type: 'success',
+        description: `버전 ${result.version}이 저장되었습니다. (${result.saved_count}건)`,
+      });
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '저장에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     } finally {
       setSaving(false);
     }
@@ -197,7 +223,7 @@ export default function RequirementsPage({ params }: Props) {
       setSections((prev) => [...prev, created]);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '섹션 추가에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
@@ -207,7 +233,7 @@ export default function RequirementsPage({ params }: Props) {
       setSections((prev) => prev.map((s) => (s.section_id === sectionId ? updated : s)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '섹션 이름 변경에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
@@ -226,7 +252,7 @@ export default function RequirementsPage({ params }: Props) {
           );
         } catch (err) {
           const msg = err instanceof ApiError ? err.message : '섹션 삭제에 실패했습니다.';
-          showToast.error(msg);
+          showAlert({ type: 'error', description: msg });
         }
       },
     });
@@ -276,7 +302,7 @@ export default function RequirementsPage({ params }: Props) {
       setRefineResult(result);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'AI 정제에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     } finally {
       setIsRefining(false);
     }
@@ -295,13 +321,13 @@ export default function RequirementsPage({ params }: Props) {
       setRefineResult(null);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 추가에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
   async function handleSuggest() {
     if (selectedIds.length === 0) {
-      showToast.warning('먼저 요구사항을 선택하세요.');
+      showAlert({ type: 'warning', description: '먼저 요구사항을 선택하세요.' });
       return;
     }
     setIsSuggesting(true);
@@ -313,7 +339,7 @@ export default function RequirementsPage({ params }: Props) {
       setSuggestions(result.suggestions);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'AI 제안에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     } finally {
       setIsSuggesting(false);
     }
@@ -329,7 +355,7 @@ export default function RequirementsPage({ params }: Props) {
       setSuggestions((prev) => prev.filter((s) => s !== suggestion));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '제안 수락에 실패했습니다.';
-      showToast.error(msg);
+      showAlert({ type: 'error', description: msg });
     }
   }
 
@@ -404,31 +430,33 @@ export default function RequirementsPage({ params }: Props) {
   }
 
   return (
-    <>
-      {/* Mode Toggle */}
-      <div className='border-line-subtle bg-canvas-primary mb-4 flex w-fit items-center gap-1 rounded-lg border p-1'>
-        <button
-          onClick={() => setMode('structured')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            mode === 'structured'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-fg-muted hover:text-fg-primary hover:bg-muted'
-          }`}
-        >
-          <List className='size-4' />
-          구조화 모드
-        </button>
-        <button
-          onClick={() => setMode('chat')}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            mode === 'chat'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-fg-muted hover:text-fg-primary hover:bg-muted'
-          }`}
-        >
-          <MessageSquare className='size-4' />
-          대화 모드
-        </button>
+    <div className='mx-auto max-w-4xl px-6 py-6'>
+      {/* Mode Toggle + Review */}
+      <div className='mb-4 flex items-center justify-between'>
+        <div className='border-line-subtle bg-canvas-primary flex w-fit items-center gap-1 rounded-lg border p-1'>
+          <button
+            onClick={() => setMode('structured')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              mode === 'structured'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-fg-muted hover:text-fg-primary hover:bg-muted'
+            }`}
+          >
+            <List className='size-4' />
+            구조화 모드
+          </button>
+          <button
+            onClick={() => setMode('chat')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              mode === 'chat'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-fg-muted hover:text-fg-primary hover:bg-muted'
+            }`}
+          >
+            <MessageSquare className='size-4' />
+            대화 모드
+          </button>
+        </div>
       </div>
 
       {mode === 'chat' ? (
@@ -439,11 +467,15 @@ export default function RequirementsPage({ params }: Props) {
           {/* 현재 요구사항 현황 */}
           <div>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RequirementType)}>
-              <TabsList>
-                <TabsTrigger value='fr'>FR ({tabCounts.fr})</TabsTrigger>
-                <TabsTrigger value='qa'>QA ({tabCounts.qa})</TabsTrigger>
-                <TabsTrigger value='constraints'>Constraints ({tabCounts.constraints})</TabsTrigger>
-              </TabsList>
+              <div className='mb-4 flex items-center justify-between'>
+                <TabsList>
+                  <TabsTrigger value='fr'>FR ({tabCounts.fr})</TabsTrigger>
+                  <TabsTrigger value='qa'>QA ({tabCounts.qa})</TabsTrigger>
+                  <TabsTrigger value='constraints'>
+                    Constraints ({tabCounts.constraints})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {(['fr', 'qa', 'constraints'] as RequirementType[]).map((type) => (
                 <TabsContent key={type} value={type}>
@@ -471,6 +503,19 @@ export default function RequirementsPage({ params }: Props) {
             </TabsList>
 
             <div className='flex gap-2'>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={handleRunReview}
+                disabled={review.isReviewing}
+              >
+                {review.isReviewing ? (
+                  <Loader2 className='size-3.5 animate-spin' />
+                ) : (
+                  <ClipboardCheck className='size-3.5' />
+                )}
+                {review.isReviewing ? '리뷰 중...' : '리뷰'}
+              </Button>
               <Button
                 size='sm'
                 variant='outline'
@@ -528,6 +573,14 @@ export default function RequirementsPage({ params }: Props) {
           ))}
         </Tabs>
       )}
-    </>
+
+      {/* Review Modal */}
+      <ReviewModal
+        open={review.isModalOpen}
+        onOpenChange={review.setIsModalOpen}
+        reviewData={review.reviewData}
+        isLoading={review.isReviewing}
+      />
+    </div>
   );
 }

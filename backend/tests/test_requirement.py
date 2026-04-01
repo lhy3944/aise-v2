@@ -43,7 +43,7 @@ async def test_create_requirement(client):
     assert body["type"] == "fr"
     assert body["original_text"] == "로봇 중앙 버튼 클릭하면 멈춤"
     assert body["status"] == "draft"
-    assert body["is_selected"] is False
+    assert body["is_selected"] is True
     assert body["display_id"] == "FR-001"
     assert body["order_index"] == 0
     assert "created_at" in body
@@ -149,16 +149,17 @@ async def test_update_selection(client):
     req2 = await create_test_requirement(client, project_id, original_text="요구사항 2")
     req3 = await create_test_requirement(client, project_id, original_text="요구사항 3")
 
+    # 기본값이 True이므로, req3만 선택 해제하여 테스트
     resp = await client.put(
         f"/api/v1/projects/{project_id}/requirements/selection",
         json={
-            "requirement_ids": [req1["requirement_id"], req2["requirement_id"]],
-            "is_selected": True,
+            "requirement_ids": [req3["requirement_id"]],
+            "is_selected": False,
         },
     )
     assert resp.status_code == 200
     body = resp.json()
-    assert body["updated_count"] == 2
+    assert body["updated_count"] == 1
 
     # 선택 상태 확인
     resp = await client.get(f"/api/v1/projects/{project_id}/requirements")

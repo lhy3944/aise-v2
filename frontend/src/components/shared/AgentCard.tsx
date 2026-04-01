@@ -4,9 +4,10 @@ interface AgentCardProps {
   icon: LucideIcon;
   name: string;
   description: string;
+  tags: string[];
 }
 
-export function AgentCard({ icon: Icon, name, description }: AgentCardProps) {
+export function AgentCard({ icon: Icon, name, description, tags }: AgentCardProps) {
   return (
     <div className='group border-line-subtle hover:bg-card hover:border-accent-primary flex flex-col gap-3 rounded-xl border p-6 transition-colors duration-200'>
       <div className='flex items-center gap-3'>
@@ -17,8 +18,11 @@ export function AgentCard({ icon: Icon, name, description }: AgentCardProps) {
       </div>
       <p className='text-fg-secondary text-sm leading-relaxed font-medium'>{description}</p>
       <div className='flex flex-1 items-end gap-1.5'>
-        <span className='bg-secondary rounded px-2 py-0.5 text-[11px] font-medium'>Tag-1</span>
-        <span className='bg-secondary rounded px-2 py-0.5 text-[11px] font-medium'>Tag-2</span>
+        {tags.map((tag) => (
+          <span key={tag} className='bg-secondary rounded px-2 py-0.5 text-[11px] font-medium'>
+            {tag}
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -8,13 +8,14 @@ import { ProjectListItem } from '@/components/projects/ProjectListItem';
 import { ProjectListSkeleton } from '@/components/projects/ProjectListSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
 import type { ProjectCreate } from '@/types/project';
-import { LayoutGrid, List, Plus, Search } from 'lucide-react';
+import { Grid2X2, Plus, Search, TextAlignJustify } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type ViewMode = 'card' | 'list';
@@ -122,24 +123,35 @@ export default function ProjectsPage() {
 
           <div className='flex gap-3'>
             <div className='border-line-primary flex h-9 items-center rounded-xs border'>
-              <Button
-                variant={viewMode === 'card' ? 'secondary' : 'ghost'}
-                size='icon-sm'
-                onClick={() => setViewMode('card')}
-                aria-label='카드 뷰'
-                className='h-full rounded-l-xs rounded-r-none border-0'
-              >
-                <LayoutGrid className='size-4' />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size='icon-sm'
-                onClick={() => setViewMode('list')}
-                aria-label='리스트 뷰'
-                className='h-full rounded-l-none rounded-r-xs border-0'
-              >
-                <List className='size-4' />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'card' ? 'secondary' : 'ghost'}
+                    size='icon-sm'
+                    onClick={() => setViewMode('card')}
+                    aria-label='카드 뷰'
+                    className='h-full rounded-l-xs rounded-r-none border-0'
+                  >
+                    <Grid2X2 />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>카드 보기</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                    size='icon-sm'
+                    onClick={() => setViewMode('list')}
+                    aria-label='리스트 뷰'
+                    className='h-full rounded-l-none rounded-r-xs border-0'
+                  >
+                    <TextAlignJustify />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>리스트 보기</TooltipContent>
+              </Tooltip>
             </div>
 
             <Button onClick={() => setCreateOpen(true)} variant={'outline'}>

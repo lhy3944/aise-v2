@@ -1,6 +1,6 @@
-import { BookOpen, Play } from 'lucide-react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ArrowRight, BookOpen, Play, SquareArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { AuroraText } from '../ui/aurora-text';
 import { TextAnimate } from '../ui/text-animate';
 
@@ -14,24 +14,24 @@ export function HeroSection() {
         </h1>
         <div className='text-md text-fg-secondary max-w-[560px] text-center leading-relaxed font-semibold'>
           <TextAnimate animation='slideLeft' by='character'>
-            AI 에이전트와 함께 개발 프로세스를 최적화하여
+            AI 에이전트와 함께 요구사항부터 테스트까지
           </TextAnimate>
           <TextAnimate animation='slideLeft' by='character'>
-            더 빠르고 효율적으로 진행하세요.
+            소프트웨어 엔지니어링을 자동화하세요.
           </TextAnimate>
         </div>
       </div>
 
       <div className='flex items-center gap-6'>
-        <Button asChild size='lg' className='gap-2 rounded-lg px-7'>
-          <Link href='/chat'>
-            <Play className='h-4 w-4' />
+        <Button asChild size='lg' className='rounded-sm px-7'>
+          <Link href='/projects'>
+            <SquareArrowRight className='size-4' />
             Get Started
           </Link>
         </Button>
-        <Button asChild size='lg' className='gap-2 rounded-lg px-7' variant={'outline'}>
-          <Link href='/chat'>
-            <BookOpen className='h-4 w-4' />
+        <Button asChild size='lg' className='rounded-sm px-7' variant={'outline'}>
+          <Link href='/dashboard'>
+            <BookOpen className='size-4' />
             Documentation
           </Link>
         </Button>

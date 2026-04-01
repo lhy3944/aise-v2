@@ -39,7 +39,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 # BaseHTTPMiddleware 특성상 exception handler로 전달되지 않으므로
                 # 여기서 직접 500 응답을 반환한다.
                 process_time = (time.time() - start_time) * 1000
-                logger.error(f"Unhandled exception: {e}")
+                logger.exception(f"Unhandled exception: {e}")
                 logger.info(f"Response: Status=500 (took: {process_time:.2f}ms)")
                 return JSONResponse(
                     status_code=500,

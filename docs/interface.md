@@ -341,7 +341,11 @@
 ## 6. Review
 
 ### `POST /api/v1/projects/{project_id}/review/requirements`
-> 요구사항 Review (FR-RQ-02-01~04)
+> 요구사항 Review (FR-RQ-02-01~04, FR-RQ-02-08, FR-RQ-02-13)
+>
+> - Include(`is_selected=true`)된 요구사항의 ID를 전달하여 리뷰 수행
+> - v1: **충돌(conflict) + 중복(duplicate) 검출** + 간단 해결 힌트 제공
+> - 리뷰 결과는 자동으로 DB에 저장 (프로젝트당 최신 1건 유지)
 
 **Request:**
 ```json
@@ -353,30 +357,72 @@
 **Response:**
 ```json
 {
+  "review_id": "rv-001",
   "issues": [
     {
       "issue_id": "issue-001",
       "type": "conflict",
-      "severity": "high",
-      "description": "req-001과 req-003이 충돌합니다.",
-      "related_requirements": ["req-001", "req-003"],
-      "suggestion": {
-        "target_id": "req-003",
-        "original_text": "기존 요구사항 문장",
-        "suggested_text": "수정 제안 문장"
-      }
+      "description": "FR-001과 FR-003이 충돌합니다. 정지 시간 100ms와 200ms가 모순됩니다.",
+      "related_requirements": ["FR-001", "FR-003"],
+      "hint": "두 요구사항의 정지 시간을 통일하거나 우선순위를 명시하세요."
+    },
+    {
+      "issue_id": "issue-002",
+      "type": "duplicate",
+      "description": "FR-001과 FR-004가 동일한 내용입니다.",
+      "related_requirements": ["FR-001", "FR-004"],
+      "hint": "중복 요구사항 중 하나를 삭제하거나 통합하세요."
     }
   ],
   "summary": {
     "total_issues": 2,
     "conflicts": 1,
-    "duplicates": 0,
-    "ambiguities": 1,
-    "ready_for_next": false,
-    "feedback": "성능 관련 QA가 부족합니다."
+    "duplicates": 1,
+    "ready_for_next": true,
+    "feedback": "충돌 1건이 검출되었습니다. 해결을 권장하지만 다음 단계 진행은 가능합니다."
   }
 }
 ```
+- `type`: v1은 `"conflict"` | `"duplicate"` 사용 (추후 `"ambiguity"` 확장 예정)
+- `hint`: 간단한 해결 방향 1줄
+- `ready_for_next`: 충돌 유무와 관계없이 `true` (v1은 경고만, 차단 안 함)
+
+### `GET /api/v1/projects/{project_id}/review/results/latest`
+> 마지막 리뷰 결과 조회 (FR-RQ-02-14)
+>
+> 저장된 마지막 리뷰 결과를 반환. 리뷰 이력이 없으면 404.
+> ※ v1에서는 API만 제공, UI는 추후 필요 시 제공
+
+**Response:**
+```json
+{
+  "review_id": "rv-001",
+  "created_at": "2026-03-31T10:00:00Z",
+  "reviewed_requirement_ids": ["req-uuid-001", "req-uuid-002", "req-uuid-003"],
+  "issues": [
+    {
+      "issue_id": "issue-001",
+      "type": "conflict",
+      "description": "FR-001과 FR-003이 충돌합니다.",
+      "related_requirements": ["FR-001", "FR-003"],
+      "hint": "정지 시간을 통일하세요."
+    }
+  ],
+  "summary": {
+    "total_issues": 1,
+    "conflicts": 1,
+    "duplicates": 0,
+    "ready_for_next": true,
+    "feedback": "충돌 1건이 검출되었습니다."
+  }
+}
+```
+
+> **추후 확장 예정 (v1에서 미사용)**
+> - `POST /review/suggestions/{issue_id}/accept` — 수정 제안 수락
+> - `POST /review/suggestions/{issue_id}/reject` — 수정 제안 거절
+> - 모호성(ambiguity), 누락(missing) 검출
+> - severity(critical/minor), quality_score(0~100)
 
 ### `POST /api/v1/projects/{project_id}/review/usecase-diagram`
 > Use Case Diagram Review (FR-RQ-02-05)

@@ -13,7 +13,7 @@ from sqlalchemy.pool import NullPool
 from src.main import app
 from src.core.database import get_db
 
-TEST_DATABASE_URL = "postgresql+asyncpg://aise:aise1234@localhost:5432/aise"
+TEST_DATABASE_URL = "postgresql+asyncpg://aise:aise1234@localhost:5432/aise_test"
 
 # NullPool: 각 요청마다 새 커넥션을 생성하여 "operation in progress" 문제를 방지
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
@@ -21,9 +21,11 @@ TestSession = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 # 테이블 정리 순서 (FK 의존성 고려)
 CLEANUP_TABLES = [
+    "requirement_reviews",
     "glossary_items",
     "requirement_versions",
     "requirements",
+    "requirement_sections",
     "project_settings",
     "projects",
 ]

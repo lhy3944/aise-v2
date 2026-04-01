@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlalchemy import String, Text, Boolean, DateTime, Integer, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,7 +39,7 @@ class Requirement(Base):
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     original_text: Mapped[str] = mapped_column(Text, nullable=False)
     refined_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_selected: Mapped[bool] = mapped_column(Boolean, default=True, server_default=sa.true())
     status: Mapped[str] = mapped_column(String(20), default="draft")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

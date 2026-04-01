@@ -94,6 +94,30 @@ async def _next_order_index(db: AsyncSession, project_id: uuid.UUID) -> int:
     return (max_idx + 1) if max_idx is not None else 0
 
 
+async def create_requirement_from_review(
+    project_id: uuid.UUID,
+    req_type: str,
+    text: str,
+    db: AsyncSession,
+) -> Requirement:
+    """Review 제안 수락으로 새 요구사항을 생성한다."""
+    display_id = await _next_display_id(db, project_id, req_type)
+    order_index = await _next_order_index(db, project_id)
+
+    new_req = Requirement(
+        project_id=project_id,
+        type=req_type,
+        original_text=text,
+        refined_text=text,
+        display_id=display_id,
+        order_index=order_index,
+        is_selected=True,
+    )
+    db.add(new_req)
+    await db.flush()
+    return new_req
+
+
 async def get_requirements(
     db: AsyncSession,
     project_id: uuid.UUID,

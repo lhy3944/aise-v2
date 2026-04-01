@@ -1,7 +1,9 @@
 import os
 
 from loguru import logger
-from openai import AsyncAzureOpenAI
+from openai import AsyncAzureOpenAI, BadRequestError
+
+from src.core.exceptions import AppException
 
 
 # Azure OpenAI 클라이언트 (SRS용)
@@ -47,12 +49,28 @@ async def chat_completion(
 
     logger.debug(f"LLM 호출: model={model}, messages={len(messages)}개, client={client_type}")
 
-    response = await client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_completion_tokens=max_completion_tokens,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_completion_tokens=max_completion_tokens,
+        )
+    except BadRequestError as e:
+        body = e.body or {}
+        inner = body.get("innererror", {}) if isinstance(body, dict) else {}
+        if inner.get("code") == "ResponsibleAIPolicyViolation":
+            filters = inner.get("content_filter_result", {})
+            triggered = [
+                k for k, v in filters.items()
+                if isinstance(v, dict) and v.get("filtered")
+            ]
+            logger.warning(f"Azure 콘텐츠 필터 차단: categories={triggered}")
+            raise AppException(
+                status_code=422,
+                detail="Azure 콘텐츠 필터에 의해 요청이 차단되었습니다. 입력 내용을 수정 후 다시 시도해주세요.",
+            ) from e
+        raise
 
     content = response.choices[0].message.content or ""
     logger.debug(f"LLM 응답: {len(content)}자")
