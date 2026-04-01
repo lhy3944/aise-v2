@@ -1,10 +1,8 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { GlossaryGeneratePanel } from '@/components/projects/GlossaryGeneratePanel';
 import { GlossaryTable } from '@/components/projects/GlossaryTable';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api';
 import { glossaryService } from '@/services/glossary-service';
@@ -113,40 +111,37 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     }
   }
 
+  if (showSkeleton) {
+    return (
+      <div className='flex flex-col gap-2'>
+        <Skeleton className='h-8 w-full rounded-md' />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className='h-10 w-full rounded-md' />
+        ))}
+      </div>
+    );
+  }
+
+  if (loading) return null;
+
   return (
-    <>
-      <div className='bg-accent-primary/5 border-accent-primary/20 mb-6 rounded-lg border p-4'>
-        <p className='text-fg-secondary text-sm'>
-          프로젝트 도메인의 전문 용어를 정의합니다. 에이전트가 산출물 생성 시 일관된 용어를 사용하도록 참조합니다.
-        </p>
-      </div>
-
-      <div className='mb-4 flex items-center justify-end'>
-        <Button size='sm' variant='outline' onClick={handleGenerate} disabled={generating}>
-          <Sparkles className='size-3.5' />
-          {generating ? '생성 중...' : '자동 생성'}
-        </Button>
-      </div>
-
+    <div className='flex flex-col gap-4'>
       {generated.length > 0 && (
-        <div className='mb-4'>
-          <GlossaryGeneratePanel
-            generated={generated}
-            onAdd={handleAddGenerated}
-            onClose={() => setGenerated([])}
-          />
-        </div>
+        <GlossaryGeneratePanel
+          generated={generated}
+          onAdd={handleAddGenerated}
+          onClose={() => setGenerated([])}
+        />
       )}
 
-      {showSkeleton ? (
-        <div className='flex flex-col gap-2'>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className='h-10 w-full rounded-md' />
-          ))}
-        </div>
-      ) : loading ? null : (
-        <GlossaryTable items={items} onAdd={handleAdd} onUpdate={handleUpdate} onDelete={handleDelete} />
-      )}
-    </>
+      <GlossaryTable
+        items={items}
+        onAdd={handleAdd}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        generating={generating}
+        onGenerate={handleGenerate}
+      />
+    </div>
   );
 }

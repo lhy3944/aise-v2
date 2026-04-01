@@ -1,18 +1,18 @@
 'use client';
 
-import { BookOpen, FolderOpen, Info } from 'lucide-react';
-import { use, useState } from 'react';
-import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
+import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
+import { BookOpen, Box, FolderOpen, Info } from 'lucide-react';
+import { use, useState } from 'react';
 
 type TabId = 'overview' | 'glossary' | 'knowledge';
 
 const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
-  { id: 'overview', label: '개요', icon: Info },
+  { id: 'overview', label: '개요', icon: Box },
   { id: 'glossary', label: '용어사전', icon: BookOpen },
   { id: 'knowledge', label: '지식 소스', icon: FolderOpen },
 ];
@@ -34,12 +34,9 @@ export default function ProjectDetailLayout({ children, params }: Props) {
       {/* Tab Navigation */}
       <div className='bg-canvas-primary'>
         <div
-          className={cn(
-            'mx-auto px-6 pt-11 transition-[max-width] duration-300 ease-in-out',
-            maxW,
-          )}
+          className={cn('mx-auto px-6 pt-11 transition-[max-width] duration-300 ease-in-out', maxW)}
         >
-          <div className='flex border-b border-line-subtle'>
+          <div className='border-line-subtle flex border-b'>
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
