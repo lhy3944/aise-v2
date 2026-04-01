@@ -93,7 +93,7 @@ export default function ProjectsPage() {
       <div
         className={cn(
           'mx-auto p-6 transition-[max-width] duration-300 ease-in-out',
-          fullWidthMode ? 'max-w-full' : 'max-w-6xl',
+          fullWidthMode ? 'max-w-[1800px]' : 'max-w-6xl',
         )}
       >
         {/* Header */}
