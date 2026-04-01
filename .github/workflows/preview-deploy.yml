@@ -70,7 +70,7 @@ jobs:
             <b>브랜치:</b> <code>${{ github.ref_name }}</code>
             <b>커밋:</b> <code>${{ github.sha }}</code>
 
-            🌐 <a href="http://${{ secrets.VPS_HOST }}:4100">Frontend</a>
+            🌐 <a href="https://preview.devbanjang.cloud">Frontend</a>
             📡 <a href="http://${{ secrets.VPS_HOST }}:8181">Backend</a>
             📖 <a href="http://${{ secrets.VPS_HOST }}:8181/docs">Swagger</a>
 
