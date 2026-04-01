@@ -41,13 +41,16 @@ jobs:
             git checkout "$BRANCH"
             git pull origin "$BRANCH"
 
-            # Build and deploy with docker-compose
-            docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --build
+            # Export HOST_IP for frontend API URL
+            export HOST_IP=$(hostname -I | awk '{print $1}')
+
+            # Build and deploy (preview-only compose, 포트 분리)
+            docker compose -f docker-compose.preview.yml up -d --build
 
             echo "=== Deploy complete ==="
-            echo "Frontend: http://$(hostname -I | awk '{print $1}'):4000"
-            echo "Backend:  http://$(hostname -I | awk '{print $1}'):8081"
-            echo "Swagger:  http://$(hostname -I | awk '{print $1}'):8081/docs"
+            echo "Frontend: http://$HOST_IP:4100"
+            echo "Backend:  http://$HOST_IP:8181"
+            echo "Swagger:  http://$HOST_IP:8181/docs"
 
   notify:
     runs-on: ubuntu-latest
@@ -68,9 +71,9 @@ jobs:
             *커밋:* `${{ github.sha }}`
             *메시지:* ${{ github.event.head_commit.message }}
 
-            🌐 *Frontend:* http://${{ secrets.VPS_HOST }}:4000
-            📡 *Backend:* http://${{ secrets.VPS_HOST }}:8081
-            📖 *Swagger:* http://${{ secrets.VPS_HOST }}:8081/docs
+            🌐 *Frontend:* http://${{ secrets.VPS_HOST }}:4100
+            📡 *Backend:* http://${{ secrets.VPS_HOST }}:8181
+            📖 *Swagger:* http://${{ secrets.VPS_HOST }}:8181/docs
 
             [커밋 보기](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
 
