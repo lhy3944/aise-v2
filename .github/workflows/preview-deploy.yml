@@ -63,19 +63,18 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            ✅ *Preview 배포 완료*
+            ✅ <b>Preview 배포 완료</b>
 
-            *브랜치:* `${{ github.ref_name }}`
-            *커밋:* `${{ github.sha }}`
-            *메시지:* ${{ github.event.head_commit.message }}
+            <b>브랜치:</b> <code>${{ github.ref_name }}</code>
+            <b>커밋:</b> <code>${{ github.sha }}</code>
 
-            🌐 *Frontend:* http://${{ secrets.VPS_HOST }}:4100
-            📡 *Backend:* http://${{ secrets.VPS_HOST }}:8181
-            📖 *Swagger:* http://${{ secrets.VPS_HOST }}:8181/docs
+            🌐 <a href="http://${{ secrets.VPS_HOST }}:4100">Frontend</a>
+            📡 <a href="http://${{ secrets.VPS_HOST }}:8181">Backend</a>
+            📖 <a href="http://${{ secrets.VPS_HOST }}:8181/docs">Swagger</a>
 
-            [커밋 보기](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+            <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">커밋 보기</a>
 
       - name: Send Telegram notification (failure)
         if: needs.deploy-preview.result == 'failure'
@@ -83,12 +82,11 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            ❌ *Preview 배포 실패*
+            ❌ <b>Preview 배포 실패</b>
 
-            *브랜치:* `${{ github.ref_name }}`
-            *커밋:* `${{ github.sha }}`
-            *메시지:* ${{ github.event.head_commit.message }}
+            <b>브랜치:</b> <code>${{ github.ref_name }}</code>
+            <b>커밋:</b> <code>${{ github.sha }}</code>
 
-            [로그 확인](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">로그 확인</a>
