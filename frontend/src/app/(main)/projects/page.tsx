@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
+import { layoutMaxW } from '@/config/layout';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
 import type { ProjectCreate } from '@/types/project';
@@ -93,7 +94,7 @@ export default function ProjectsPage() {
       <div
         className={cn(
           'mx-auto p-6 transition-[max-width] duration-300 ease-in-out',
-          fullWidthMode ? 'max-w-full' : 'max-w-6xl',
+          layoutMaxW(fullWidthMode),
         )}
       >
         {/* Header */}
