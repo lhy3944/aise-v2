@@ -44,7 +44,7 @@ export function Modal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className={cn('flex flex-col gap-0 p-0', SIZE_CLASSES[size])}
+        className={cn('flex flex-col gap-0 overflow-hidden p-0', SIZE_CLASSES[size])}
         showCloseButton={showCloseButton}
       >
         {(title || description) && (
