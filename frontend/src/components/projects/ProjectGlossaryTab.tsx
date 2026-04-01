@@ -121,8 +121,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
         </p>
       </div>
 
-      <div className='mb-4 flex items-center justify-between'>
-        <h2 className='text-fg-primary text-base font-semibold'>용어사전</h2>
+      <div className='mb-4 flex items-center justify-end'>
         <Button size='sm' variant='outline' onClick={handleGenerate} disabled={generating}>
           <Sparkles className='size-3.5' />
           {generating ? '생성 중...' : '자동 생성'}

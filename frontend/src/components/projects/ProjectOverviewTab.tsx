@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Save, X } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MODULE_COLORS, MODULE_LABELS } from '@/constants/project';
@@ -108,147 +109,161 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
     return <p className='text-fg-muted text-sm'>프로젝트를 찾을 수 없습니다.</p>;
   }
 
-  return (
-    <div className='flex flex-col gap-8'>
-      <div className='bg-accent-primary/5 border-accent-primary/20 rounded-lg border p-4'>
-        <p className='text-fg-secondary text-sm'>
-          프로젝트의 기본 정보를 관리합니다. 에이전트는 이 설정을 기반으로 산출물을 생성합니다.
-        </p>
-      </div>
+  const fields: { label: string; value: React.ReactNode }[] = [
+    { label: '이름', value: <span className='text-fg-primary font-medium'>{project.name}</span> },
+    { label: '설명', value: project.description || '-' },
+    { label: '도메인', value: project.domain || '-' },
+    { label: '제품 유형', value: project.product_type || '-' },
+    {
+      label: '모듈',
+      value: (
+        <div className='flex flex-wrap gap-1.5'>
+          {project.modules.map((mod) => (
+            <Badge key={mod} variant='ghost' className={cn(MODULE_COLORS[mod], 'text-xs')}>
+              {MODULE_LABELS[mod]}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    { label: '생성일', value: formatDate(project.created_at) },
+    { label: '수정일', value: formatDate(project.updated_at) },
+  ];
 
-      <section className='border-line-primary rounded-lg border p-6'>
-        <div className='mb-4 flex items-center justify-between'>
-          <h2 className='text-fg-primary text-base font-semibold'>프로젝트 정보</h2>
-          {!editing ? (
-            <Button variant='ghost' size='sm' onClick={() => setEditing(true)}>
-              <Pencil className='mr-1.5 size-3.5' />
-              편집
-            </Button>
-          ) : (
-            <div className='flex gap-2'>
+  return (
+    <div className='w-full'>
+      {/* Header */}
+      <div className='flex items-center justify-end pb-4'>
+        {!editing && (
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 variant='ghost'
-                size='sm'
-                onClick={() => {
-                  resetProjectForm(project);
-                  setEditing(false);
-                }}
-                disabled={saving}
+                size='icon-sm'
+                onClick={() => setEditing(true)}
+                className='text-fg-muted hover:text-fg-primary size-7'
               >
-                <X className='mr-1 size-3.5' />
-                취소
+                <Pencil className='size-3.5' />
               </Button>
-              <Button size='sm' onClick={handleSaveProject} disabled={saving || !name.trim()}>
-                {saving ? <Spinner className='mr-1.5' /> : <Save className='mr-1.5 size-3.5' />}
-                저장
-              </Button>
-            </div>
-          )}
-        </div>
+            </TooltipTrigger>
+            <TooltipContent>편집</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
-        {editing ? (
-          <div className='flex flex-col gap-4'>
+      {editing ? (
+        <div className='flex flex-col gap-4'>
+          <div className='flex flex-col gap-1.5'>
+            <Label htmlFor='edit-name' className='text-fg-muted text-xs'>
+              프로젝트 이름 <span className='text-destructive'>*</span>
+            </Label>
+            <Input
+              id='edit-name'
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder='프로젝트 이름'
+            />
+          </div>
+          <div className='flex flex-col gap-1.5'>
+            <Label htmlFor='edit-desc' className='text-fg-muted text-xs'>
+              설명
+            </Label>
+            <Textarea
+              id='edit-desc'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder='프로젝트에 대한 간단한 설명'
+              className='min-h-20 resize-none'
+            />
+          </div>
+          <div className='grid grid-cols-2 gap-3'>
             <div className='flex flex-col gap-1.5'>
-              <Label htmlFor='edit-name'>
-                프로젝트 이름 <span className='text-destructive'>*</span>
+              <Label htmlFor='edit-domain' className='text-fg-muted text-xs'>
+                도메인
               </Label>
               <Input
-                id='edit-name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder='프로젝트 이름'
+                id='edit-domain'
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                placeholder='예: robotics'
               />
             </div>
             <div className='flex flex-col gap-1.5'>
-              <Label htmlFor='edit-desc'>설명</Label>
-              <Textarea
-                id='edit-desc'
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder='프로젝트에 대한 간단한 설명'
-                className='min-h-20 resize-none'
+              <Label htmlFor='edit-product' className='text-fg-muted text-xs'>
+                제품 유형
+              </Label>
+              <Input
+                id='edit-product'
+                value={productType}
+                onChange={(e) => setProductType(e.target.value)}
+                placeholder='예: embedded'
               />
             </div>
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='flex flex-col gap-1.5'>
-                <Label htmlFor='edit-domain'>도메인</Label>
-                <Input
-                  id='edit-domain'
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder='예: robotics'
-                />
-              </div>
-              <div className='flex flex-col gap-1.5'>
-                <Label htmlFor='edit-product'>제품 유형</Label>
-                <Input
-                  id='edit-product'
-                  value={productType}
-                  onChange={(e) => setProductType(e.target.value)}
-                  placeholder='예: embedded'
-                />
-              </div>
-            </div>
-            <div className='flex flex-col gap-2'>
-              <Label>
-                모듈 선택 <span className='text-destructive'>*</span>
-              </Label>
-              <div className='flex flex-wrap gap-2'>
-                {MODULE_PRESETS.map((preset) => {
-                  const isActive =
-                    preset.modules.length === modules.length &&
-                    preset.modules.every((m) => modules.includes(m));
-                  return (
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      key={preset.label}
-                      onClick={() => setModules(preset.modules)}
-                      className={cn(
-                        'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
-                        isActive
-                          ? 'border-accent-primary bg-accent-primary/5 text-accent-primary'
-                          : 'border-line-primary text-fg-secondary hover:border-fg-muted',
-                      )}
-                    >
-                      {preset.label}
-                    </Button>
-                  );
-                })}
-              </div>
+          </div>
+          <div className='flex flex-col gap-2'>
+            <Label className='text-fg-muted text-xs'>
+              모듈 선택 <span className='text-destructive'>*</span>
+            </Label>
+            <div className='grid grid-cols-2 gap-2 sm:grid-cols-1 md:grid-cols-5'>
+              {MODULE_PRESETS.map((preset) => {
+                const isActive =
+                  preset.modules.length === modules.length &&
+                  preset.modules.every((m) => modules.includes(m));
+                return (
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    key={preset.label}
+                    onClick={() => setModules(preset.modules)}
+                    className={cn(
+                      'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                      isActive
+                        ? 'border-accent-primary bg-accent-primary/5 text-accent-primary'
+                        : 'border-line-primary text-fg-secondary hover:border-fg-muted',
+                    )}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
-        ) : (
-          <div className='grid grid-cols-[120px_1fr] gap-y-2.5 text-sm'>
-            <span className='text-fg-muted'>이름</span>
-            <span className='text-fg-primary font-medium'>{project.name}</span>
 
-            <span className='text-fg-muted'>설명</span>
-            <span className='text-fg-secondary'>{project.description || '-'}</span>
-
-            <span className='text-fg-muted'>도메인</span>
-            <span className='text-fg-secondary'>{project.domain || '-'}</span>
-
-            <span className='text-fg-muted'>제품 유형</span>
-            <span className='text-fg-secondary'>{project.product_type || '-'}</span>
-
-            <span className='text-fg-muted'>모듈</span>
-            <div className='flex flex-wrap gap-1.5'>
-              {project.modules.map((mod) => (
-                <Badge key={mod} variant='ghost' className={cn(MODULE_COLORS[mod], 'text-xs')}>
-                  {MODULE_LABELS[mod]}
-                </Badge>
-              ))}
-            </div>
-
-            <span className='text-fg-muted'>생성일</span>
-            <span className='text-fg-secondary'>{formatDate(project.created_at)}</span>
-
-            <span className='text-fg-muted'>수정일</span>
-            <span className='text-fg-secondary'>{formatDate(project.updated_at)}</span>
+          {/* Actions — 우하단 */}
+          <div className='flex justify-end gap-2 pt-2'>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => {
+                resetProjectForm(project);
+                setEditing(false);
+              }}
+              disabled={saving}
+            >
+              취소
+            </Button>
+            <Button size='sm' onClick={handleSaveProject} disabled={saving || !name.trim()}>
+              {saving && <Spinner className='mr-1.5' />}
+              저장
+            </Button>
           </div>
-        )}
-      </section>
+        </div>
+      ) : (
+        <div className='flex flex-col'>
+          {fields.map((field, i) => (
+            <div
+              key={field.label}
+              className={cn(
+                'flex items-baseline gap-4 py-2.5 text-sm',
+                i < fields.length - 1 && 'border-line-subtle border-b',
+              )}
+            >
+              <span className='text-fg-muted w-20 shrink-0'>{field.label}</span>
+              <span className='text-fg-secondary'>{field.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

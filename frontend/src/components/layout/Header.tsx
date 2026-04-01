@@ -4,6 +4,7 @@ import { HeaderActions } from '@/components/layout/HeaderActions';
 import { HeaderTabs } from '@/components/layout/HeaderTabs';
 import { MobileMenu } from '@/components/layout/MobileMenu';
 import { Logo } from '@/components/shared/Logo';
+import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 
@@ -23,7 +24,7 @@ export function Header({ showLayoutToggle = false }: HeaderProps) {
       <div
         className={cn(
           'mx-auto flex h-full w-full items-center justify-between px-2 transition-[max-width] duration-300 ease-in-out sm:px-6 lg:px-8',
-          fullWidthMode ? 'max-w-[2160px]' : 'max-w-6xl',
+          layoutMaxW(fullWidthMode),
         )}
       >
         <div className='flex flex-1 items-center'>

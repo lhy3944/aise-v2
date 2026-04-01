@@ -5,6 +5,7 @@ import { use, useState } from 'react';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
+import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 
@@ -26,36 +27,38 @@ export default function ProjectDetailLayout({ children, params }: Props) {
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
-  const maxW = fullWidthMode ? 'max-w-[2160px]' : 'max-w-6xl';
+  const maxW = layoutMaxW(fullWidthMode);
 
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
       {/* Tab Navigation */}
-      <div className='bg-canvas-primary px-6 pt-6'>
+      <div className='bg-canvas-primary'>
         <div
           className={cn(
-            'border-line-primary mx-auto flex border-b transition-[max-width] duration-300 ease-in-out',
+            'mx-auto px-6 pt-11 transition-[max-width] duration-300 ease-in-out',
             maxW,
           )}
         >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
-                  isActive
-                    ? 'border-accent-primary text-accent-primary'
-                    : 'text-fg-muted hover:text-fg-secondary border-transparent',
-                )}
-              >
-                <tab.icon className='size-4' />
-                {tab.label}
-              </button>
-            );
-          })}
+          <div className='flex border-b border-line-subtle'>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
+                    isActive
+                      ? 'border-accent-primary text-accent-primary'
+                      : 'text-fg-muted hover:text-fg-secondary border-transparent',
+                  )}
+                >
+                  <tab.icon className='size-4' />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
