@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
-import type { Project, ProjectModule, ProjectSettings, ProjectSettingsUpdate } from '@/types/project';
+import type { Project, ProjectModule } from '@/types/project';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -29,22 +29,11 @@ const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'Testcase Only', modules: ['testcase'] },
 ];
 
-const LLM_MODELS = ['gpt-5.2', 'gpt-4.1', 'gpt-4.1-mini'];
-const LANGUAGES = [
-  { value: 'ko', label: '한국어' },
-  { value: 'en', label: 'English' },
-];
-const DIAGRAM_TOOLS = [
-  { value: 'plantuml', label: 'PlantUML' },
-  { value: 'mermaid', label: 'Mermaid' },
-];
-
 export default function ProjectOverviewPage({ params }: Props) {
   const { id } = use(params);
   const updateProjectInStore = useProjectStore((s) => s.updateProject);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [settings, setSettings] = useState<ProjectSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,26 +45,14 @@ export default function ProjectOverviewPage({ params }: Props) {
   const [productType, setProductType] = useState('');
   const [modules, setModules] = useState<ProjectModule[]>([]);
 
-  // Settings form state
-  const [editingSettings, setEditingSettings] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [llmModel, setLlmModel] = useState('');
-  const [language, setLanguage] = useState('');
-  const [diagramTool, setDiagramTool] = useState('');
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [proj, sett] = await Promise.all([
-        projectService.get(id),
-        projectService.getSettings(id),
-      ]);
+      const proj = await projectService.get(id);
       setProject(proj);
-      setSettings(sett);
       resetProjectForm(proj);
-      resetSettingsForm(sett);
     } catch {
-      // useFetch pattern already handles toast
+      // error handled globally
     } finally {
       setLoading(false);
     }
@@ -91,12 +68,6 @@ export default function ProjectOverviewPage({ params }: Props) {
     setDomain(p.domain ?? '');
     setProductType(p.product_type ?? '');
     setModules(p.modules);
-  }
-
-  function resetSettingsForm(s: ProjectSettings) {
-    setLlmModel(s.llm_model);
-    setLanguage(s.language);
-    setDiagramTool(s.diagram_tool);
   }
 
   async function handleSaveProject() {
@@ -121,30 +92,10 @@ export default function ProjectOverviewPage({ params }: Props) {
     }
   }
 
-  async function handleSaveSettings() {
-    setSavingSettings(true);
-    try {
-      const data: ProjectSettingsUpdate = {
-        llm_model: llmModel,
-        language,
-        diagram_tool: diagramTool,
-      };
-      const updated = await projectService.updateSettings(id, data);
-      setSettings(updated);
-      setEditingSettings(false);
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : '설정 업데이트에 실패했습니다.';
-      console.error(message);
-    } finally {
-      setSavingSettings(false);
-    }
-  }
-
   if (loading) {
     return (
       <div className='flex flex-col gap-6'>
         <Skeleton className='h-8 w-60' />
-        <Skeleton className='h-32 w-full' />
         <Skeleton className='h-32 w-full' />
       </div>
     );
@@ -159,7 +110,7 @@ export default function ProjectOverviewPage({ params }: Props) {
       {/* Guide Banner */}
       <div className='bg-accent-primary/5 border-accent-primary/20 rounded-lg border p-4'>
         <p className='text-fg-secondary text-sm'>
-          프로젝트의 기본 정보와 설정을 관리합니다. 에이전트는 이 설정을 기반으로 산출물을 생성합니다.
+          프로젝트의 기본 정보를 관리합니다. 에이전트는 이 설정을 기반으로 산출물을 생성합니다.
         </p>
       </div>
 
@@ -299,112 +250,6 @@ export default function ProjectOverviewPage({ params }: Props) {
           </div>
         )}
       </section>
-
-      {/* Settings Section */}
-      {settings && (
-        <section className='border-line-primary rounded-lg border p-6'>
-          <div className='mb-4 flex items-center justify-between'>
-            <h2 className='text-fg-primary text-base font-semibold'>프로젝트 설정</h2>
-            {!editingSettings ? (
-              <Button variant='ghost' size='sm' onClick={() => setEditingSettings(true)}>
-                <Pencil className='mr-1.5 size-3.5' />
-                편집
-              </Button>
-            ) : (
-              <div className='flex gap-2'>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => {
-                    resetSettingsForm(settings);
-                    setEditingSettings(false);
-                  }}
-                  disabled={savingSettings}
-                >
-                  <X className='mr-1 size-3.5' />
-                  취소
-                </Button>
-                <Button size='sm' onClick={handleSaveSettings} disabled={savingSettings}>
-                  {savingSettings ? (
-                    <Spinner className='mr-1.5' />
-                  ) : (
-                    <Save className='mr-1.5 size-3.5' />
-                  )}
-                  저장
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {editingSettings ? (
-            <div className='flex flex-col gap-4'>
-              <div className='flex flex-col gap-1.5'>
-                <Label htmlFor='edit-llm'>LLM 모델</Label>
-                <select
-                  id='edit-llm'
-                  value={llmModel}
-                  onChange={(e) => setLlmModel(e.target.value)}
-                  className='border-line-primary bg-canvas-primary text-fg-primary rounded-md border px-3 py-2 text-sm'
-                >
-                  {LLM_MODELS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className='grid grid-cols-2 gap-3'>
-                <div className='flex flex-col gap-1.5'>
-                  <Label htmlFor='edit-lang'>언어</Label>
-                  <select
-                    id='edit-lang'
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className='border-line-primary bg-canvas-primary text-fg-primary rounded-md border px-3 py-2 text-sm'
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.value} value={l.value}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className='flex flex-col gap-1.5'>
-                  <Label htmlFor='edit-diagram'>다이어그램 도구</Label>
-                  <select
-                    id='edit-diagram'
-                    value={diagramTool}
-                    onChange={(e) => setDiagramTool(e.target.value)}
-                    className='border-line-primary bg-canvas-primary text-fg-primary rounded-md border px-3 py-2 text-sm'
-                  >
-                    {DIAGRAM_TOOLS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className='grid grid-cols-[120px_1fr] gap-y-2.5 text-sm'>
-              <span className='text-fg-muted'>LLM 모델</span>
-              <span className='text-fg-secondary'>{settings.llm_model}</span>
-
-              <span className='text-fg-muted'>언어</span>
-              <span className='text-fg-secondary'>
-                {LANGUAGES.find((l) => l.value === settings.language)?.label ?? settings.language}
-              </span>
-
-              <span className='text-fg-muted'>다이어그램</span>
-              <span className='text-fg-secondary'>
-                {DIAGRAM_TOOLS.find((t) => t.value === settings.diagram_tool)?.label ??
-                  settings.diagram_tool}
-              </span>
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }
