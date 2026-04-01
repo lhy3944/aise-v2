@@ -1,6 +1,8 @@
 import type { ErrorResponse } from '@/types/project';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+// 프로덕션/프리뷰: 빈 문자열 → 같은 도메인으로 요청 → Next.js rewrites가 백엔드로 프록시
+// 로컬 개발: NEXT_PUBLIC_API_URL=http://localhost:8081 직접 호출
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export class ApiError extends Error {
   code: string;
