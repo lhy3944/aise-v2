@@ -9,8 +9,9 @@ import { Check, Pencil, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
 
-/** 공통 그리드 컬럼 — 모바일: 제품군 숨김, 데스크탑: 4열 */
-const GRID_COLS = 'grid max-sm:grid-cols-[1fr_2fr_40px] sm:grid-cols-[minmax(120px,1fr)_2fr_120px_60px]';
+/** 공통 그리드 컬럼 — 모바일: 비율 기반 3열(액션 숨김), 데스크탑: 4열 */
+const GRID_COLS =
+  'grid max-sm:grid-cols-[2fr_3fr_2fr] sm:grid-cols-[minmax(120px,1fr)_2fr_120px_60px]';
 
 /* ─── Inline Edit Row ─── */
 
@@ -123,8 +124,8 @@ function GlossaryRow({
     <div className={cn('border-line-subtle hover:bg-canvas-surface/40 group items-baseline gap-3 border-b px-4 py-2.5 text-sm transition-colors', GRID_COLS)}>
       <span className='text-fg-primary truncate font-medium'>{item.term}</span>
       <span className='text-fg-secondary line-clamp-2 leading-relaxed'>{item.definition}</span>
-      <span className='text-fg-muted max-sm:hidden truncate text-xs'>{item.product_group || '-'}</span>
-      <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
+      <span className='text-fg-muted truncate text-xs'>{item.product_group || '-'}</span>
+      <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 max-sm:hidden'>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -211,7 +212,7 @@ export function GlossaryTable({
   return (
     <div className='flex flex-col'>
       {/* ─── Sticky Toolbar ─── */}
-      <div className='bg-canvas-primary sticky top-0 z-10 flex flex-col gap-3 pb-3'>
+      <div className='bg-canvas-primary sm:sticky sm:top-0 sm:z-10 flex flex-col gap-3 pb-3'>
         <div className='flex items-center gap-3'>
           {/* Search */}
           <div className='relative flex-1'>
@@ -297,8 +298,8 @@ export function GlossaryTable({
       <div className={cn('border-line-subtle gap-3 border-b px-4 py-2 text-xs whitespace-nowrap', GRID_COLS)}>
         <span className='text-fg-muted text-center font-medium'>용어</span>
         <span className='text-fg-muted text-center font-medium'>정의</span>
-        <span className='text-fg-muted max-sm:hidden text-center font-medium'>제품군</span>
-        <span />
+        <span className='text-fg-muted text-center font-medium'>제품군</span>
+        <span className='max-sm:hidden' />
       </div>
 
       {/* ─── Inline Add (상단) ─── */}
