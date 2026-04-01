@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api';
 import { glossaryService } from '@/services/glossary-service';
 import { useOverlayStore } from '@/stores/overlay-store';
+import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
 
 interface ProjectGlossaryTabProps {
@@ -20,6 +21,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
 
   const [items, setItems] = useState<GlossaryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDeferredLoading(loading);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GlossaryCreate[]>([]);
 
@@ -137,13 +139,13 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
         </div>
       )}
 
-      {loading ? (
+      {showSkeleton ? (
         <div className='flex flex-col gap-2'>
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className='h-10 w-full rounded-md' />
           ))}
         </div>
-      ) : (
+      ) : loading ? null : (
         <GlossaryTable items={items} onAdd={handleAdd} onUpdate={handleUpdate} onDelete={handleDelete} />
       )}
     </>

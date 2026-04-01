@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
+import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import type { Project, ProjectModule } from '@/types/project';
 
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
@@ -90,7 +91,9 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
     }
   }
 
-  if (loading) {
+  const showSkeleton = useDeferredLoading(loading);
+
+  if (showSkeleton) {
     return (
       <div className='flex flex-col gap-6'>
         <Skeleton className='h-8 w-60' />
@@ -98,6 +101,8 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
       </div>
     );
   }
+
+  if (loading) return null;
 
   if (!project) {
     return <p className='text-fg-muted text-sm'>프로젝트를 찾을 수 없습니다.</p>;
