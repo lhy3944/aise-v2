@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Project } from '@/types/project';
 
 interface ProjectState {
@@ -16,26 +17,34 @@ interface ProjectState {
   setError: (error: string | null) => void;
 }
 
-export const useProjectStore = create<ProjectState>((set) => ({
-  projects: [],
-  currentProject: null,
-  isLoading: false,
-  error: null,
+export const useProjectStore = create<ProjectState>()(
+  persist(
+    (set) => ({
+      projects: [],
+      currentProject: null,
+      isLoading: false,
+      error: null,
 
-  setProjects: (projects) => set({ projects }),
-  setCurrentProject: (project) => set({ currentProject: project }),
-  addProject: (project) => set((s) => ({ projects: [project, ...s.projects] })),
-  updateProject: (project) =>
-    set((s) => ({
-      projects: s.projects.map((p) => (p.project_id === project.project_id ? project : p)),
-      currentProject:
-        s.currentProject?.project_id === project.project_id ? project : s.currentProject,
-    })),
-  removeProject: (projectId) =>
-    set((s) => ({
-      projects: s.projects.filter((p) => p.project_id !== projectId),
-      currentProject: s.currentProject?.project_id === projectId ? null : s.currentProject,
-    })),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
-}));
+      setProjects: (projects) => set({ projects }),
+      setCurrentProject: (project) => set({ currentProject: project }),
+      addProject: (project) => set((s) => ({ projects: [project, ...s.projects] })),
+      updateProject: (project) =>
+        set((s) => ({
+          projects: s.projects.map((p) => (p.project_id === project.project_id ? project : p)),
+          currentProject:
+            s.currentProject?.project_id === project.project_id ? project : s.currentProject,
+        })),
+      removeProject: (projectId) =>
+        set((s) => ({
+          projects: s.projects.filter((p) => p.project_id !== projectId),
+          currentProject: s.currentProject?.project_id === projectId ? null : s.currentProject,
+        })),
+      setLoading: (isLoading) => set({ isLoading }),
+      setError: (error) => set({ error }),
+    }),
+    {
+      name: 'aise-project',
+      partialize: (s) => ({ currentProject: s.currentProject }),
+    },
+  ),
+);

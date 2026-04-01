@@ -25,12 +25,23 @@ function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimiti
   return <TooltipPrimitive.Trigger data-slot='tooltip-trigger' {...props} />;
 }
 
+function useIsTouchDevice() {
+  const [isTouch, setIsTouch] = React.useState(false);
+  React.useEffect(() => {
+    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+  return isTouch;
+}
+
 function TooltipContent({
   className,
   sideOffset = 0,
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  const isTouch = useIsTouchDevice();
+  if (isTouch) return null;
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content

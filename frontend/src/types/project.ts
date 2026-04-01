@@ -232,6 +232,36 @@ export interface LatestReviewResponse {
   summary: ReviewSummary;
 }
 
+// --- Project Settings ---
+
+export interface ProjectSettings {
+  llm_model: string;
+  language: string;
+  export_format: string;
+  diagram_tool: string;
+}
+
+export interface ProjectSettingsUpdate {
+  llm_model?: string | null;
+  language?: string | null;
+  export_format?: string | null;
+  diagram_tool?: string | null;
+}
+
+// --- Knowledge Source (mock - backend not yet implemented) ---
+
+export type KnowledgeSourceFileType = 'pdf' | 'md' | 'docx' | 'xlsx' | 'pptx';
+export type KnowledgeSourceStatus = 'processing' | 'ready' | 'error';
+
+export interface KnowledgeSource {
+  id: string;
+  name: string;
+  file_type: KnowledgeSourceFileType;
+  size_bytes: number;
+  uploaded_at: string;
+  status: KnowledgeSourceStatus;
+}
+
 // --- Common ---
 
 export interface ErrorDetail {

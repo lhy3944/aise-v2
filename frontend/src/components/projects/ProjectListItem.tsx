@@ -16,7 +16,7 @@ interface ProjectListItemProps {
 export function ProjectListItem({ project, onDelete }: ProjectListItemProps) {
   return (
     <Link
-      href={`/projects/${project.project_id}/requirements`}
+      href={`/projects/${project.project_id}`}
       className='group border-line-primary bg-card hover:border-accent-primary/50 flex items-center gap-4 rounded-lg border px-5 py-3.5 transition-all'
     >
       <div className='bg-accent-primary/10 flex size-9 shrink-0 items-center justify-center rounded-md'>

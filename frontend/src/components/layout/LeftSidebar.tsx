@@ -3,6 +3,8 @@
 import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { ThreadList } from '@/components/chat/ThreadList';
 import { SettingsDialog } from '@/components/overlay/SettingsDialog';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ import { useChatStore } from '@/stores/chat-store';
 import { usePanelStore } from '@/stores/panel-store';
 
 export function LeftSidebar() {
+  const router = useRouter();
   const createThread = useChatStore((s) => s.createThread);
   const leftSidebarOpen = usePanelStore((s) => s.leftSidebarOpen);
   const toggleLeftSidebar = usePanelStore((s) => s.toggleLeftSidebar);
@@ -19,6 +22,7 @@ export function LeftSidebar() {
 
   const actionHandlers: Record<string, () => void> = {
     settings: () => setSettingsOpen(true),
+    project: () => router.push('/projects'),
   };
 
   const BOTTOM_ICONS = SIDEBAR_ACTIONS.map((action) => ({
@@ -63,6 +67,11 @@ export function LeftSidebar() {
                 >
                   <PanelLeftClose className='h-5 w-5' />
                 </Button>
+              </div>
+
+              {/* Project Selector */}
+              <div className='pr-3'>
+                <ProjectSelector />
               </div>
 
               <ThreadList />
@@ -125,6 +134,9 @@ export function LeftSidebar() {
                   </TooltipTrigger>
                   <TooltipContent side='right'>새 대화</TooltipContent>
                 </Tooltip>
+
+                {/* Project Selector (collapsed) */}
+                <ProjectSelector collapsed />
               </div>
               <div className='flex flex-col items-center gap-2'>
                 {BOTTOM_ICONS.map(({ icon: Icon, label, onClick }) => (

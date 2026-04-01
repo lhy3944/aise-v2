@@ -1,5 +1,12 @@
 import { api } from '@/lib/api';
-import type { Project, ProjectCreate, ProjectListResponse, ProjectUpdate } from '@/types/project';
+import type {
+  Project,
+  ProjectCreate,
+  ProjectListResponse,
+  ProjectSettings,
+  ProjectSettingsUpdate,
+  ProjectUpdate,
+} from '@/types/project';
 
 const BASE = '/api/v1/projects';
 
@@ -13,4 +20,9 @@ export const projectService = {
   update: (id: string, data: ProjectUpdate) => api.put<Project>(`${BASE}/${id}`, data),
 
   delete: (id: string) => api.delete<void>(`${BASE}/${id}`),
+
+  getSettings: (id: string) => api.get<ProjectSettings>(`${BASE}/${id}/settings`),
+
+  updateSettings: (id: string, data: ProjectSettingsUpdate) =>
+    api.put<ProjectSettings>(`${BASE}/${id}/settings`, data),
 };
