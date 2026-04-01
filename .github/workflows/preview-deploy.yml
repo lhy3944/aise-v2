@@ -21,13 +21,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1
+        uses: nick-fields/retry@v3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          script: |
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            # Install SSH client
+            which ssh || sudo apt-get install -y openssh-client
+            # Write SSH key
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            ssh-keyscan -p ${{ secrets.VPS_PORT || 22 }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+            # Execute deploy
+            ssh -i ~/.ssh/deploy_key -o ConnectTimeout=30 -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
             set -e
 
             REPO_DIR="${{ secrets.VPS_REPO_DIR || '/home/workspace/aise-v2-preview' }}"
@@ -37,21 +45,18 @@ jobs:
 
             cd "$REPO_DIR"
 
-            # Fetch and checkout branch
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
             git pull origin "$BRANCH"
 
-            # Export HOST_IP for frontend API URL
             export HOST_IP=$(hostname -I | awk '{print $1}')
 
-            # Build and deploy (preview-only compose, 포트 분리)
             docker compose -f docker-compose.preview.yml up -d --build
 
             echo "=== Deploy complete ==="
             echo "Frontend: http://$HOST_IP:4100"
             echo "Backend:  http://$HOST_IP:8181"
-            echo "Swagger:  http://$HOST_IP:8181/docs"
+            DEPLOY_SCRIPT
 
   notify:
     runs-on: ubuntu-latest
