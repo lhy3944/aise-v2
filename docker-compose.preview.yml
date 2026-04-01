@@ -1,8 +1,11 @@
 # Preview 환경 (master와 포트/컨테이너 완전 분리)
 # 사용: docker compose -f docker-compose.preview.yml up -d --build
 #
-# master 환경:  Frontend 4000, Backend 8081, DB 5432 (aise2_*)
-# preview 환경: Frontend 4100, Backend 8181, DB 5433 (aise2_preview_*)
+# master:  Frontend 4000, Backend 8081, DB 5432 (aise2_*)
+# preview: Frontend 4100, Backend 8181, DB 5433 (aise2_preview_*)
+#
+# 필수 환경변수:
+#   HOST_IP=<VPS 공인 IP>  (export HOST_IP=$(hostname -I | awk '{print $1}'))
 
 services:
   postgres:
@@ -34,7 +37,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aise}:${POSTGRES_PASSWORD:-aise1234}@postgres:5432/${POSTGRES_DB:-aise}
       ENVIRONMENT: preview
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: "https://preview.devbanjang.cloud,http://${HOST_IP:-localhost}:4100"
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,13 +47,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "http://${HOST_IP:-localhost}:8181"
+        NEXT_PUBLIC_API_URL: "http://${HOST_IP:?HOST_IP must be set}:8181"
     container_name: aise2_preview_frontend
     restart: unless-stopped
     ports:
       - "4100:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: "http://${HOST_IP:-localhost}:8181"
     depends_on:
       - backend
 
