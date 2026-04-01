@@ -1,0 +1,25 @@
+# Preview 환경 오버라이드
+# 사용: docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --build
+#
+# docker-compose.yml의 설정을 상속하면서 preview용 설정만 오버라이드
+# - 이미지 재빌드 강제 (--build)
+# - DB 마이그레이션 자동 실행
+# - CORS 허용 범위 확장
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ENVIRONMENT: preview
+      CORS_ORIGINS: "*"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://${HOST_IP:-localhost}:8081"
+    environment:
+      NEXT_PUBLIC_API_URL: "http://${HOST_IP:-localhost}:8081"
