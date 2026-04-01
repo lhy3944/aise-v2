@@ -9,6 +9,9 @@ import { Check, Pencil, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
 
+/** 공통 그리드 컬럼 — 모바일: 제품군 숨김, 데스크탑: 4열 */
+const GRID_COLS = 'grid max-sm:grid-cols-[1fr_2fr_40px] sm:grid-cols-[minmax(120px,1fr)_2fr_120px_60px]';
+
 /* ─── Inline Edit Row ─── */
 
 interface EditRowProps {
@@ -35,7 +38,7 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
   return (
     <div className='border-accent-primary/30 bg-canvas-surface/30 border-b px-4 py-3'>
       <div className='flex flex-col gap-2.5'>
-        <div className='grid grid-cols-[1fr_1fr_140px] gap-2'>
+        <div className='grid max-sm:grid-cols-1 sm:grid-cols-[1fr_1fr_140px] gap-2'>
           <Input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
@@ -117,10 +120,10 @@ function GlossaryRow({
   }
 
   return (
-    <div className='border-line-subtle hover:bg-canvas-surface/40 group grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] items-baseline gap-3 border-b px-4 py-2.5 text-sm transition-colors'>
+    <div className={cn('border-line-subtle hover:bg-canvas-surface/40 group items-baseline gap-3 border-b px-4 py-2.5 text-sm transition-colors', GRID_COLS)}>
       <span className='text-fg-primary truncate font-medium'>{item.term}</span>
       <span className='text-fg-secondary line-clamp-2 leading-relaxed'>{item.definition}</span>
-      <span className='text-fg-muted truncate text-xs'>{item.product_group || '-'}</span>
+      <span className='text-fg-muted max-sm:hidden truncate text-xs'>{item.product_group || '-'}</span>
       <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -291,10 +294,10 @@ export function GlossaryTable({
       </div>
 
       {/* ─── Column Header ─── */}
-      <div className='border-line-subtle grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] gap-3 border-b px-4 py-2 text-xs whitespace-nowrap'>
-        <span className='text-fg-muted font-medium'>용어</span>
-        <span className='text-fg-muted font-medium'>정의</span>
-        <span className='text-fg-muted font-medium'>제품군</span>
+      <div className={cn('border-line-subtle gap-3 border-b px-4 py-2 text-xs whitespace-nowrap', GRID_COLS)}>
+        <span className='text-fg-muted text-center font-medium'>용어</span>
+        <span className='text-fg-muted text-center font-medium'>정의</span>
+        <span className='text-fg-muted max-sm:hidden text-center font-medium'>제품군</span>
         <span />
       </div>
 
