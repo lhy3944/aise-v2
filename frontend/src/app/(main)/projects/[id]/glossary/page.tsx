@@ -2,7 +2,6 @@
 
 import { Sparkles } from 'lucide-react';
 import { use, useCallback, useEffect, useState } from 'react';
-import { GlossaryAddForm } from '@/components/projects/GlossaryAddForm';
 import { GlossaryGeneratePanel } from '@/components/projects/GlossaryGeneratePanel';
 import { GlossaryTable } from '@/components/projects/GlossaryTable';
 import { Button } from '@/components/ui/button';
@@ -115,11 +114,17 @@ export default function GlossaryPage({ params }: Props) {
 
   return (
     <>
+      {/* Guide Banner */}
+      <div className='bg-accent-primary/5 border-accent-primary/20 mb-6 rounded-lg border p-4'>
+        <p className='text-fg-secondary text-sm'>
+          프로젝트 도메인의 전문 용어를 정의합니다. 에이전트가 산출물 생성 시 일관된 용어를 사용하도록 참조합니다.
+        </p>
+      </div>
+
       {/* Header */}
       <div className='mb-4 flex items-center justify-between'>
         <div>
-          <h2 className='text-fg-primary text-base font-semibold'>Glossary</h2>
-          <p className='text-fg-muted text-xs'>프로젝트에서 사용하는 용어를 관리합니다.</p>
+          <h2 className='text-fg-primary text-base font-semibold'>용어사전</h2>
         </div>
         <Button size='sm' variant='outline' onClick={handleGenerate} disabled={generating}>
           <Sparkles className='size-3.5' />
@@ -146,14 +151,8 @@ export default function GlossaryPage({ params }: Props) {
           ))}
         </div>
       ) : (
-        <GlossaryTable items={items} onUpdate={handleUpdate} onDelete={handleDelete} />
+        <GlossaryTable items={items} onAdd={handleAdd} onUpdate={handleUpdate} onDelete={handleDelete} />
       )}
-
-      {/* Add Form */}
-      <div className='border-line-primary mt-4 rounded-lg border p-4'>
-        <span className='text-fg-muted mb-2 block text-xs font-medium'>새 용어 추가</span>
-        <GlossaryAddForm onAdd={handleAdd} />
-      </div>
     </>
   );
 }

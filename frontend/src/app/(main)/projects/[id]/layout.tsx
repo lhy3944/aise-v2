@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, FolderOpen, Info } from 'lucide-react';
+import { BookOpen, ChevronLeft, FolderOpen, Info } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { use } from 'react';
@@ -31,50 +31,52 @@ export default function ProjectDetailLayout({ children, params }: Props) {
 
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
-      {/* Project Header */}
-      <div className='border-line-primary bg-canvas-primary p-6'>
+      {/* Tab Navigation with project name */}
+      <div className='border-line-primary bg-canvas-primary border-b px-6'>
         <div
           className={cn(
-            'mx-auto flex items-center gap-3 transition-[max-width] duration-300 ease-in-out',
+            'mx-auto flex items-center gap-4 transition-[max-width] duration-300 ease-in-out',
             maxW,
           )}
         >
-          {isLoading ? (
-            <Skeleton className='h-5 w-40' />
-          ) : project ? (
-            <div className='flex items-center gap-3'>
-              <h1 className='text-fg-primary text-base font-semibold'>{project.name}</h1>
-              {project.domain && <span className='text-fg-muted text-xs'>{project.domain}</span>}
-            </div>
-          ) : (
-            <span className='text-fg-muted text-sm'>프로젝트를 찾을 수 없습니다</span>
-          )}
-        </div>
-      </div>
+          {/* Back + Project Name */}
+          <div className='flex items-center gap-1.5 pr-4'>
+            <Link
+              href='/projects'
+              className='text-fg-muted hover:text-fg-secondary transition-colors'
+            >
+              <ChevronLeft className='size-4' />
+            </Link>
+            {isLoading ? (
+              <Skeleton className='h-4 w-24' />
+            ) : project ? (
+              <span className='text-fg-primary text-sm font-semibold'>{project.name}</span>
+            ) : (
+              <span className='text-fg-muted text-xs'>프로젝트 없음</span>
+            )}
+          </div>
 
-      {/* Tab Navigation */}
-      <div className='border-line-primary bg-canvas-primary border-b px-6'>
-        <div
-          className={cn('mx-auto flex gap-1 transition-[max-width] duration-300 ease-in-out', maxW)}
-        >
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={cn(
-                  'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'border-accent-primary text-accent-primary'
-                    : 'text-fg-muted hover:text-fg-secondary border-transparent',
-                )}
-              >
-                <tab.icon className='size-4' />
-                {tab.label}
-              </Link>
-            );
-          })}
+          {/* Tabs */}
+          <div className='flex gap-1'>
+            {tabs.map((tab) => {
+              const isActive = pathname === tab.href;
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={cn(
+                    'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'border-accent-primary text-accent-primary'
+                      : 'text-fg-muted hover:text-fg-secondary border-transparent',
+                  )}
+                >
+                  <tab.icon className='size-4' />
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
 

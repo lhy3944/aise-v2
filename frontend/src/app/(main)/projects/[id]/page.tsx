@@ -156,6 +156,13 @@ export default function ProjectOverviewPage({ params }: Props) {
 
   return (
     <div className='flex flex-col gap-8'>
+      {/* Guide Banner */}
+      <div className='bg-accent-primary/5 border-accent-primary/20 rounded-lg border p-4'>
+        <p className='text-fg-secondary text-sm'>
+          프로젝트의 기본 정보와 설정을 관리합니다. 에이전트는 이 설정을 기반으로 산출물을 생성합니다.
+        </p>
+      </div>
+
       {/* Project Info Section */}
       <section className='border-line-primary rounded-lg border p-6'>
         <div className='mb-4 flex items-center justify-between'>
