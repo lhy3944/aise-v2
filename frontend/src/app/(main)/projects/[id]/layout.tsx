@@ -44,7 +44,7 @@ export default function ProjectDetailLayout({ children, params }: Props) {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
+                    'flex shrink-0 items-center justify-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors max-sm:flex-1',
                     isActive
                       ? 'border-accent-primary text-accent-primary'
                       : 'text-fg-muted hover:text-fg-secondary border-transparent',

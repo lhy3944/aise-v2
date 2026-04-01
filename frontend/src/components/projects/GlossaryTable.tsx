@@ -221,13 +221,6 @@ export function GlossaryTable({
             />
           </div>
 
-          {/* Count */}
-          <span className='text-fg-muted shrink-0 text-xs'>
-            {search || activeFilter
-              ? `${filtered.length} / ${items.length}건`
-              : `${items.length}건`}
-          </span>
-
           {/* Actions */}
           <div className='flex shrink-0 gap-1.5'>
             <Button
@@ -257,40 +250,48 @@ export function GlossaryTable({
           </div>
         </div>
 
-        {/* Product Group Filters */}
-        {productGroups.length > 0 && (
-          <div className='flex flex-wrap gap-1.5'>
-            <button
-              onClick={() => setActiveFilter(null)}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-                !activeFilter
-                  ? 'bg-accent-primary/10 text-accent-primary'
-                  : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
-              )}
-            >
-              전체
-            </button>
-            {productGroups.map((group) => (
+        {/* Count + Product Group Filters */}
+        <div className='flex flex-wrap items-center gap-1.5'>
+          <span className='text-fg-muted text-xs'>
+            {search || activeFilter
+              ? `${filtered.length} / ${items.length}건`
+              : `총 ${items.length}건`}
+          </span>
+          {productGroups.length > 0 && (
+            <>
+              <span className='text-fg-muted text-xs'>·</span>
               <button
-                key={group}
-                onClick={() => setActiveFilter(activeFilter === group ? null : group)}
+                onClick={() => setActiveFilter(null)}
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-                  activeFilter === group
+                  !activeFilter
                     ? 'bg-accent-primary/10 text-accent-primary'
                     : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
                 )}
               >
-                {group}
+                전체
               </button>
-            ))}
-          </div>
-        )}
+              {productGroups.map((group) => (
+                <button
+                  key={group}
+                  onClick={() => setActiveFilter(activeFilter === group ? null : group)}
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    activeFilter === group
+                      ? 'bg-accent-primary/10 text-accent-primary'
+                      : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
+                  )}
+                >
+                  {group}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
       </div>
 
       {/* ─── Column Header ─── */}
-      <div className='border-line-subtle grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] gap-3 border-b px-4 py-2 text-xs'>
+      <div className='border-line-subtle grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] gap-3 border-b px-4 py-2 text-xs whitespace-nowrap'>
         <span className='text-fg-muted font-medium'>용어</span>
         <span className='text-fg-muted font-medium'>정의</span>
         <span className='text-fg-muted font-medium'>제품군</span>
