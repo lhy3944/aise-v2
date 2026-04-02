@@ -13,7 +13,8 @@ import {
   X,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { SettingsAccount } from '@/components/overlay/SettingsAccount';
 import { SettingsGeneral } from '@/components/overlay/SettingsGeneral';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -33,7 +34,7 @@ const SETTINGS_MENU: SettingsMenuItem[] = [
     id: 'account',
     label: '계정',
     icon: User,
-    content: <p className='text-fg-muted text-sm'>계정 설정</p>,
+    content: <SettingsAccount />,
   },
   {
     id: 'general',
@@ -82,10 +83,17 @@ const SETTINGS_MENU: SettingsMenuItem[] = [
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTab?: string;
 }
 
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, initialTab }: SettingsDialogProps) {
   const [activeId, setActiveId] = useState('general');
+
+  useEffect(() => {
+    if (open) {
+      setActiveId(initialTab ?? 'general');
+    }
+  }, [open, initialTab]);
   const activeItem = SETTINGS_MENU.find((item) => item.id === activeId);
 
   return (
@@ -151,10 +159,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <div className='relative'>
             <ScrollArea className='w-full'>
               <div className='flex items-center gap-1 px-4 pr-8 pb-[10px]'>
-                <Tabs defaultValue='overview'>
+                <Tabs value={activeId} onValueChange={setActiveId}>
                   <TabsList variant={'line'}>
                     {SETTINGS_MENU.map(({ id, label }) => (
-                      <TabsTrigger key={id} value={id} onClick={() => setActiveId(id)}>
+                      <TabsTrigger key={id} value={id}>
                         {label}
                       </TabsTrigger>
                     ))}

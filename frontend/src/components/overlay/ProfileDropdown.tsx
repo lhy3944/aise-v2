@@ -14,9 +14,10 @@ import {
 
 interface ProfileDropdownProps {
   onSettingsOpen: () => void;
+  onProfileOpen: () => void;
 }
 
-export function ProfileDropdown({ onSettingsOpen }: ProfileDropdownProps) {
+export function ProfileDropdown({ onSettingsOpen, onProfileOpen }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -43,7 +44,7 @@ export function ProfileDropdown({ onSettingsOpen }: ProfileDropdownProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className='gap-2 px-3 py-2'>
+        <DropdownMenuItem className='gap-2 px-3 py-2' onSelect={() => onProfileOpen()}>
           <User className='h-4 w-4' />
           <span>프로필</span>
         </DropdownMenuItem>
