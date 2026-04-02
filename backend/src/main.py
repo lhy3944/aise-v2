@@ -11,6 +11,8 @@
 #    uv run uvicorn src.main:app --port=8081 --reload --host 0.0.0.0
 # ============================================
 
+import src.core.compat  # noqa: F401 — Python 3.14 rc2 호환성 패치 (가장 먼저 import)
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
@@ -24,7 +26,7 @@ from src.core.exceptions import (
 )
 from src.core.logging import setup_logging
 from src.middleware import LoggingMiddleware
-from src.routers import sample_router, dev_chat_router, project_router, requirement_router, glossary_router, assist_router, review_router, section_router
+from src.routers import sample_router, dev_chat_router, project_router, requirement_router, glossary_router, assist_router, review_router, section_router, knowledge_router
 
 # 로깅 초기화 (앱 시작 시점에 명시적으로 실행)
 setup_logging()
@@ -48,3 +50,4 @@ app.include_router(glossary_router)
 app.include_router(assist_router)
 app.include_router(review_router)
 app.include_router(section_router)
+app.include_router(knowledge_router)

@@ -17,9 +17,40 @@
 | 테스트 인프라 | Done | pytest 56개 (Project/Settings/Requirement/Glossary/Assist/Review) |
 | 요구사항 Review | Done | Review API + 프롬프트 + 테스트 6개 구현 완료 |
 | 요구사항 섹션(그룹핑) | Done | Section CRUD API + 프론트 UI (접기/펼치기, 드래그, 섹션 간 이동) |
+| Knowledge Repository | Done | Backend: pgvector + MinIO + RAG Chat API. Frontend: API 연동 미완 |
+| Frontend 구조 재설계 | Done | /chat→/agent, ArtifactPanel 우패널, RequirementsArtifact 추출 |
 | SRS 생성 | Not Started | Phase 2 다음 작업 |
 
 ## 작업 로그
+
+### 2026-04-02 (Knowledge Repository + Frontend 구조 재설계)
+- **인프라**:
+  - `docker-compose.yml`: postgres → `pgvector/pgvector:pg16` 이미지 변경 + MinIO 서비스 추가
+  - `pyproject.toml`: pgvector, minio, pymupdf, python-docx, python-pptx, openpyxl, tiktoken 추가
+  - Alembic 마이그레이션: `CREATE EXTENSION vector` + knowledge_documents/knowledge_chunks 테이블 + HNSW 인덱스
+- **백엔드 Knowledge API**:
+  - `models/knowledge.py`: KnowledgeDocument, KnowledgeChunk (Vector(3072))
+  - `schemas/api/knowledge.py`: Document/Chat 요청/응답 스키마
+  - `services/storage_svc.py`: MinIO 래퍼 (upload/download/delete)
+  - `services/embedding_svc.py`: Azure OpenAI text-embedding-3-large 배치 임베딩
+  - `utils/text_chunker.py`: tiktoken 기반 재귀 문자 분할 (500토큰, 50 overlap)
+  - `services/document_processor.py`: 파싱(PDF/DOCX/PPTX/XLSX/TXT)→청킹→임베딩→저장 파이프라인
+  - `services/knowledge_svc.py`: 문서 CRUD + BackgroundTasks 비동기 처리
+  - `services/rag_svc.py`: pgvector cosine distance 검색 + Glossary 컨텍스트 + LLM 응답
+  - `prompts/knowledge/chat.py`: RAG 프롬프트 (출처 인용 규칙)
+  - `routers/knowledge.py`: 5개 엔드포인트 (업로드/목록/상세/삭제/RAG chat)
+- **프론트엔드 구조 재설계**:
+  - `/chat` → `/agent` 라우트 변경 + `middleware.ts` redirect
+  - `config/navigation.ts` 업데이트
+  - `stores/artifact-store.ts`: ArtifactType 탭 상태 관리
+  - `components/artifacts/ArtifactPanel.tsx`: 우패널 메인 (Requirements|SRS|Design|TC 탭)
+  - `components/artifacts/RequirementsArtifact.tsx`: requirements/page.tsx에서 추출 (projectId prop 방식)
+  - `components/artifacts/{Srs,Design,TestCase}Artifact.tsx`: placeholder 컴포넌트
+  - `components/layout/RightPanel.tsx`: ArtifactPanel 렌더
+  - `components/layout/MobileRightDrawer.tsx`: 타이틀 업데이트
+  - `app/(main)/projects/[id]/layout.tsx`: 기본 탭 overview → knowledge
+  - `next.config.ts`: turbopack.root 설정 추가
+  - TypeScript 타입체크 통과
 
 ### 2026-03-30 (요구사항 섹션/그룹핑 기능 — FR-RQ-01-23~30)
 - **요구사항 문서 업데이트**: FR-RQ-01-23~30 추가 (섹션 CRUD, 드래그, 접기/펼치기, SRS 반영, Import 연동)

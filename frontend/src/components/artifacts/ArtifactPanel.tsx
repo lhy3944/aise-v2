@@ -1,0 +1,78 @@
+'use client';
+
+import { FileText, FlaskConical, Layers, ListChecks } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useProjectStore } from '@/stores/project-store';
+import { useArtifactStore } from '@/stores/artifact-store';
+import type { ArtifactType } from '@/stores/artifact-store';
+import { RequirementsArtifact } from '@/components/artifacts/RequirementsArtifact';
+import { SrsArtifact } from '@/components/artifacts/SrsArtifact';
+import { DesignArtifact } from '@/components/artifacts/DesignArtifact';
+import { TestCaseArtifact } from '@/components/artifacts/TestCaseArtifact';
+
+const ARTIFACT_TABS = [
+  { value: 'requirements' as const, label: 'Requirements', icon: ListChecks },
+  { value: 'srs' as const, label: 'SRS', icon: FileText },
+  { value: 'design' as const, label: 'Design', icon: Layers },
+  { value: 'testcase' as const, label: 'Test Cases', icon: FlaskConical },
+];
+
+export function ArtifactPanel() {
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const activeTab = useArtifactStore((s) => s.activeTab);
+  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
+
+  if (!currentProject) {
+    return (
+      <div className='flex h-full items-center justify-center p-6'>
+        <div className='text-center'>
+          <Layers className='text-fg-muted mx-auto mb-3 size-10' />
+          <p className='text-fg-secondary text-sm font-medium'>프로젝트를 선택해주세요</p>
+          <p className='text-fg-muted mt-1 text-xs'>
+            왼쪽 사이드바에서 프로젝트를 선택하면 산출물을 확인할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => setActiveTab(v as ArtifactType)}
+      className='flex h-full flex-col'
+    >
+      {/* Tab Bar */}
+      <div className='border-line-primary shrink-0 border-b px-2 pt-2'>
+        <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
+          {ARTIFACT_TABS.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className='data-[state=active]:text-accent-primary after:bg-accent-primary gap-1.5 px-3 text-xs md:flex-initial'
+            >
+              <tab.icon className='size-3.5' />
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+
+      {/* Content */}
+      <div className='flex-1 overflow-hidden'>
+        <TabsContent value='requirements' className='mt-0 h-full'>
+          <RequirementsArtifact projectId={currentProject.project_id} />
+        </TabsContent>
+        <TabsContent value='srs' className='mt-0 h-full'>
+          <SrsArtifact />
+        </TabsContent>
+        <TabsContent value='design' className='mt-0 h-full'>
+          <DesignArtifact />
+        </TabsContent>
+        <TabsContent value='testcase' className='mt-0 h-full'>
+          <TestCaseArtifact />
+        </TabsContent>
+      </div>
+    </Tabs>
+  );
+}

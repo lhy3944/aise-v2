@@ -21,6 +21,8 @@ TestSession = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 # 테이블 정리 순서 (FK 의존성 고려)
 CLEANUP_TABLES = [
+    "knowledge_chunks",
+    "knowledge_documents",
     "requirement_reviews",
     "glossary_items",
     "requirement_versions",

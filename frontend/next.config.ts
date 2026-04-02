@@ -3,9 +3,11 @@ import type { NextConfig } from 'next';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:8081';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
   output: 'standalone',
+  turbopack: {
+    root: __dirname,
+  },
   allowedDevOrigins: ['dev.devbanjang.cloud', 'local-aise.lge.com'],
   async rewrites() {
     return [

@@ -71,6 +71,24 @@
 - [x] API: Glossary 자동 생성
 - [x] Frontend: 용어 관리 페이지
 
+### 1.7 Knowledge Repository + RAG Chat
+- [x] DB 모델: KnowledgeDocument, KnowledgeChunk (pgvector)
+- [x] API: 문서 업로드/목록/삭제 (`/api/v1/projects/{id}/knowledge/documents`)
+- [x] API: RAG Chat (`/api/v1/projects/{id}/knowledge/chat`)
+- [x] 서비스: storage_svc (MinIO), embedding_svc, document_processor, rag_svc
+- [x] 프롬프트: Knowledge Chat 프롬프트 (출처 인용 + Glossary 컨텍스트)
+- [x] 인프라: docker-compose (pgvector, MinIO) + Alembic 마이그레이션
+- [ ] Frontend: ProjectKnowledgeTab mock → 실제 API 연동
+
+### 1.8 Frontend 구조 재설계
+- [x] `/chat` → `/agent` 라우트 변경 + navigation 업데이트
+- [x] `/chat` → `/agent` redirect (middleware.ts)
+- [x] Agent 우패널: ArtifactPanel (Requirements | SRS | Design | TC 탭)
+- [x] RequirementsArtifact: requirements/page.tsx에서 추출 → 우패널
+- [x] artifact-store: 탭 상태 관리 (Zustand persist)
+- [x] 프로젝트 상세 기본 탭: overview → knowledge
+- [ ] Frontend: requirements/page.tsx 삭제 (RequirementsArtifact로 완전 대체 확인 후)
+
 ---
 
 ## Phase 2: Review + 섹션 그룹핑 + SRS 생성 + Import/Classification
