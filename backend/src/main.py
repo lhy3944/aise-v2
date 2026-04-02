@@ -11,8 +11,6 @@
 #    uv run uvicorn src.main:app --port=8081 --reload --host 0.0.0.0
 # ============================================
 
-import src.core.compat  # noqa: F401 — Python 3.14 rc2 호환성 패치 (가장 먼저 import)
-
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
