@@ -266,14 +266,14 @@ export function GlossaryTable({
 
         {/* Product Group Filters */}
         {productGroups.length > 0 && (
-          <div className='flex flex-wrap gap-1.5'>
+          <div className='flex flex-wrap gap-2'>
             <button
               onClick={() => setActiveFilter(null)}
               className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
                 !activeFilter
-                  ? 'bg-accent-primary/10 text-accent-primary'
-                  : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
+                  ? 'bg-neutral-600 text-white'
+                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
               )}
             >
               전체
@@ -283,10 +283,10 @@ export function GlossaryTable({
                 key={group}
                 onClick={() => setActiveFilter(activeFilter === group ? null : group)}
                 className={cn(
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
                   activeFilter === group
-                    ? 'bg-accent-primary/10 text-accent-primary'
-                    : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
+                    ? 'bg-neutral-600 text-white'
+                    : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
                 )}
               >
                 {group}
