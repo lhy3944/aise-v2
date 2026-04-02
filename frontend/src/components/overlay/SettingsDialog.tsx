@@ -159,10 +159,10 @@ export function SettingsDialog({ open, onOpenChange, initialTab }: SettingsDialo
           <div className='relative'>
             <ScrollArea className='w-full'>
               <div className='flex items-center gap-1 px-4 pr-8 pb-[10px]'>
-                <Tabs defaultValue='overview'>
+                <Tabs value={activeId} onValueChange={setActiveId}>
                   <TabsList variant={'line'}>
                     {SETTINGS_MENU.map(({ id, label }) => (
-                      <TabsTrigger key={id} value={id} onClick={() => setActiveId(id)}>
+                      <TabsTrigger key={id} value={id}>
                         {label}
                       </TabsTrigger>
                     ))}
