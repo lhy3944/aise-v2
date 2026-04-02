@@ -37,7 +37,7 @@ class KnowledgeChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    embedding = mapped_column(Vector(3072), nullable=True)  # text-embedding-3-large
+    embedding = mapped_column(Vector(1536), nullable=True)  # text-embedding-3-large (dimensions=1536)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
     # relationships

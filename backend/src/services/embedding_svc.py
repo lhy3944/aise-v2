@@ -30,6 +30,7 @@ async def get_embeddings(
             response = await client.embeddings.create(
                 model=model,
                 input=batch,
+                dimensions=1536,
             )
             batch_embeddings = [item.embedding for item in response.data]
             all_embeddings.extend(batch_embeddings)

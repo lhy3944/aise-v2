@@ -49,7 +49,7 @@ def upgrade() -> None:
         sa.Column('chunk_index', sa.Integer(), nullable=False),
         sa.Column('content', sa.Text(), nullable=False),
         sa.Column('token_count', sa.Integer(), nullable=False),
-        sa.Column('embedding', Vector(3072), nullable=True),
+        sa.Column('embedding', Vector(1536), nullable=True),
         sa.Column('metadata', sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(['document_id'], ['knowledge_documents.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
