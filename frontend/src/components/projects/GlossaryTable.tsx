@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,7 +14,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Check, Pencil, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
 
 /* ─── Inline Edit Row ─── */
@@ -185,32 +184,15 @@ export function GlossaryTable({
   onGenerate,
 }: GlossaryTableProps) {
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // 제품군 필터 목록
-  const productGroups = useMemo(() => {
-    const groups = new Set<string>();
-    for (const item of items) {
-      if (item.product_group) groups.add(item.product_group);
-    }
-    return Array.from(groups).sort();
-  }, [items]);
-
-  const filtered = useMemo(() => {
-    let result = items;
-    if (activeFilter) {
-      result = result.filter((item) => item.product_group === activeFilter);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (item) => item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [items, search, activeFilter]);
+  const filtered = search.trim()
+    ? items.filter((item) => {
+        const q = search.toLowerCase();
+        return item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q);
+      })
+    : items;
 
   return (
     <div className='flex flex-col'>
@@ -229,7 +211,7 @@ export function GlossaryTable({
               />
             </div>
             <span className='text-fg-muted shrink-0 text-xs'>
-              {search || activeFilter
+              {search
                 ? `${filtered.length} / ${items.length}건`
                 : `${items.length}건`}
             </span>
@@ -263,37 +245,6 @@ export function GlossaryTable({
             )}
           </div>
         </div>
-
-        {/* Product Group Filters */}
-        {productGroups.length > 0 && (
-          <div className='flex flex-wrap gap-2'>
-            <button
-              onClick={() => setActiveFilter(null)}
-              className={cn(
-                'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                !activeFilter
-                  ? 'bg-neutral-600 text-white'
-                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
-              )}
-            >
-              전체
-            </button>
-            {productGroups.map((group) => (
-              <button
-                key={group}
-                onClick={() => setActiveFilter(activeFilter === group ? null : group)}
-                className={cn(
-                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                  activeFilter === group
-                    ? 'bg-neutral-600 text-white'
-                    : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
-                )}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ─── Table ─── */}
@@ -338,7 +289,7 @@ export function GlossaryTable({
       {/* ─── Empty States ─── */}
       {filtered.length === 0 && (
         <div className='py-12 text-center'>
-          {search || activeFilter ? (
+          {search ? (
             <p className='text-fg-muted text-sm'>검색 결과가 없습니다.</p>
           ) : (
             <>
