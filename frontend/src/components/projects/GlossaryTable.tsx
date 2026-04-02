@@ -42,7 +42,54 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
 
   return (
     <TableRow className='border-accent-primary/30 bg-canvas-surface/30 hover:bg-canvas-surface/30'>
-      <TableCell>
+      <TableCell colSpan={4} className='p-2 md:hidden'>
+        <div className='flex flex-col gap-2'>
+          <div className='flex flex-col gap-1'>
+            <label className='text-fg-muted text-xs'>용어</label>
+            <Input
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder='용어 입력'
+              className='text-sm'
+              autoFocus={autoFocus}
+            />
+          </div>
+          <div className='flex flex-col gap-1'>
+            <label className='text-fg-muted text-xs'>정의</label>
+            <Textarea
+              value={definition}
+              onChange={(e) => setDefinition(e.target.value)}
+              placeholder='정의 입력'
+              className='min-h-16 resize-none text-sm'
+              rows={2}
+            />
+          </div>
+          <div className='flex flex-col gap-1'>
+            <label className='text-fg-muted text-xs'>제품군</label>
+            <Input
+              value={productGroup}
+              onChange={(e) => setProductGroup(e.target.value)}
+              placeholder='제품군 (선택)'
+              className='text-sm'
+            />
+          </div>
+          <div className='flex justify-end gap-1.5 pt-1'>
+            <Button size='sm' variant='ghost' onClick={onCancel} className='h-8 text-xs'>
+              취소
+            </Button>
+            <Button
+              size='sm'
+              onClick={handleSave}
+              disabled={!term.trim() || !definition.trim()}
+              className='h-8 text-xs'
+            >
+              <Check className='mr-1 size-3' />
+              {initial ? '저장' : '추가'}
+            </Button>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className='max-md:hidden'>
         <Input
           value={term}
           onChange={(e) => setTerm(e.target.value)}
@@ -51,7 +98,7 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
           autoFocus={autoFocus}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className='max-md:hidden'>
         <Textarea
           value={definition}
           onChange={(e) => setDefinition(e.target.value)}
@@ -60,7 +107,7 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
           rows={1}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className='max-md:hidden'>
         <Input
           value={productGroup}
           onChange={(e) => setProductGroup(e.target.value)}
@@ -68,7 +115,7 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
           className='text-sm'
         />
       </TableCell>
-      <TableCell className='text-right'>
+      <TableCell className='max-md:hidden text-right'>
         <div className='flex justify-end gap-1.5'>
           <Button size='sm' variant='ghost' onClick={onCancel} className='h-7 text-xs'>
             취소
@@ -123,12 +170,46 @@ function GlossaryRow({ item, editing, onStartEdit, onUpdate, onDelete, onCancelE
 
   return (
     <TableRow className='group'>
-      <TableCell className='text-fg-primary truncate font-medium'>{item.term}</TableCell>
-      <TableCell className='text-fg-secondary line-clamp-2 leading-relaxed'>
+      {/* Mobile: stacked layout */}
+      <TableCell className='p-3 md:hidden'>
+        <div className='flex items-start justify-between gap-2'>
+          <div className='min-w-0 flex-1'>
+            <p className='text-fg-primary truncate font-medium'>{item.term}</p>
+            <p className='text-fg-secondary mt-1 line-clamp-3 text-sm leading-relaxed'>
+              {item.definition}
+            </p>
+            {item.product_group && (
+              <p className='text-fg-muted mt-1 text-xs'>{item.product_group}</p>
+            )}
+          </div>
+          <div className='flex shrink-0 gap-0.5'>
+            <Button
+              size='icon-sm'
+              variant='ghost'
+              onClick={onStartEdit}
+              className='text-fg-muted hover:text-fg-primary size-7'
+            >
+              <Pencil className='size-3.5' />
+            </Button>
+            <Button
+              size='icon-sm'
+              variant='ghost'
+              onClick={() => onDelete(item.glossary_id)}
+              className='text-fg-muted hover:text-destructive size-7'
+            >
+              <Trash2 className='size-3.5' />
+            </Button>
+          </div>
+        </div>
+      </TableCell>
+
+      {/* Desktop: table columns */}
+      <TableCell className='text-fg-primary max-md:hidden truncate font-medium'>{item.term}</TableCell>
+      <TableCell className='text-fg-secondary max-md:hidden line-clamp-2 leading-relaxed'>
         {item.definition}
       </TableCell>
-      <TableCell className='text-fg-muted truncate text-xs'>{item.product_group || '-'}</TableCell>
-      <TableCell className='text-right'>
+      <TableCell className='text-fg-muted max-md:hidden truncate text-xs'>{item.product_group || '-'}</TableCell>
+      <TableCell className='max-md:hidden text-right'>
         <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -216,10 +297,10 @@ export function GlossaryTable({
     <div className='flex flex-col'>
       {/* ─── Sticky Toolbar ─── */}
       <div className='bg-canvas-primary sticky top-0 z-10 flex flex-col gap-3 pb-3'>
-        <div className='flex items-center justify-between gap-3'>
+        <div className='flex flex-wrap items-center justify-between gap-2 md:gap-3'>
           {/* Search + Count */}
-          <div className='flex items-center gap-3'>
-            <div className='relative max-w-60'>
+          <div className='flex min-w-0 flex-1 items-center gap-2 md:gap-3'>
+            <div className='relative min-w-0 flex-1 md:max-w-60 md:flex-none'>
               <Search className='text-fg-muted absolute top-1/2 left-3 size-3.5 -translate-y-1/2' />
               <Input
                 value={search}
@@ -300,10 +381,11 @@ export function GlossaryTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className='w-[20%]'>용어</TableHead>
-            <TableHead className='w-[50%]'>정의</TableHead>
-            <TableHead className='w-[20%]'>제품군</TableHead>
-            <TableHead className='w-[10%]' />
+            <TableHead className='w-[20%] max-md:hidden'>용어</TableHead>
+            <TableHead className='w-[50%] max-md:hidden'>정의</TableHead>
+            <TableHead className='w-[20%] max-md:hidden'>제품군</TableHead>
+            <TableHead className='w-[10%] max-md:hidden' />
+            <TableHead className='md:hidden'>용어 / 정의</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
