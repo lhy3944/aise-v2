@@ -6,13 +6,13 @@ import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
-import { BookOpen, Box, FolderOpen, Info } from 'lucide-react';
+import { BookOpen, FolderOpen, Info } from 'lucide-react';
 import { use, useState } from 'react';
 
 type TabId = 'overview' | 'glossary' | 'knowledge';
 
 const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
-  { id: 'overview', label: '개요', icon: Box },
+  { id: 'overview', label: '정보', icon: Info },
   { id: 'glossary', label: '용어사전', icon: BookOpen },
   { id: 'knowledge', label: '지식 소스', icon: FolderOpen },
 ];

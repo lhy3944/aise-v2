@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MODULE_COLORS, MODULE_LABELS } from '@/constants/project';
+import { useOverlay } from '@/hooks/useOverlay';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
@@ -32,7 +34,10 @@ interface ProjectOverviewTabProps {
 }
 
 export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
+  const router = useRouter();
+  const overlay = useOverlay();
   const updateProjectInStore = useProjectStore((s) => s.updateProject);
+  const removeProjectFromStore = useProjectStore((s) => s.removeProject);
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +73,26 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
     setDomain(p.domain ?? '');
     setProductType(p.product_type ?? '');
     setModules(p.modules);
+  }
+
+  function handleDeleteProject() {
+    overlay.confirm({
+      title: '프로젝트를 삭제하시겠습니까?',
+      description: '이 작업은 되돌릴 수 없습니다. 프로젝트와 관련된 모든 데이터가 삭제됩니다.',
+      confirmLabel: '삭제',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await projectService.delete(projectId);
+          removeProjectFromStore(projectId);
+          router.push('/projects');
+        } catch (err) {
+          const message =
+            err instanceof ApiError ? err.message : '프로젝트 삭제에 실패했습니다.';
+          overlay.alert({ type: 'error', title: '삭제 실패', description: message });
+        }
+      },
+    });
   }
 
   async function handleSaveProject() {
@@ -117,9 +142,13 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
     {
       label: '모듈',
       value: (
-        <div className='flex flex-wrap gap-1.5'>
+        <div className='flex w-full flex-col gap-1.5 sm:flex-row sm:flex-wrap'>
           {project.modules.map((mod) => (
-            <Badge key={mod} variant='ghost' className={cn(MODULE_COLORS[mod], 'text-xs')}>
+            <Badge
+              key={mod}
+              variant='ghost'
+              className={cn(MODULE_COLORS[mod], 'text-xs max-sm:w-full max-sm:justify-center')}
+            >
               {MODULE_LABELS[mod]}
             </Badge>
           ))}
@@ -133,21 +162,36 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
   return (
     <div className='w-full'>
       {/* Header */}
-      <div className='flex items-center justify-end pb-4'>
+      <div className='flex items-center justify-end gap-1 pb-4'>
         {!editing && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant='ghost'
-                size='icon-sm'
-                onClick={() => setEditing(true)}
-                className='text-fg-muted hover:text-fg-primary size-7'
-              >
-                <Pencil className='size-3.5' />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>편집</TooltipContent>
-          </Tooltip>
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon-sm'
+                  onClick={handleDeleteProject}
+                  className='text-fg-muted hover:text-destructive size-7'
+                >
+                  <Trash2 className='size-3.5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>삭제</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon-sm'
+                  onClick={() => setEditing(true)}
+                  className='text-fg-muted hover:text-fg-primary size-7'
+                >
+                  <Pencil className='size-3.5' />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>편집</TooltipContent>
+            </Tooltip>
+          </>
         )}
       </div>
 
