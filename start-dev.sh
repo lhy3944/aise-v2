@@ -5,9 +5,11 @@
 
 set -e
 
+export PATH="$HOME/.local/bin:$PATH"
+
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_PORT=8081
-FRONTEND_PORT=3000
+FRONTEND_PORT=3009
 
 # 색상
 GREEN='\033[0;32m'

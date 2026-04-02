@@ -124,10 +124,10 @@ export function ProjectKnowledgeTab() {
   return (
     <div className='flex flex-col gap-6'>
       {/* Info Banner */}
-      <div className='bg-accent-primary/5 border-accent-primary/20 rounded-lg border p-4'>
-        <p className='text-fg-secondary text-sm'>
-          프로젝트에 관련 문서(PRD, 기술 스펙 등)를 업로드하면 에이전트가 RAG 방식으로 참조하여
-          더 정확한 산출물을 생성합니다.
+      <div className='bg-primary/5 border-primary/20 rounded-lg border p-4'>
+        <p className='text-sm'>
+          프로젝트에 관련 문서(PRD, 기술 스펙 등)를 업로드하면 에이전트가 RAG 방식으로 참조하여 더
+          정확한 산출물을 생성합니다.
         </p>
       </div>
 
@@ -138,7 +138,7 @@ export function ProjectKnowledgeTab() {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 transition-colors',
+          'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-6 py-10 transition-colors',
           dragging
             ? 'border-accent-primary bg-accent-primary/5'
             : 'border-line-primary hover:border-fg-muted hover:bg-canvas-surface/50',
@@ -147,9 +147,7 @@ export function ProjectKnowledgeTab() {
         <div className='bg-canvas-surface mb-3 flex size-12 items-center justify-center rounded-full'>
           <Upload className='text-fg-muted size-5' />
         </div>
-        <p className='text-fg-primary text-sm font-medium'>
-          파일을 드래그하거나 클릭하여 업로드
-        </p>
+        <p className='text-fg-primary text-sm font-medium'>파일을 드래그하거나 클릭하여 업로드</p>
         <p className='text-fg-muted mt-1 text-xs'>PDF, Markdown, Word, Excel, PowerPoint</p>
         <input
           ref={fileInputRef}
@@ -173,10 +171,7 @@ export function ProjectKnowledgeTab() {
               const statusConfig = STATUS_CONFIG[source.status];
               const StatusIcon = statusConfig.icon;
               return (
-                <div
-                  key={source.id}
-                  className='flex items-center gap-3 px-4 py-3'
-                >
+                <div key={source.id} className='flex items-center gap-3 px-4 py-3'>
                   <div
                     className={cn(
                       'flex size-9 shrink-0 items-center justify-center rounded-md',
@@ -188,9 +183,7 @@ export function ProjectKnowledgeTab() {
 
                   <div className='min-w-0 flex-1'>
                     <p className='text-fg-primary truncate text-sm font-medium'>{source.name}</p>
-                    <p className='text-fg-muted text-xs'>
-                      {formatFileSize(source.size_bytes)}
-                    </p>
+                    <p className='text-fg-muted text-xs'>{formatFileSize(source.size_bytes)}</p>
                   </div>
 
                   <div className='flex shrink-0 items-center gap-3'>

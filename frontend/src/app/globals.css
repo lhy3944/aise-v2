@@ -115,8 +115,8 @@
   --border-primary: #e0e0e0;
   --border-subtle: #eeeeee;
   --text-primary: #111111;
-  --text-secondary: #666666;
-  --text-muted: #aaaaaa;
+  --text-secondary: #555555;
+  --text-muted: #8b8e98;
   --accent-primary: #5b5fc7;
   --icon-default: #777777;
   --icon-active: #111111;
@@ -152,9 +152,9 @@
   --bg-input: #2a2a2a;
   --border-primary: #333333;
   --border-subtle: #222222;
-  --text-primary: #ffffff;
-  --text-secondary: #999999;
-  --text-muted: #555555;
+  --text-primary: #eeeeee;
+  --text-secondary: #b0b0b0;
+  --text-muted: #8b8f96;
   --accent-primary: #4ecdc4;
   --icon-default: #888888;
   --icon-active: #ffffff;
@@ -186,10 +186,10 @@
   }
   body {
     @apply bg-canvas-primary text-fg-primary;
-    font-family: var(--font-inter), var(--font-pretendard), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-pretendard), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
   }
   button:not(:disabled),
   [role='button']:not(:disabled) {

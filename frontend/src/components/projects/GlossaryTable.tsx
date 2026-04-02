@@ -3,6 +3,14 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Check, Pencil, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
@@ -33,30 +41,34 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
   }
 
   return (
-    <div className='border-accent-primary/30 bg-canvas-surface/30 border-b px-4 py-3'>
-      <div className='flex flex-col gap-2.5'>
-        <div className='grid grid-cols-[1fr_1fr_140px] gap-2'>
-          <Input
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder='용어'
-            className='text-sm'
-            autoFocus={autoFocus}
-          />
-          <Textarea
-            value={definition}
-            onChange={(e) => setDefinition(e.target.value)}
-            placeholder='정의'
-            className='min-h-9 resize-none text-sm'
-            rows={1}
-          />
-          <Input
-            value={productGroup}
-            onChange={(e) => setProductGroup(e.target.value)}
-            placeholder='제품군 (선택)'
-            className='text-sm'
-          />
-        </div>
+    <TableRow className='border-accent-primary/30 bg-canvas-surface/30 hover:bg-canvas-surface/30'>
+      <TableCell>
+        <Input
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder='용어'
+          className='text-sm'
+          autoFocus={autoFocus}
+        />
+      </TableCell>
+      <TableCell>
+        <Textarea
+          value={definition}
+          onChange={(e) => setDefinition(e.target.value)}
+          placeholder='정의'
+          className='min-h-9 resize-none text-sm'
+          rows={1}
+        />
+      </TableCell>
+      <TableCell>
+        <Input
+          value={productGroup}
+          onChange={(e) => setProductGroup(e.target.value)}
+          placeholder='제품군 (선택)'
+          className='text-sm'
+        />
+      </TableCell>
+      <TableCell className='text-right'>
         <div className='flex justify-end gap-1.5'>
           <Button size='sm' variant='ghost' onClick={onCancel} className='h-7 text-xs'>
             취소
@@ -71,8 +83,8 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
             {initial ? '저장' : '추가'}
           </Button>
         </div>
-      </div>
-    </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -90,14 +102,7 @@ interface RowProps {
   onCancelEdit: () => void;
 }
 
-function GlossaryRow({
-  item,
-  editing,
-  onStartEdit,
-  onUpdate,
-  onDelete,
-  onCancelEdit,
-}: RowProps) {
+function GlossaryRow({ item, editing, onStartEdit, onUpdate, onDelete, onCancelEdit }: RowProps) {
   if (editing) {
     return (
       <EditRow
@@ -117,39 +122,43 @@ function GlossaryRow({
   }
 
   return (
-    <div className='border-line-subtle hover:bg-canvas-surface/40 group grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] items-baseline gap-3 border-b px-4 py-2.5 text-sm transition-colors'>
-      <span className='text-fg-primary truncate font-medium'>{item.term}</span>
-      <span className='text-fg-secondary line-clamp-2 leading-relaxed'>{item.definition}</span>
-      <span className='text-fg-muted truncate text-xs'>{item.product_group || '-'}</span>
-      <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size='icon-sm'
-              variant='ghost'
-              onClick={onStartEdit}
-              className='text-fg-muted hover:text-fg-primary size-6'
-            >
-              <Pencil className='size-3' />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>수정</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size='icon-sm'
-              variant='ghost'
-              onClick={() => onDelete(item.glossary_id)}
-              className='text-fg-muted hover:text-destructive size-6'
-            >
-              <Trash2 className='size-3' />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>삭제</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
+    <TableRow className='group'>
+      <TableCell className='text-fg-primary truncate font-medium'>{item.term}</TableCell>
+      <TableCell className='text-fg-secondary line-clamp-2 leading-relaxed'>
+        {item.definition}
+      </TableCell>
+      <TableCell className='text-fg-muted truncate text-xs'>{item.product_group || '-'}</TableCell>
+      <TableCell className='text-right'>
+        <div className='flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100'>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon-sm'
+                variant='ghost'
+                onClick={onStartEdit}
+                className='text-fg-muted hover:text-fg-primary size-6'
+              >
+                <Pencil className='size-3' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>수정</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size='icon-sm'
+                variant='ghost'
+                onClick={() => onDelete(item.glossary_id)}
+                className='text-fg-muted hover:text-destructive size-6'
+              >
+                <Trash2 className='size-3' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>삭제</TooltipContent>
+          </Tooltip>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -197,9 +206,7 @@ export function GlossaryTable({
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (item) =>
-          item.term.toLowerCase().includes(q) ||
-          item.definition.toLowerCase().includes(q),
+        (item) => item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q),
       );
     }
     return result;
@@ -209,24 +216,24 @@ export function GlossaryTable({
     <div className='flex flex-col'>
       {/* ─── Sticky Toolbar ─── */}
       <div className='bg-canvas-primary sticky top-0 z-10 flex flex-col gap-3 pb-3'>
-        <div className='flex items-center gap-3'>
-          {/* Search */}
-          <div className='relative flex-1'>
-            <Search className='text-fg-muted absolute top-1/2 left-3 size-3.5 -translate-y-1/2' />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='용어 검색...'
-              className='h-8 pl-9 text-sm'
-            />
+        <div className='flex items-center justify-between gap-3'>
+          {/* Search + Count */}
+          <div className='flex items-center gap-3'>
+            <div className='relative max-w-60'>
+              <Search className='text-fg-muted absolute top-1/2 left-3 size-3.5 -translate-y-1/2' />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder='검색'
+                className='h-8 pl-9 text-sm'
+              />
+            </div>
+            <span className='text-fg-muted shrink-0 text-xs'>
+              {search || activeFilter
+                ? `${filtered.length} / ${items.length}건`
+                : `${items.length}건`}
+            </span>
           </div>
-
-          {/* Count */}
-          <span className='text-fg-muted shrink-0 text-xs'>
-            {search || activeFilter
-              ? `${filtered.length} / ${items.length}건`
-              : `${items.length}건`}
-          </span>
 
           {/* Actions */}
           <div className='flex shrink-0 gap-1.5'>
@@ -289,41 +296,44 @@ export function GlossaryTable({
         )}
       </div>
 
-      {/* ─── Column Header ─── */}
-      <div className='border-line-subtle grid grid-cols-[minmax(120px,1fr)_2fr_120px_60px] gap-3 border-b px-4 py-2 text-xs'>
-        <span className='text-fg-muted font-medium'>용어</span>
-        <span className='text-fg-muted font-medium'>정의</span>
-        <span className='text-fg-muted font-medium'>제품군</span>
-        <span />
-      </div>
+      {/* ─── Table ─── */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className='w-[20%]'>용어</TableHead>
+            <TableHead className='w-[50%]'>정의</TableHead>
+            <TableHead className='w-[20%]'>제품군</TableHead>
+            <TableHead className='w-[10%]' />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {adding && (
+            <EditRow
+              onSave={(data) => {
+                onAdd(data);
+                setAdding(false);
+              }}
+              onCancel={() => setAdding(false)}
+              autoFocus
+            />
+          )}
 
-      {/* ─── Inline Add (상단) ─── */}
-      {adding && (
-        <EditRow
-          onSave={(data) => {
-            onAdd(data);
-            setAdding(false);
-          }}
-          onCancel={() => setAdding(false)}
-          autoFocus
-        />
-      )}
-
-      {/* ─── Rows ─── */}
-      {filtered.map((item) => (
-        <GlossaryRow
-          key={item.glossary_id}
-          item={item}
-          editing={editingId === item.glossary_id}
-          onStartEdit={() => {
-            setEditingId(item.glossary_id);
-            setAdding(false);
-          }}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-          onCancelEdit={() => setEditingId(null)}
-        />
-      ))}
+          {filtered.map((item) => (
+            <GlossaryRow
+              key={item.glossary_id}
+              item={item}
+              editing={editingId === item.glossary_id}
+              onStartEdit={() => {
+                setEditingId(item.glossary_id);
+                setAdding(false);
+              }}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onCancelEdit={() => setEditingId(null)}
+            />
+          ))}
+        </TableBody>
+      </Table>
 
       {/* ─── Empty States ─── */}
       {filtered.length === 0 && (

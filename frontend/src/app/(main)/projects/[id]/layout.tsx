@@ -3,59 +3,56 @@
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
-import { BookOpen, Box, FolderOpen, Info } from 'lucide-react';
-import { use, useState } from 'react';
-
-type TabId = 'overview' | 'glossary' | 'knowledge';
-
-const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
-  { id: 'overview', label: '개요', icon: Box },
-  { id: 'glossary', label: '용어사전', icon: BookOpen },
-  { id: 'knowledge', label: '지식 소스', icon: FolderOpen },
-];
+import { BookOpen, Box, FolderOpen } from 'lucide-react';
+import { use } from 'react';
 
 interface Props {
-  children: React.ReactNode;
   params: Promise<{ id: string }>;
 }
 
-export default function ProjectDetailLayout({ children, params }: Props) {
+export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   const maxW = layoutMaxW(fullWidthMode);
 
   return (
-    <div className='flex flex-1 flex-col overflow-hidden'>
+    <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden'>
       {/* Tab Navigation */}
       <div className='bg-canvas-primary'>
         <div
-          className={cn('mx-auto px-6 pt-11 transition-[max-width] duration-300 ease-in-out', maxW)}
+          className={cn(
+            'mx-auto pt-11 transition-[max-width] duration-300 ease-in-out sm:px-6',
+            maxW,
+          )}
         >
-          <div className='border-line-subtle flex border-b'>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors',
-                    isActive
-                      ? 'border-accent-primary text-accent-primary'
-                      : 'text-fg-muted hover:text-fg-secondary border-transparent',
-                  )}
-                >
-                  <tab.icon className='size-4' />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
+            <TabsTrigger
+              value='overview'
+              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+            >
+              <Box className='size-4' />
+              기본 정보
+            </TabsTrigger>
+            <TabsTrigger
+              value='glossary'
+              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+            >
+              <BookOpen className='size-4' />
+              용어 사전
+            </TabsTrigger>
+            <TabsTrigger
+              value='knowledge'
+              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+            >
+              <FolderOpen className='size-4' />
+              지식 소스
+            </TabsTrigger>
+          </TabsList>
         </div>
       </div>
 
@@ -64,11 +61,17 @@ export default function ProjectDetailLayout({ children, params }: Props) {
         <div
           className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
         >
-          {activeTab === 'overview' && <ProjectOverviewTab projectId={id} />}
-          {activeTab === 'glossary' && <ProjectGlossaryTab projectId={id} />}
-          {activeTab === 'knowledge' && <ProjectKnowledgeTab />}
+          <TabsContent value='overview'>
+            <ProjectOverviewTab projectId={id} />
+          </TabsContent>
+          <TabsContent value='glossary'>
+            <ProjectGlossaryTab projectId={id} />
+          </TabsContent>
+          <TabsContent value='knowledge'>
+            <ProjectKnowledgeTab />
+          </TabsContent>
         </div>
       </div>
-    </div>
+    </Tabs>
   );
 }

@@ -32,7 +32,7 @@ export function GlossaryAddForm({ onAdd }: GlossaryAddFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-3">
       <div className="flex flex-1 flex-col gap-1">
-        <Label htmlFor="glossary-term" className="text-xs">용어</Label>
+        <Label htmlFor="glossary-term" variant="field">용어</Label>
         <Input
           id="glossary-term"
           value={term}
@@ -42,7 +42,7 @@ export function GlossaryAddForm({ onAdd }: GlossaryAddFormProps) {
         />
       </div>
       <div className="flex flex-[2] flex-col gap-1">
-        <Label htmlFor="glossary-def" className="text-xs">정의</Label>
+        <Label htmlFor="glossary-def" variant="field">정의</Label>
         <Input
           id="glossary-def"
           value={definition}
@@ -52,7 +52,7 @@ export function GlossaryAddForm({ onAdd }: GlossaryAddFormProps) {
         />
       </div>
       <div className="flex flex-1 flex-col gap-1">
-        <Label htmlFor="glossary-group" className="text-xs">제품군</Label>
+        <Label htmlFor="glossary-group" variant="field">제품군</Label>
         <Input
           id="glossary-group"
           value={productGroup}
