@@ -90,8 +90,8 @@ export function SettingsDialog({ open, onOpenChange, initialTab }: SettingsDialo
   const [activeId, setActiveId] = useState('general');
 
   useEffect(() => {
-    if (open && initialTab) {
-      setActiveId(initialTab);
+    if (open) {
+      setActiveId(initialTab ?? 'general');
     }
   }, [open, initialTab]);
   const activeItem = SETTINGS_MENU.find((item) => item.id === activeId);

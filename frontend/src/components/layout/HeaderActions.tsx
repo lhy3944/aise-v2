@@ -31,7 +31,7 @@ export function HeaderActions({ showLayoutToggle = false }: HeaderActionsProps) 
   const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const [labsOpen, setLabsOpen] = useState(false);
 
-  const openSettings = (tab?: string) => {
+  const openSettings = (tab = 'general') => {
     setSettingsInitialTab(tab);
     setSettingsOpen(true);
   };
