@@ -16,9 +16,10 @@ interface ThreadItemProps {
   thread: Thread;
   isActive: boolean;
   onClick: () => void;
+  onDelete?: () => void;
 }
 
-export function ThreadItem({ thread, isActive, onClick }: ThreadItemProps) {
+export function ThreadItem({ thread, isActive, onClick, onDelete }: ThreadItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -60,7 +61,13 @@ export function ThreadItem({ thread, isActive, onClick }: ThreadItemProps) {
             공유
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className='text-destructive focus:text-destructive gap-2 text-xs'>
+          <DropdownMenuItem
+            className='text-destructive focus:text-destructive gap-2 text-xs'
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.();
+            }}
+          >
             <Trash2 className='h-3.5 w-3.5' />
             삭제
           </DropdownMenuItem>

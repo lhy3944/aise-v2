@@ -13,10 +13,13 @@ import {
 } from '@/components/ui/drawer';
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
 import { useChatStore } from '@/stores/chat-store';
+import { useProjectStore } from '@/stores/project-store';
 import { SettingsDialog } from '../overlay/SettingsDialog';
 
 export function MobileBottomDrawer() {
   const createThread = useChatStore((s) => s.createThread);
+  const setActiveThread = useChatStore((s) => s.setActiveThread);
+  const currentProject = useProjectStore((s) => s.currentProject);
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -30,14 +33,18 @@ export function MobileBottomDrawer() {
   }));
 
   const handleCreateThread = () => {
-    createThread();
+    if (currentProject) {
+      createThread(currentProject.project_id);
+    } else {
+      setActiveThread(null);
+    }
     setOpen(false);
   };
 
   return (
     <div className='flex items-center gap-1 py-1.5'>
       <Button
-        onClick={createThread}
+        onClick={handleCreateThread}
         variant='ghost'
         size='icon'
         className='text-icon-default hover:text-icon-active h-9 w-9'

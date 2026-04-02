@@ -164,13 +164,19 @@ function VoiceButton() {
   );
 }
 
-export function ChatInput() {
+export function ChatInput({
+  onSubmit,
+  disabled,
+}: {
+  onSubmit?: (text: string) => void;
+  disabled?: boolean;
+}) {
   const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
 
   const handleSubmit = () => {
-    // Handle submit
-    console.log('handleSubmit');
+    if (!inputValue.trim() || disabled) return;
+    onSubmit?.(inputValue.trim());
   };
 
   return (
@@ -181,6 +187,7 @@ export function ChatInput() {
           autoFocus
           value={inputValue}
           onChange={(e) => setInputValue(e.currentTarget.value)}
+          disabled={disabled}
         />
       </PromptInputBody>
       <PromptInputFooter>
@@ -188,8 +195,7 @@ export function ChatInput() {
           <AttachButton />
           <VoiceButton />
         </PromptInputTools>
-        {/* 프롬프트가 비어있으면 기본 비활성화 */}
-        <PromptInputSubmit disabled={inputValue?.trim().length === 0} />
+        <PromptInputSubmit disabled={!inputValue?.trim() || disabled} />
       </PromptInputFooter>
     </PromptInput>
   );
