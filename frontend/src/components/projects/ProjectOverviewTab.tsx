@@ -154,7 +154,7 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
               </Label>
               <Textarea
                 id='edit-desc'
-                rows={5}
+                rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder='프로젝트에 대한 간단한 설명'

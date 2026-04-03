@@ -28,7 +28,13 @@ export function HeaderActions({ showLayoutToggle = false }: HeaderActionsProps) 
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const [labsOpen, setLabsOpen] = useState(false);
+
+  const openSettings = (tab = 'general') => {
+    setSettingsInitialTab(tab);
+    setSettingsOpen(true);
+  };
 
   return (
     <>
@@ -108,12 +114,15 @@ export function HeaderActions({ showLayoutToggle = false }: HeaderActionsProps) 
         </div>
 
         {/* 프로필 */}
-        <ProfileDropdown onSettingsOpen={() => setSettingsOpen(true)} />
+        <ProfileDropdown
+          onSettingsOpen={() => openSettings()}
+          onProfileOpen={() => openSettings('account')}
+        />
       </div>
 
       {/* Dialogs */}
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} initialTab={settingsInitialTab} />
       <LabsDialog open={labsOpen} onOpenChange={setLabsOpen} />
       <NotificationPanel />
     </>
