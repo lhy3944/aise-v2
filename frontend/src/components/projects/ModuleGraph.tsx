@@ -108,10 +108,13 @@ function HorizontalGraph({ modules }: { modules: ProjectModule[] }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className='h-auto w-full' aria-label='Module graph'>
+      <defs>
+        <filter id='node-glow' x='-30%' y='-30%' width='160%' height='160%'>
+          <feGaussianBlur stdDeviation='2.5' result='blur' />
+          <feComposite in='SourceGraphic' in2='blur' operator='over' />
+        </filter>
+      </defs>
       {/* Edges */}
-      {EDGES.map(([from, to]) => {
-        const active = modules.includes(from) && modules.includes(to);
-        const nodeW = 150;
         return (
           <AnimatedEdge
             key={`${from}-${to}`}
@@ -162,6 +165,12 @@ function VerticalGraph({ modules }: { modules: ProjectModule[] }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className='h-auto w-full' aria-label='Module graph'>
+      <defs>
+        <filter id='node-glow-mobile' x='-30%' y='-30%' width='160%' height='160%'>
+          <feGaussianBlur stdDeviation='3' result='blur' />
+          <feComposite in='SourceGraphic' in2='blur' operator='over' />
+        </filter>
+      </defs>
       {/* Edges */}
       {EDGES.map(([from, to]) => {
         const active = modules.includes(from) && modules.includes(to);
@@ -218,7 +227,11 @@ function NodeBox({
   height: number;
 }) {
   return (
-    <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
+    <g
+      opacity={active ? 1 : 0.3}
+      filter={active ? 'url(#node-glow)' : undefined}
+      className='transition-opacity duration-300'
+    >
       <rect
         x={x - width / 2}
         y={y - height / 2}
@@ -276,7 +289,11 @@ function MobileNodeBox({
   height: number;
 }) {
   return (
-    <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
+    <g
+      opacity={active ? 1 : 0.3}
+      filter={active ? 'url(#node-glow-mobile)' : undefined}
+      className='transition-opacity duration-300'
+    >
       <rect
         x={x - width / 2}
         y={y - height / 2}
