@@ -30,39 +30,45 @@ export function GlossaryAddForm({ onAdd }: GlossaryAddFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-3">
-      <div className="flex flex-1 flex-col gap-1">
-        <Label htmlFor="glossary-term" variant="field">용어</Label>
+    <form onSubmit={handleSubmit} className='flex items-end gap-3'>
+      <div className='flex flex-1 flex-col gap-1'>
+        <Label htmlFor='glossary-term' variant='field'>
+          용어
+        </Label>
         <Input
-          id="glossary-term"
+          id='glossary-term'
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="용어 입력"
-          className="h-8 text-sm"
+          placeholder='용어 입력'
+          className='h-8 text-sm'
         />
       </div>
-      <div className="flex flex-[2] flex-col gap-1">
-        <Label htmlFor="glossary-def" variant="field">정의</Label>
+      <div className='flex flex-1 flex-col gap-1'>
+        <Label htmlFor='glossary-def' variant='field'>
+          정의
+        </Label>
         <Input
-          id="glossary-def"
+          id='glossary-def'
           value={definition}
           onChange={(e) => setDefinition(e.target.value)}
-          placeholder="정의 입력"
-          className="h-8 text-sm"
+          placeholder='정의 입력'
+          className='h-8 text-sm'
         />
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <Label htmlFor="glossary-group" variant="field">제품군</Label>
+      <div className='flex flex-1 flex-col gap-1'>
+        <Label htmlFor='glossary-group' variant='field'>
+          제품군
+        </Label>
         <Input
-          id="glossary-group"
+          id='glossary-group'
           value={productGroup}
           onChange={(e) => setProductGroup(e.target.value)}
-          placeholder="(선택)"
-          className="h-8 text-sm"
+          placeholder='(선택)'
+          className='h-8 text-sm'
         />
       </div>
-      <Button size="sm" type="submit" disabled={!term.trim() || !definition.trim()}>
-        <Plus className="size-3.5" />
+      <Button size='sm' type='submit' disabled={!term.trim() || !definition.trim()}>
+        <Plus className='size-3.5' />
         추가
       </Button>
     </form>

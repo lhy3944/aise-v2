@@ -9,10 +9,11 @@ import { ProjectListSkeleton } from '@/components/projects/ProjectListSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { layoutMaxW } from '@/config/layout';
 import { ApiError } from '@/lib/api';
+import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
-import { layoutMaxW } from '@/config/layout';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
 import type { ProjectCreate } from '@/types/project';
@@ -59,6 +60,7 @@ export default function ProjectsPage() {
   }, [setProjects, setLoading, setError]);
 
   useEffect(() => {
+    showToast.error('저장에 실패했습니다', '네트워크 오류');
     fetchProjects();
   }, [fetchProjects]);
 

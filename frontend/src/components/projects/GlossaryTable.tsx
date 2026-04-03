@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,9 +12,9 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, Pencil, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
+import { Check, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 /* ─── Inline Edit Row ─── */
 
@@ -185,24 +184,12 @@ export function GlossaryTable({
   onGenerate,
 }: GlossaryTableProps) {
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // 제품군 필터 목록
-  const productGroups = useMemo(() => {
-    const groups = new Set<string>();
-    for (const item of items) {
-      if (item.product_group) groups.add(item.product_group);
-    }
-    return Array.from(groups).sort();
-  }, [items]);
-
   const filtered = useMemo(() => {
     let result = items;
-    if (activeFilter) {
-      result = result.filter((item) => item.product_group === activeFilter);
-    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -210,7 +197,7 @@ export function GlossaryTable({
       );
     }
     return result;
-  }, [items, search, activeFilter]);
+  }, [items, search]);
 
   return (
     <div className='flex flex-col'>
@@ -228,11 +215,6 @@ export function GlossaryTable({
                 className='h-8 pl-9 text-sm'
               />
             </div>
-            <span className='text-fg-muted shrink-0 text-xs'>
-              {search || activeFilter
-                ? `${filtered.length} / ${items.length}건`
-                : `${items.length}건`}
-            </span>
           </div>
 
           {/* Actions */}
@@ -263,42 +245,11 @@ export function GlossaryTable({
             )}
           </div>
         </div>
-
-        {/* Product Group Filters */}
-        {productGroups.length > 0 && (
-          <div className='flex flex-wrap gap-1.5'>
-            <button
-              onClick={() => setActiveFilter(null)}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-                !activeFilter
-                  ? 'bg-accent-primary/10 text-accent-primary'
-                  : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
-              )}
-            >
-              전체
-            </button>
-            {productGroups.map((group) => (
-              <button
-                key={group}
-                onClick={() => setActiveFilter(activeFilter === group ? null : group)}
-                className={cn(
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-                  activeFilter === group
-                    ? 'bg-accent-primary/10 text-accent-primary'
-                    : 'text-fg-muted hover:text-fg-secondary hover:bg-canvas-surface',
-                )}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ─── Table ─── */}
       <Table>
-        <TableHeader>
+        <TableHeader className='bg-canvas-secondary'>
           <TableRow>
             <TableHead className='w-[20%]'>용어</TableHead>
             <TableHead className='w-[50%]'>정의</TableHead>
@@ -338,7 +289,7 @@ export function GlossaryTable({
       {/* ─── Empty States ─── */}
       {filtered.length === 0 && (
         <div className='py-12 text-center'>
-          {search || activeFilter ? (
+          {search ? (
             <p className='text-fg-muted text-sm'>검색 결과가 없습니다.</p>
           ) : (
             <>

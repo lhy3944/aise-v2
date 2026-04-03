@@ -5,30 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { ModuleGraph } from '@/components/projects/ModuleGraph';
 import type { ProjectCreate, ProjectModule } from '@/types/project';
 import { useState } from 'react';
-
-const MODULE_INFO: {
-  value: ProjectModule;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'requirements',
-    label: 'Requirements',
-    description: '요구사항 관리 + SRS 생성',
-  },
-  {
-    value: 'design',
-    label: 'Design',
-    description: 'UCD/UCS/SAD 설계 문서 생성',
-  },
-  {
-    value: 'testcase',
-    label: 'Test Case',
-    description: '테스트 케이스 자동 생성',
-  },
-];
 
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'All', modules: ['requirements', 'design', 'testcase'] },
@@ -156,28 +135,8 @@ export function ProjectCreateForm({
           })}
         </div>
 
-        {/* Module status display */}
-        <div className='border-line-subtle flex flex-col gap-1.5 rounded-md border p-3'>
-          {MODULE_INFO.map((mod) => {
-            const isActive = modules.includes(mod.value);
-            return (
-              <div
-                key={mod.value}
-                className={`flex items-center gap-2.5 transition-opacity ${
-                  isActive ? 'opacity-100' : 'opacity-35'
-                }`}
-              >
-                <div
-                  className={`h-2 w-2 rounded-full ${isActive ? 'bg-accent-primary' : 'bg-fg-muted'}`}
-                />
-                <div>
-                  <span className='text-fg-primary text-sm font-medium'>{mod.label}</span>
-                  <span className='text-fg-secondary ml-2 text-xs'>{mod.description}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Module graph visualization */}
+        <ModuleGraph modules={modules} />
       </div>
 
       {/* Actions */}

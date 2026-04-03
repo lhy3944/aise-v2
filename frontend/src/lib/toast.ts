@@ -1,6 +1,4 @@
-import { useToastStore } from '@/stores/toast-store';
-
-const DEFAULT_DURATION = 4000;
+import { toast } from 'sonner';
 
 /**
  * 표준 Toast 헬퍼
@@ -12,15 +10,13 @@ const DEFAULT_DURATION = 4000;
  *   showToast.warning('주의가 필요합니다')
  */
 export const showToast = {
-  success: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'success', message, description, duration: DEFAULT_DURATION }),
+  success: (message: string, description?: string) => toast.success(message, { description }),
 
-  error: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'error', message, description, duration: 6000 }),
+  error: (message: string, description?: string, id?: string) =>
+    toast.error(message, { description, duration: 600000, id }),
 
-  info: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'info', message, description, duration: DEFAULT_DURATION }),
+  info: (message: string, description?: string) => toast.info(message, { description }),
 
   warning: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'warning', message, description, duration: 5000 }),
+    toast.warning(message, { description, duration: 5000 }),
 };

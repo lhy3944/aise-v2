@@ -1,11 +1,11 @@
+import { OverlayProvider } from '@/components/providers/OverlayProvider';
+import { StoreProvider } from '@/components/providers/StoreProvider';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { fontVariables } from '@/lib/fonts';
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import NextTopLoader from 'nextjs-toploader';
-import { OverlayProvider } from '@/components/providers/OverlayProvider';
-import { StoreProvider } from '@/components/providers/StoreProvider';
-import { ToastProvider } from '@/components/providers/ToastProvider';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { fontVariables } from '@/lib/fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -51,7 +51,7 @@ export default function RootLayout({
             <TooltipProvider>
               {children}
               <OverlayProvider />
-              <ToastProvider />
+              <Toaster position='bottom-right' closeButton={false} />
             </TooltipProvider>
           </ThemeProvider>
         </StoreProvider>
