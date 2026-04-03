@@ -14,11 +14,21 @@ interface HeaderProps {
 
 export function Header({ showLayoutToggle = false }: HeaderProps) {
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
+  const headerVisible = usePanelStore((s) => s.headerVisible);
+  const isMobile = usePanelStore((s) => s.isMobile);
+  const isTablet = usePanelStore((s) => s.isTablet);
+
+  const canHide = isMobile || isTablet;
 
   return (
     <header
       className={cn(
-        'border-line-primary sticky top-0 z-50 flex h-15 shrink-0 items-center border-b backdrop-blur-xl',
+        'border-line-primary z-50 flex shrink-0 items-center border-b backdrop-blur-xl',
+        canHide
+          ? 'transition-[height] duration-300 ease-in-out overflow-hidden'
+          : 'h-15',
+        canHide && headerVisible && 'h-15',
+        canHide && !headerVisible && 'h-0 border-b-0',
       )}
     >
       <div

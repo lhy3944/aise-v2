@@ -15,10 +15,12 @@ interface PanelState {
   layoutMode: LayoutMode;
   notificationOpen: boolean;
   fullWidthMode: boolean;
+  headerVisible: boolean;
   isMobile: boolean;
   isTablet: boolean;
   previousLeftSidebar: boolean;
 
+  setHeaderVisible: (visible: boolean) => void;
   toggleLeftSidebar: () => void;
   toggleRightPanel: () => void;
   setRightPanelWidth: (pct: number) => void;
@@ -37,10 +39,12 @@ export const usePanelStore = create<PanelState>()(
       layoutMode: LayoutMode.CLOSED,
       notificationOpen: false,
       fullWidthMode: false,
+      headerVisible: true,
       isMobile: false,
       isTablet: false,
       previousLeftSidebar: false,
 
+      setHeaderVisible: (visible) => set({ headerVisible: visible }),
       toggleLeftSidebar: () => {
         set((s) => ({ leftSidebarOpen: !s.leftSidebarOpen }));
       },

@@ -3,6 +3,7 @@
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { cn } from '@/lib/utils';
 import { streamAgentChat } from '@/services/agent-service';
 import type { ChatMessage } from '@/stores/chat-store';
@@ -36,6 +37,8 @@ export function ChatArea() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const lastUserMsgIdRef = useRef<string | null>(null);
+
+  useScrollDirection(scrollRef);
 
   // 새 사용자 메시지 → 상단으로 스크롤 / 그 외 → 하단으로 스크롤
   useEffect(() => {
