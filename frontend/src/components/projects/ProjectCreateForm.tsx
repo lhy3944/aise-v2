@@ -1,5 +1,6 @@
 'use client';
 
+import { ModuleGraph } from '@/components/projects/ModuleGraph';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,7 +77,7 @@ export function ProjectCreateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
+    <form onSubmit={handleSubmit} className='flex flex-col gap-5' autoComplete='off'>
       {/* Name */}
       <div className='flex flex-col gap-1.5'>
         <Label htmlFor='project-name'>
@@ -156,28 +157,8 @@ export function ProjectCreateForm({
           })}
         </div>
 
-        {/* Module status display */}
-        <div className='border-line-subtle flex flex-col gap-1.5 rounded-md border p-3'>
-          {MODULE_INFO.map((mod) => {
-            const isActive = modules.includes(mod.value);
-            return (
-              <div
-                key={mod.value}
-                className={`flex items-center gap-2.5 transition-opacity ${
-                  isActive ? 'opacity-100' : 'opacity-35'
-                }`}
-              >
-                <div
-                  className={`h-2 w-2 rounded-full ${isActive ? 'bg-accent-primary' : 'bg-fg-muted'}`}
-                />
-                <div>
-                  <span className='text-fg-primary text-sm font-medium'>{mod.label}</span>
-                  <span className='text-fg-secondary ml-2 text-xs'>{mod.description}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Module graph */}
+        <ModuleGraph modules={modules} />
       </div>
 
       {/* Actions */}
