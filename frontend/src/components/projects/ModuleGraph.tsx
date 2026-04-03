@@ -51,7 +51,7 @@ export function ModuleGraph({ modules }: ModuleGraphProps) {
 }
 
 // --- Shared animated edge styles ---
-const EDGE_DASH = '6,4';
+const EDGE_DASH = '3,3';
 const EDGE_ANIM_DURATION = '1.2s';
 
 function AnimatedEdge({
@@ -121,7 +121,7 @@ function HorizontalGraph({ modules }: { modules: ProjectModule[] }) {
     >
       <defs>
         <filter id='node-glow' x='-30%' y='-30%' width='160%' height='160%'>
-          <feGaussianBlur stdDeviation='1.5' result='blur' />
+          <feGaussianBlur stdDeviation='1' result='blur' />
           <feComposite in='SourceGraphic' in2='blur' operator='over' />
         </filter>
       </defs>
@@ -180,7 +180,7 @@ function VerticalGraph({ modules }: { modules: ProjectModule[] }) {
     <svg viewBox={`0 0 ${W} ${H}`} className='h-auto w-full' aria-label='Module graph'>
       <defs>
         <filter id='node-glow-mobile' x='-30%' y='-30%' width='160%' height='160%'>
-          <feGaussianBlur stdDeviation='3' result='blur' />
+          <feGaussianBlur stdDeviation='2' result='blur' />
           <feComposite in='SourceGraphic' in2='blur' operator='over' />
         </filter>
       </defs>
