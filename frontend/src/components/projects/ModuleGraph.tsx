@@ -97,24 +97,36 @@ function AnimatedEdge({
 // --- Horizontal layout (desktop) ---
 function HorizontalGraph({ modules }: { modules: ProjectModule[] }) {
   // Layout: Requirements on left, Design top-right, TestCase bottom-right
-  const W = 440;
-  const H = 100;
+  // 노드 크기
+  const nodeW = 150;
+  const nodeH = 32;
+  const pad = 10; // 글로우 여백
 
   const positions: Record<ProjectModule, { x: number; y: number }> = {
-    requirements: { x: 60, y: 50 },
-    design: { x: 260, y: 24 },
-    testcase: { x: 260, y: 76 },
+    requirements: { x: 100, y: 60 },
+    design: { x: 300, y: 30 },
+    testcase: { x: 300, y: 90 },
   };
 
+  // viewBox를 모든 노드 + 여백이 포함되도록 계산
+  const allX = Object.values(positions).map((p) => p.x);
+  const allY = Object.values(positions).map((p) => p.y);
+  const minX = Math.min(...allX) - nodeW / 2 - pad;
+  const minY = Math.min(...allY) - nodeH / 2 - pad;
+  const maxX = Math.max(...allX) + nodeW / 2 + pad;
+  const maxY = Math.max(...allY) + nodeH / 2 + pad;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className='h-auto w-full' aria-label='Module graph'>
+    <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className='h-auto w-full' aria-label='Module graph'>
       <defs>
         <filter id='node-glow' x='-30%' y='-30%' width='160%' height='160%'>
-          <feGaussianBlur stdDeviation='2.5' result='blur' />
+          <feGaussianBlur stdDeviation='1.5' result='blur' />
           <feComposite in='SourceGraphic' in2='blur' operator='over' />
         </filter>
       </defs>
       {/* Edges */}
+      {EDGES.map(([from, to]) => {
+        const active = modules.includes(from) && modules.includes(to);
         return (
           <AnimatedEdge
             key={`${from}-${to}`}
@@ -139,8 +151,8 @@ function HorizontalGraph({ modules }: { modules: ProjectModule[] }) {
               label={node.label}
               description={node.description}
               active={active}
-              width={150}
-              height={32}
+              width={nodeW}
+              height={nodeH}
             />
           </g>
         );
@@ -227,11 +239,7 @@ function NodeBox({
   height: number;
 }) {
   return (
-    <g
-      opacity={active ? 1 : 0.3}
-      filter={active ? 'url(#node-glow)' : undefined}
-      className='transition-opacity duration-300'
-    >
+    <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
       <rect
         x={x - width / 2}
         y={y - height / 2}
@@ -243,14 +251,15 @@ function NodeBox({
           'transition-colors duration-300',
           active ? 'stroke-accent-primary' : 'stroke-line-primary',
         )}
-        strokeWidth={1}
+        strokeWidth={active ? 1.5 : 1}
+        filter={active ? 'url(#node-glow)' : undefined}
       />
       <text
         x={x}
         y={y - 3}
         textAnchor='middle'
         className={cn(
-          'text-[11px] font-semibold transition-colors duration-300',
+          'text-[11px] font-semibold',
           active ? 'fill-fg-primary' : 'fill-fg-muted',
         )}
       >
@@ -261,7 +270,7 @@ function NodeBox({
         y={y + 10}
         textAnchor='middle'
         className={cn(
-          'text-[7px] transition-colors duration-300',
+          'text-[7px]',
           active ? 'fill-fg-secondary' : 'fill-fg-muted',
         )}
       >
@@ -289,11 +298,7 @@ function MobileNodeBox({
   height: number;
 }) {
   return (
-    <g
-      opacity={active ? 1 : 0.3}
-      filter={active ? 'url(#node-glow-mobile)' : undefined}
-      className='transition-opacity duration-300'
-    >
+    <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
       <rect
         x={x - width / 2}
         y={y - height / 2}
@@ -305,14 +310,15 @@ function MobileNodeBox({
           'transition-colors duration-300',
           active ? 'stroke-accent-primary' : 'stroke-line-primary',
         )}
-        strokeWidth={1}
+        strokeWidth={active ? 1.5 : 1}
+        filter={active ? 'url(#node-glow-mobile)' : undefined}
       />
       <text
         x={x}
         y={y - 4}
         textAnchor='middle'
         className={cn(
-          'text-[13px] font-semibold transition-colors duration-300',
+          'text-[13px] font-semibold',
           active ? 'fill-fg-primary' : 'fill-fg-muted',
         )}
       >
@@ -323,7 +329,7 @@ function MobileNodeBox({
         y={y + 12}
         textAnchor='middle'
         className={cn(
-          'text-[9px] transition-colors duration-300',
+          'text-[9px]',
           active ? 'fill-fg-secondary' : 'fill-fg-muted',
         )}
       >
