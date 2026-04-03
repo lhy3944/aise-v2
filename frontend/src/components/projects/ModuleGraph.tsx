@@ -219,25 +219,13 @@ function NodeBox({
 }) {
   return (
     <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
-      <rect
-        x={x - width / 2}
-        y={y - height / 2}
-        width={width}
-        height={height}
-        rx={6}
-        className={cn(
-          'transition-colors duration-300',
-          active ? 'fill-accent-primary/10 stroke-accent-primary' : 'fill-canvas-surface stroke-line-primary',
-        )}
-        strokeWidth={1}
-      />
       <text
         x={x}
         y={y - 3}
         textAnchor='middle'
         className={cn(
           'text-[11px] font-semibold transition-colors duration-300',
-          active ? 'fill-accent-primary' : 'fill-fg-muted',
+          active ? 'fill-fg-primary' : 'fill-fg-muted',
         )}
       >
         {label}
@@ -276,25 +264,13 @@ function MobileNodeBox({
 }) {
   return (
     <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
-      <rect
-        x={x - width / 2}
-        y={y - height / 2}
-        width={width}
-        height={height}
-        rx={8}
-        className={cn(
-          'transition-colors duration-300',
-          active ? 'fill-accent-primary/10 stroke-accent-primary' : 'fill-canvas-surface stroke-line-primary',
-        )}
-        strokeWidth={1}
-      />
       <text
         x={x}
         y={y - 4}
         textAnchor='middle'
         className={cn(
           'text-[13px] font-semibold transition-colors duration-300',
-          active ? 'fill-accent-primary' : 'fill-fg-muted',
+          active ? 'fill-fg-primary' : 'fill-fg-muted',
         )}
       >
         {label}
