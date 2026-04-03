@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -13,7 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
-import { Check, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 /* ─── Inline Edit Row ─── */
@@ -41,6 +42,7 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
 
   return (
     <TableRow className='border-accent-primary/30 bg-canvas-surface/30 hover:bg-canvas-surface/30'>
+      <TableCell />
       <TableCell>
         <Input
           value={term}
@@ -92,6 +94,8 @@ function EditRow({ initial, onSave, onCancel, autoFocus }: EditRowProps) {
 interface RowProps {
   item: GlossaryItem;
   editing: boolean;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onStartEdit: () => void;
   onUpdate: (
     id: string,
@@ -101,7 +105,16 @@ interface RowProps {
   onCancelEdit: () => void;
 }
 
-function GlossaryRow({ item, editing, onStartEdit, onUpdate, onDelete, onCancelEdit }: RowProps) {
+function GlossaryRow({
+  item,
+  editing,
+  selected,
+  onToggleSelect,
+  onStartEdit,
+  onUpdate,
+  onDelete,
+  onCancelEdit,
+}: RowProps) {
   if (editing) {
     return (
       <EditRow
@@ -121,7 +134,13 @@ function GlossaryRow({ item, editing, onStartEdit, onUpdate, onDelete, onCancelE
   }
 
   return (
-    <TableRow className='group'>
+    <TableRow className='group hover:bg-muted/20'>
+      <TableCell className='w-10 px-3'>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(item.glossary_id)}
+        />
+      </TableCell>
       <TableCell className='text-fg-primary truncate font-medium'>{item.term}</TableCell>
       <TableCell className='text-fg-secondary line-clamp-2 leading-relaxed'>
         {item.definition}
@@ -171,6 +190,7 @@ interface GlossaryTableProps {
     data: { term?: string; definition?: string; product_group?: string | null },
   ) => void;
   onDelete: (id: string) => void;
+  onBulkDelete?: (ids: string[]) => void;
   generating?: boolean;
   onGenerate?: () => void;
 }
@@ -180,12 +200,14 @@ export function GlossaryTable({
   onAdd,
   onUpdate,
   onDelete,
+  onBulkDelete,
   generating,
   onGenerate,
 }: GlossaryTableProps) {
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
     let result = items;
@@ -198,6 +220,35 @@ export function GlossaryTable({
     }
     return result;
   }, [items, search]);
+
+  const allSelected = filtered.length > 0 && filtered.every((item) => selectedIds.has(item.glossary_id));
+  const someSelected = filtered.some((item) => selectedIds.has(item.glossary_id)) && !allSelected;
+
+  function handleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((item) => item.glossary_id)));
+    }
+  }
+
+  function handleToggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    onBulkDelete?.(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  }
 
   return (
     <div className='flex flex-col'>
@@ -219,6 +270,17 @@ export function GlossaryTable({
 
           {/* Actions */}
           <div className='flex shrink-0 gap-1.5'>
+            {selectedIds.size > 0 && (
+              <Button
+                size='sm'
+                variant='outline'
+                className='text-destructive hover:bg-destructive hover:text-destructive-foreground h-8 text-xs'
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className='size-3.5' />
+                {selectedIds.size}건 삭제
+              </Button>
+            )}
             <Button
               size='sm'
               variant='outline'
@@ -249,11 +311,18 @@ export function GlossaryTable({
 
       {/* ─── Table ─── */}
       <Table>
-        <TableHeader className='bg-canvas-secondary'>
-          <TableRow>
-            <TableHead className='w-[20%]'>용어</TableHead>
-            <TableHead className='w-[50%]'>정의</TableHead>
-            <TableHead className='w-[20%]'>제품군</TableHead>
+        <TableHeader>
+          <TableRow className='bg-canvas-surface hover:bg-canvas-surface border-line-primary'>
+            <TableHead className='w-10 px-3'>
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onCheckedChange={handleSelectAll}
+              />
+            </TableHead>
+            <TableHead className='text-fg-secondary w-[20%] text-xs font-semibold'>용어</TableHead>
+            <TableHead className='text-fg-secondary w-[45%] text-xs font-semibold'>정의</TableHead>
+            <TableHead className='text-fg-secondary w-[20%] text-xs font-semibold'>제품군</TableHead>
             <TableHead className='w-[10%]' />
           </TableRow>
         </TableHeader>
@@ -274,6 +343,8 @@ export function GlossaryTable({
               key={item.glossary_id}
               item={item}
               editing={editingId === item.glossary_id}
+              selected={selectedIds.has(item.glossary_id)}
+              onToggleSelect={handleToggleSelect}
               onStartEdit={() => {
                 setEditingId(item.glossary_id);
                 setAdding(false);
@@ -288,14 +359,21 @@ export function GlossaryTable({
 
       {/* ─── Empty States ─── */}
       {filtered.length === 0 && (
-        <div className='py-12 text-center'>
+        <div className='flex flex-col items-center justify-center py-12 text-center'>
+          <div className='bg-canvas-surface mb-4 flex size-16 items-center justify-center rounded-full'>
+            {search ? (
+              <Search className='text-fg-muted size-6' />
+            ) : (
+              <BookOpen className='text-fg-muted size-6' />
+            )}
+          </div>
           {search ? (
-            <p className='text-fg-muted text-sm'>검색 결과가 없습니다.</p>
+            <p className='text-fg-primary text-sm font-medium'>검색 결과가 없습니다</p>
           ) : (
             <>
-              <p className='text-fg-muted text-sm'>아직 용어가 없습니다.</p>
+              <p className='text-fg-primary text-sm font-medium'>아직 등록된 용어가 없습니다</p>
               <p className='text-fg-muted mt-1 text-xs'>
-                상단의 추가 버튼이나 AI 생성을 사용하세요.
+                상단의 추가 버튼이나 AI 생성을 사용하세요
               </p>
             </>
           )}

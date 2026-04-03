@@ -81,6 +81,25 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     });
   }
 
+  function handleBulkDelete(ids: string[]) {
+    showConfirm({
+      title: '용어 일괄 삭제',
+      description: `선택한 ${ids.length}개 용어를 삭제하시겠습니까?`,
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          // TODO: bulk delete API 추가 후 glossaryService.bulkDelete(projectId, ids) 로 교체
+          await Promise.all(ids.map((id) => glossaryService.delete(projectId, id)));
+          setItems((prev) => prev.filter((item) => !ids.includes(item.glossary_id)));
+          showToast.success(`${ids.length}개 용어가 삭제되었습니다.`);
+        } catch (err) {
+          const msg = err instanceof ApiError ? err.message : '일괄 삭제에 실패했습니다.';
+          showToast.error(msg);
+        }
+      },
+    });
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     setGenerated([]);
@@ -137,6 +156,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
+        onBulkDelete={handleBulkDelete}
         generating={generating}
         onGenerate={handleGenerate}
       />
