@@ -55,12 +55,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""
+        BACKEND_URL: "http://backend:8081"
     container_name: aise2_frontend
     restart: unless-stopped
     ports:
       - "4000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: "http://${HOST_IP:-localhost}:8081"
+      BACKEND_URL: "http://backend:8081"
     depends_on:
       - backend
 
