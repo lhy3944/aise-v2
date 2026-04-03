@@ -5,6 +5,7 @@ import { GlossaryGeneratePanel } from '@/components/projects/GlossaryGeneratePan
 import { GlossaryTable } from '@/components/projects/GlossaryTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api';
+import { showToast } from '@/lib/toast';
 import { glossaryService } from '@/services/glossary-service';
 import { useOverlayStore } from '@/stores/overlay-store';
 import { useDeferredLoading } from '@/hooks/useDeferredLoading';
@@ -15,7 +16,7 @@ interface ProjectGlossaryTabProps {
 }
 
 export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
-  const { showAlert, showConfirm } = useOverlayStore();
+  const { showConfirm } = useOverlayStore();
 
   const [items, setItems] = useState<GlossaryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,11 +31,11 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       setItems(data.glossary);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '용어 목록을 불러올 수 없습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [projectId, showAlert]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchGlossary();
@@ -46,7 +47,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       setItems((prev) => [...prev, created]);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '용어 추가에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -59,7 +60,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       setItems((prev) => prev.map((item) => (item.glossary_id === glossaryId ? updated : item)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '용어 수정에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -74,7 +75,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
           setItems((prev) => prev.filter((item) => item.glossary_id !== glossaryId));
         } catch (err) {
           const msg = err instanceof ApiError ? err.message : '삭제에 실패했습니다.';
-          showAlert({ type: 'error', description: msg });
+          showToast.error(msg);
         }
       },
     });
@@ -88,7 +89,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       setGenerated(result.generated_glossary);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '자동 생성에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setGenerating(false);
     }
@@ -101,13 +102,10 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       );
       setItems((prev) => [...prev, ...created]);
       setGenerated([]);
-      showAlert({
-        type: 'success',
-        description: `${created.length}개 용어가 추가되었습니다.`,
-      });
+      showToast.success(`${created.length}개 용어가 추가되었습니다.`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '용어 추가에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 

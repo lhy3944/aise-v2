@@ -1,8 +1,9 @@
 'use client';
 
-import { CircleCheckIcon, CircleX, InfoIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
+import { Check, CircleX, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
+import { Spinner } from './spinner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
@@ -20,11 +21,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       icons={{
-        success: <CircleCheckIcon className='size-4' />,
-        info: <InfoIcon className='size-4' />,
-        warning: <TriangleAlertIcon className='size-4' />,
-        error: <CircleX className='size-7' />,
-        loading: <Loader2Icon className='size-4 animate-spin' />,
+        success: <Check className='size-7 text-green-500' />,
+        info: <InfoIcon className='size-7' />,
+        warning: <TriangleAlertIcon className='size-7 text-yellow-500' />,
+        error: <CircleX className='size-7 text-red-500' />,
+        loading: <Spinner className='size-5' />,
       }}
       style={
         {

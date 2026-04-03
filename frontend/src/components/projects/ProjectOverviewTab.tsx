@@ -19,7 +19,7 @@ import type { Project, ProjectModule } from '@/types/project';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Search, Trash2 } from 'lucide-react';
 
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'All', modules: ['requirements', 'design', 'testcase'] },
@@ -129,7 +129,14 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
   if (loading) return null;
 
   if (!project) {
-    return <p className='text-fg-muted text-sm'>프로젝트를 찾을 수 없습니다.</p>;
+    return (
+      <div className='flex min-h-[calc(100vh-200px)] items-start justify-center pt-[calc((100vh-200px)/3)]'>
+        <div className='flex items-center gap-2 text-fg-muted'>
+          <Search className='size-6' />
+          <p className='text-sm sm:text-md'>프로젝트를 찾을 수 없습니다.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,17 +1,16 @@
 'use client';
 
 import { ApiError } from '@/lib/api';
+import { showToast } from '@/lib/toast';
 import { reviewService } from '@/services/review-service';
-import type { AlertOptions } from '@/stores/overlay-store';
 import type { LatestReviewResponse, ReviewResponse } from '@/types/project';
 import { useState } from 'react';
 
 interface UseReviewOptions {
   projectId: string;
-  showAlert: (opts: AlertOptions) => void;
 }
 
-export function useReview({ projectId, showAlert }: UseReviewOptions) {
+export function useReview({ projectId }: UseReviewOptions) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reviewData, setReviewData] = useState<ReviewResponse | LatestReviewResponse | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
@@ -26,7 +25,7 @@ export function useReview({ projectId, showAlert }: UseReviewOptions) {
       setReviewData(result);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '리뷰 실행에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
       setIsModalOpen(false);
     } finally {
       setIsReviewing(false);
@@ -46,7 +45,7 @@ export function useReview({ projectId, showAlert }: UseReviewOptions) {
         setReviewData(null);
       } else {
         const msg = err instanceof ApiError ? err.message : '리뷰 결과를 불러올 수 없습니다.';
-        showAlert({ type: 'error', description: msg });
+        showToast.error(msg);
         setIsModalOpen(false);
       }
     } finally {

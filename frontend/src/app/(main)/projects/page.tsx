@@ -60,7 +60,6 @@ export default function ProjectsPage() {
   }, [setProjects, setLoading, setError]);
 
   useEffect(() => {
-    showToast.error('저장에 실패했습니다', '네트워크 오류');
     fetchProjects();
   }, [fetchProjects]);
 
