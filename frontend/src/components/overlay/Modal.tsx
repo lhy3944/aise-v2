@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { ModalOptions } from '@/stores/overlay-store';
+import type { ReactNode } from 'react';
 
 const SIZE_CLASSES: Record<NonNullable<ModalOptions['size']>, string> = {
   sm: 'max-w-[400px]',
@@ -46,6 +46,14 @@ export function Modal({
       <DialogContent
         className={cn('flex flex-col gap-0 p-0', SIZE_CLASSES[size])}
         showCloseButton={showCloseButton}
+        onPointerDownOutside={(e) => {
+          // don't dismiss dialog when clicking inside the toast
+          if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) {
+            e.preventDefault();
+          }
+          // if you are wrapping this component like shadcn, also call the caller's onPointerDownOutside method
+          // onPointerDownOutside?.(e);
+        }}
       >
         {(title || description) && (
           <DialogHeader className='border-line-primary border-b px-6 py-4'>

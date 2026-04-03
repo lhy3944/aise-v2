@@ -12,7 +12,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps['theme']}
       closeButton={false}
-      className='toaster group'
+      className='toaster group pointer-events-auto'
       toastOptions={{
         closeButton: true,
         classNames: {

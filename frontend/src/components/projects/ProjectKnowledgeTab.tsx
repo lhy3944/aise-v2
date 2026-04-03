@@ -46,30 +46,30 @@ function formatFileSize(bytes: number): string {
 
 // Mock data - will be replaced with API calls when backend is ready
 const MOCK_SOURCES: KnowledgeSource[] = [
-  {
-    id: '1',
-    name: 'Product Requirements Document v2.3.pdf',
-    file_type: 'pdf',
-    size_bytes: 2_458_624,
-    uploaded_at: '2026-03-28T09:15:00Z',
-    status: 'ready',
-  },
-  {
-    id: '2',
-    name: 'System Architecture Overview.md',
-    file_type: 'md',
-    size_bytes: 45_312,
-    uploaded_at: '2026-03-29T14:22:00Z',
-    status: 'ready',
-  },
-  {
-    id: '3',
-    name: 'API Specification.docx',
-    file_type: 'docx',
-    size_bytes: 892_160,
-    uploaded_at: '2026-03-30T11:05:00Z',
-    status: 'processing',
-  },
+  // {
+  //   id: '1',
+  //   name: 'Product Requirements Document v2.3.pdf',
+  //   file_type: 'pdf',
+  //   size_bytes: 2_458_624,
+  //   uploaded_at: '2026-03-28T09:15:00Z',
+  //   status: 'ready',
+  // },
+  // {
+  //   id: '2',
+  //   name: 'System Architecture Overview.md',
+  //   file_type: 'md',
+  //   size_bytes: 45_312,
+  //   uploaded_at: '2026-03-29T14:22:00Z',
+  //   status: 'ready',
+  // },
+  // {
+  //   id: '3',
+  //   name: 'API Specification.docx',
+  //   file_type: 'docx',
+  //   size_bytes: 892_160,
+  //   uploaded_at: '2026-03-30T11:05:00Z',
+  //   status: 'processing',
+  // },
 ];
 
 export function ProjectKnowledgeTab() {

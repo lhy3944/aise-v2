@@ -17,7 +17,7 @@ export const showToast = {
     toast.success(message, { description, id }),
 
   error: (message: string, description?: string, id?: string | number) =>
-    toast.error(message, { description, duration: 600000, id }),
+    toast.error(message, { description, duration: 5000, id }),
 
   info: (message: string, description?: string, id?: string | number) =>
     toast.info(message, { description, id }),

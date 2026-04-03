@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
 import { LeftSidebar } from '@/components/layout/LeftSidebar';
 import { MobileBottomDrawer } from '@/components/layout/MobileBottomDrawer';
 import { MobileRightDrawer } from '@/components/layout/MobileRightDrawer';
@@ -8,10 +7,12 @@ import { NotificationPanel } from '@/components/layout/NotificationPanel';
 import { PanelToggleBar } from '@/components/layout/PanelToggleBar';
 import { ResizeHandle } from '@/components/layout/ResizeHandle';
 import { RightPanel } from '@/components/layout/RightPanel';
+import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { useResponsivePanel } from '@/hooks/useMediaQuery';
 import { useResize } from '@/hooks/useResize';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
+import { useRef } from 'react';
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,9 +64,18 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
         {/* Content area */}
         <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>
-          <div className='flex shrink-0 items-center justify-end px-2 py-1.5 sm:px-4'>
-            <div className='flex items-center gap-1'>
+          <div className='relative flex shrink-0 items-center px-2 py-1.5 sm:px-4'>
+            <div className='flex shrink-0 items-center gap-1'>
               <PanelToggleBar />
+            </div>
+            {isMobile && (
+              <div className='absolute inset-x-0 flex justify-center pointer-events-none'>
+                <div className='pointer-events-auto min-w-[200px] max-w-[60%]'>
+                  <ProjectSelector />
+                </div>
+              </div>
+            )}
+            <div className='ml-auto flex shrink-0 items-center gap-1'>
               <MobileRightDrawer />
             </div>
           </div>

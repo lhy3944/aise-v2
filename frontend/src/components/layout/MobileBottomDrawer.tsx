@@ -1,8 +1,7 @@
 'use client';
 
-import { Ellipsis, Plus } from 'lucide-react';
-import { useState } from 'react';
 import { ThreadList } from '@/components/chat/ThreadList';
+import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -14,6 +13,8 @@ import {
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
 import { useChatStore } from '@/stores/chat-store';
 import { useProjectStore } from '@/stores/project-store';
+import { Ellipsis, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { SettingsDialog } from '../overlay/SettingsDialog';
 
 export function MobileBottomDrawer() {
@@ -63,18 +64,22 @@ export function MobileBottomDrawer() {
         </Button>
 
         <DrawerContent className='bg-canvas-primary max-h-[85vh]'>
-          <DrawerHeader className='border-line-primary flex flex-row items-center justify-between border-b pb-3'>
-            <DrawerTitle className='text-fg-primary text-base font-semibold'>대화 목록</DrawerTitle>
-            <DrawerDescription />
-            <Button
-              onClick={handleCreateThread}
-              variant='ghost'
-              size='sm'
-              className='text-fg-secondary h-8 gap-1.5'
-            >
-              <Plus className='h-4 w-4' />
-              <span className='text-xs'>새 대화</span>
-            </Button>
+          <DrawerHeader className='border-line-primary flex flex-col gap-3 border-b pb-3'>
+            <ProjectSelector />
+            <div className='flex items-center justify-between'>
+              <DrawerTitle className='text-fg-primary text-base font-semibold'>                
+              </DrawerTitle>
+              <DrawerDescription />
+              <Button
+                onClick={handleCreateThread}
+                variant='ghost'
+                size='sm'
+                className='text-fg-secondary h-8 gap-1.5'
+              >
+                <Plus className='h-4 w-4' />
+                <span className='text-xs'>새 대화</span>
+              </Button>
+            </div>
           </DrawerHeader>
 
           <div className='flex h-[50vh] overflow-hidden px-2 py-3'>
