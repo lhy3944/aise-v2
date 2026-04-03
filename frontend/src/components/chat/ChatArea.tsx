@@ -25,10 +25,10 @@ export function ChatArea() {
   const addMessage = useChatStore((s) => s.addMessage);
   const appendToLastAssistant = useChatStore((s) => s.appendToLastAssistant);
   const setStreaming = useChatStore((s) => s.setStreaming);
-  const getActiveThread = useChatStore((s) => s.getActiveThread);
 
-  const activeThread = getActiveThread();
-  const messages = activeThread?.messages ?? [];
+  const messages = useChatStore(
+    (s) => s.threads.find((t) => t.id === s.activeThreadId)?.messages ?? [],
+  );
   const hasMessages = messages.length > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
