@@ -35,10 +35,25 @@ export function ChatArea() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
+  const lastUserMsgIdRef = useRef<string | null>(null);
 
-  // Auto-scroll to bottom on new messages
+  // 새 사용자 메시지 → 상단으로 스크롤 / 그 외 → 하단으로 스크롤
   useEffect(() => {
-    if (scrollRef.current) {
+    if (!scrollRef.current) return;
+
+    const lastUserMsg = messages.findLast((m) => m.role === 'user');
+
+    if (lastUserMsg && lastUserMsg.id !== lastUserMsgIdRef.current) {
+      lastUserMsgIdRef.current = lastUserMsg.id;
+      requestAnimationFrame(() => {
+        const el = scrollRef.current?.querySelector(
+          `[data-message-id="${lastUserMsg.id}"]`,
+        );
+        if (el) {
+          el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+      });
+    } else {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length, isStreaming]);

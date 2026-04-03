@@ -77,7 +77,7 @@ function MessageBubble({
   const parts = isUser ? [{ type: 'text' as const, data: message.content }] : parseStructuredContent(message.content);
 
   return (
-    <div className={cn('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
+    <div data-message-id={message.id} className={cn('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
       {/* Avatar */}
       <div
         className={cn(
