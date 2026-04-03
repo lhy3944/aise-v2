@@ -219,6 +219,19 @@ function NodeBox({
 }) {
   return (
     <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
+      <rect
+        x={x - width / 2}
+        y={y - height / 2}
+        width={width}
+        height={height}
+        rx={6}
+        fill='transparent'
+        className={cn(
+          'transition-colors duration-300',
+          active ? 'stroke-accent-primary' : 'stroke-line-primary',
+        )}
+        strokeWidth={1}
+      />
       <text
         x={x}
         y={y - 3}
@@ -264,6 +277,19 @@ function MobileNodeBox({
 }) {
   return (
     <g opacity={active ? 1 : 0.3} className='transition-opacity duration-300'>
+      <rect
+        x={x - width / 2}
+        y={y - height / 2}
+        width={width}
+        height={height}
+        rx={8}
+        fill='transparent'
+        className={cn(
+          'transition-colors duration-300',
+          active ? 'stroke-accent-primary' : 'stroke-line-primary',
+        )}
+        strokeWidth={1}
+      />
       <text
         x={x}
         y={y - 4}
