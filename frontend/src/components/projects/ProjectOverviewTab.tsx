@@ -16,10 +16,10 @@ import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
 import type { Project, ProjectModule } from '@/types/project';
+import { Pencil, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { Pencil, Search, Trash2 } from 'lucide-react';
 
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'All', modules: ['requirements', 'design', 'testcase'] },
@@ -130,11 +130,16 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
 
   if (!project) {
     return (
-      <div className='flex min-h-[calc(100vh-200px)] items-start justify-center pt-[calc((100vh-200px)/3)]'>
-        <div className='flex items-center gap-2 text-fg-muted'>
+      <div className='flex flex-col items-center justify-center py-12 text-center'>
+        {/* <div className='flex items-center gap-2 text-fg-muted'>
           <Search className='size-6' />
           <p className='text-sm sm:text-md'>프로젝트를 찾을 수 없습니다.</p>
+        </div> */}
+        <div className='bg-canvas-surface mb-4 flex size-16 items-center justify-center rounded-full'>
+          <Search className='text-fg-muted size-6' />
         </div>
+        <p className='text-fg-primary text-sm font-medium'>프로젝트를 찾을 수 없습니다.</p>
+        <p className='text-fg-muted mt-1 text-sm'>삭제되었거나 존재하지 않는 프로젝트입니다.</p>
       </div>
     );
   }

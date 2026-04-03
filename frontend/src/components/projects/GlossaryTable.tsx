@@ -372,9 +372,7 @@ export function GlossaryTable({
           ) : (
             <>
               <p className='text-fg-primary text-sm font-medium'>아직 등록된 용어가 없습니다</p>
-              <p className='text-fg-muted mt-1 text-xs'>
-                상단의 추가 버튼이나 AI 생성을 사용하세요
-              </p>
+              <p className='text-fg-muted mt-1 text-sm'>상단의 추가 버튼이나 AI 생성을 사용하세요</p>
             </>
           )}
         </div>

@@ -1,20 +1,20 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import {
-  FileText,
-  FileSpreadsheet,
-  Presentation,
-  Upload,
-  Trash2,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { KnowledgeSource, KnowledgeSourceFileType } from '@/types/project';
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileSpreadsheet,
+  FileText,
+  Loader2,
+  Presentation,
+  Trash2,
+  Upload,
+} from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 
 const FILE_TYPE_ICON: Record<KnowledgeSourceFileType, typeof FileText> = {
   pdf: FileText,
@@ -148,7 +148,7 @@ export function ProjectKnowledgeTab() {
           <Upload className='text-fg-muted size-5' />
         </div>
         <p className='text-fg-primary text-sm font-medium'>파일을 드래그하거나 클릭하여 업로드</p>
-        <p className='text-fg-muted mt-1 text-xs'>PDF, Markdown, Word, Excel, PowerPoint</p>
+        <p className='text-fg-muted mt-1 text-sm'>TXT | PDF | MD</p>
         <input
           ref={fileInputRef}
           type='file'
@@ -220,7 +220,7 @@ export function ProjectKnowledgeTab() {
             <FileText className='text-fg-muted size-6' />
           </div>
           <p className='text-fg-primary text-sm font-medium'>아직 업로드된 문서가 없습니다</p>
-          <p className='text-fg-muted mt-1 text-xs'>
+          <p className='text-fg-muted mt-1 text-sm'>
             위 영역에 파일을 드래그하거나 클릭하여 업로드하세요
           </p>
         </div>
