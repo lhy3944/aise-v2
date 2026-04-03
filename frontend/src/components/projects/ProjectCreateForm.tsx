@@ -77,7 +77,7 @@ export function ProjectCreateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
+    <form onSubmit={handleSubmit} className='flex flex-col gap-5' autoComplete='off'>
       {/* Name */}
       <div className='flex flex-col gap-1.5'>
         <Label htmlFor='project-name'>
