@@ -148,16 +148,16 @@ function HorizontalGraph({ modules }: { modules: ProjectModule[] }) {
 
 // --- Vertical layout (mobile) ---
 function VerticalGraph({ modules }: { modules: ProjectModule[] }) {
-  const W = 280;
-  const H = 220;
+  const W = 300;
+  const H = 260;
 
   const positions: Record<ProjectModule, { x: number; y: number }> = {
-    requirements: { x: 140, y: 32 },
-    design: { x: 80, y: 140 },
-    testcase: { x: 200, y: 140 },
+    requirements: { x: 150, y: 38 },
+    design: { x: 78, y: 190 },
+    testcase: { x: 222, y: 190 },
   };
 
-  const nodeW = 120;
+  const nodeW = 130;
   const nodeH = 52;
 
   return (
