@@ -1,16 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
 import { cn } from '@/lib/utils';
-import { useChatStore } from '@/stores/chat-store';
-import { useProjectStore } from '@/stores/project-store';
-import { usePanelStore, LayoutMode } from '@/stores/panel-store';
 import { streamAgentChat } from '@/services/agent-service';
 import type { ChatMessage } from '@/stores/chat-store';
+import { useChatStore } from '@/stores/chat-store';
+import { LayoutMode, usePanelStore } from '@/stores/panel-store';
+import { useProjectStore } from '@/stores/project-store';
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useRef } from 'react';
+
+const EMPTY_MESSAGES: ChatMessage[] = [];
 
 export function ChatArea() {
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
@@ -27,7 +29,7 @@ export function ChatArea() {
   const setStreaming = useChatStore((s) => s.setStreaming);
 
   const messages = useChatStore(
-    (s) => s.threads.find((t) => t.id === s.activeThreadId)?.messages ?? [],
+    (s) => s.threads.find((t) => t.id === s.activeThreadId)?.messages ?? EMPTY_MESSAGES,
   );
   const hasMessages = messages.length > 0;
 
@@ -211,7 +213,7 @@ export function ChatArea() {
             </div>
 
             {/* 하단 입력 */}
-            <div className='shrink-0 border-t border-transparent px-4 pb-4 pt-2'>
+            <div className='shrink-0 border-t border-transparent px-4 pt-2 pb-4'>
               <div className={cn('mx-auto', maxW)}>
                 <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
               </div>
