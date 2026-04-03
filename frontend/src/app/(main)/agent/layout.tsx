@@ -24,15 +24,12 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   const rightPanelOpen = usePanelStore((s) => s.rightPanelOpen);
   const rightPanelWidth = usePanelStore((s) => s.rightPanelWidth);
   const isMobile = usePanelStore((s) => s.isMobile);
-  const isTablet = usePanelStore((s) => s.isTablet);
-  const headerVisible = usePanelStore((s) => s.headerVisible);
 
   useResponsivePanel();
 
   const showLeftPanel = !isMobile;
   const showSidebar = leftSidebarOpen && !isMobile;
   const showRightPanel = rightPanelOpen;
-  const canHide = isMobile || isTablet;
 
   return (
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
@@ -60,18 +57,9 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
         {/* Content area */}
         <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>
-          {/* Toolbar — 헤더와 함께 숨김/표시 + 블러 효과 */}
-          <div
-            className={cn(
-              'relative z-10 shrink-0 px-2 sm:px-4',
-              canHide
-                ? 'overflow-hidden transition-[height,opacity] duration-300 ease-in-out'
-                : 'py-1.5',
-              canHide && headerVisible && 'h-12 opacity-100',
-              canHide && !headerVisible && 'h-0 opacity-0',
-            )}
-          >
-            <div className='flex h-12 items-center'>
+          {/* Toolbar — 항상 표시, 하단 블러 그라데이션 */}
+          <div className='relative z-10 shrink-0 px-2 py-1.5 sm:px-4'>
+            <div className='flex items-center'>
               {/* 좌측: 모바일 버튼 or 데스크탑 PanelToggleBar */}
               <div className='flex shrink-0 items-center gap-1'>
                 {isMobile && <MobileBottomDrawer />}
@@ -88,10 +76,9 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
                 <MobileRightDrawer />
               </div>
             </div>
+            {/* 하단 블러 페이드 — toolbar 아래 경계에서 메시지로 자연스럽게 전환 */}
+            <div className='pointer-events-none absolute inset-x-0 bottom-0 h-4 translate-y-full bg-gradient-to-b from-canvas-primary/80 to-transparent' />
           </div>
-
-          {/* 블러 그라데이션 — 메시지가 toolbar 아래로 스크롤될 때 페이드 */}
-          <div className='pointer-events-none relative z-10 h-6 -mt-6 bg-gradient-to-b from-canvas-primary to-transparent' />
 
           {children}
         </div>
