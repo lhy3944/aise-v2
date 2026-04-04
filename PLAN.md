@@ -38,7 +38,7 @@
 
 ### 1.7 Knowledge Repository → Phase 2에서 확장
 - [x] Backend: pgvector + MinIO + RAG Chat API
-- [ ] Frontend: API 연동 (Phase 2.1에서 처리)
+- [x] Frontend: API 연동 (Phase 2.1에서 처리)
 
 ### 1.8 Frontend 구조 재설계
 - [x] /agent 라우트 + ArtifactPanel + RequirementsArtifact
@@ -55,29 +55,29 @@
 ### 2.1 지식 저장소 강화 (3-1)
 
 #### 2.1.1 Backend — DB 모델 확장
-- [ ] KnowledgeDocument에 `is_active` (Boolean, default=true) 필드 추가
-- [ ] KnowledgeDocument 상태값 정리: uploading→pending, processing, ready→completed, error→failed
-- [ ] Alembic 마이그레이션 생성 + 양쪽 DB 적용
+- [x] KnowledgeDocument에 `is_active` (Boolean, default=true) 필드 추가
+- [x] KnowledgeDocument 상태값 정리: uploading→pending, processing, ready→completed, error→failed
+- [x] Alembic 마이그레이션 생성 + 양쪽 DB 적용
 
 #### 2.1.2 Backend — API 확장
-- [ ] `PATCH /documents/{id}/toggle` — 활성화/비활성화 토글
-- [ ] 문서 목록 조회 시 `is_active` 필드 포함
-- [ ] 업로드 시 중복 파일 감지 (동일 project + 동일 파일명) → 409 응답 + 클라이언트에서 덮어쓰기 확인
-- [ ] 문서 미리보기 API: `GET /documents/{id}/preview` — 첫 N줄 또는 첫 페이지 텍스트 반환
-- [ ] 지원 포맷 제한: txt, md, pdf (기존 docx/pptx/xlsx는 추후 확장)
+- [x] `PATCH /documents/{id}/toggle` — 활성화/비활성화 토글
+- [x] 문서 목록 조회 시 `is_active` 필드 포함
+- [x] 업로드 시 중복 파일 감지 (동일 project + 동일 파일명) → 409 응답 + 클라이언트에서 덮어쓰기 확인
+- [x] 문서 미리보기 API: `GET /documents/{id}/preview` — 첫 N줄 또는 첫 페이지 텍스트 반환
+- [x] 지원 포맷 제한: txt, md, pdf (기존 docx/pptx/xlsx는 추후 확장)
 
 #### 2.1.3 Frontend — ProjectKnowledgeTab API 연동
-- [ ] Mock 데이터 → 실제 API 호출로 교체 (목록, 업로드, 삭제)
-- [ ] 문서별 상태 표시: pending / processing / completed / failed (아이콘 + 텍스트)
-- [ ] 활성화/비활성화 토글 스위치 UI
-- [ ] 중복 업로드 시 확인 다이얼로그 ("덮어쓰기 하시겠습니까?")
-- [ ] 문서 클릭 시 미리보기 패널/모달 (원문 텍스트 표시)
-- [ ] 실패 문서: 에러 메시지 표시 + 재업로드 버튼
+- [x] Mock 데이터 → 실제 API 호출로 교체 (목록, 업로드, 삭제)
+- [x] 문서별 상태 표시: pending / processing / completed / failed (아이콘 + 텍스트)
+- [x] 활성화/비활성화 토글 스위치 UI
+- [x] 중복 업로드 시 확인 다이얼로그 ("덮어쓰기 하시겠습니까?")
+- [x] 문서 클릭 시 미리보기 패널/모달 (원문 텍스트 표시)
+- [x] 실패 문서: 에러 메시지 표시 + 재업로드 버튼
 
 ### 2.2 용어 사전 확장 (3-2)
 
 #### 2.2.1 Backend — DB 모델 확장
-- [ ] GlossaryItem에 필드 추가:
+- [x] GlossaryItem에 필드 추가:
   - `source_document_id` (UUID FK → KnowledgeDocument, nullable, SET NULL)
   - `synonyms` (ARRAY(String), default=[])
   - `abbreviations` (ARRAY(String), default=[])
@@ -85,36 +85,36 @@
   - `is_auto_extracted` (Boolean, default=false) — AI 추출 여부
   - `is_approved` (Boolean, default=false) — 사용자 승인 여부
   - `created_at`, `updated_at` (DateTime)
-- [ ] Alembic 마이그레이션
+- [x] Alembic 마이그레이션
 
 #### 2.2.2 Backend — API 확장
-- [ ] `POST /glossary/extract` — **지식 문서 기반** 용어 후보 추출 (기존 generate는 요구사항 기반)
+- [x] `POST /glossary/extract` — **지식 문서 기반** 용어 후보 추출 (기존 generate는 요구사항 기반)
   - 활성 지식 문서의 chunk를 컨텍스트로 사용
   - 추출 결과: term, definition, source_document_id, synonyms, abbreviations
   - DB 저장 없이 후보 목록 반환 (사용자 검토 후 저장)
-- [ ] `POST /glossary/approve` — 선택한 후보 일괄 승인 저장
-- [ ] `PUT /glossary/{id}` 확장 — synonyms, abbreviations, section_tags 수정 지원
-- [ ] 프롬프트: 지식 문서 기반 용어 추출 프롬프트 작성
-- [ ] 재추출 시 기존 수동 편집 항목(`is_auto_extracted=false`) 보존 로직
+- [x] `POST /glossary/approve` — 선택한 후보 일괄 승인 저장
+- [x] `PUT /glossary/{id}` 확장 — synonyms, abbreviations, section_tags 수정 지원
+- [x] 프롬프트: 지식 문서 기반 용어 추출 프롬프트 작성
+- [x] 재추출 시 기존 수동 편집 항목(`is_auto_extracted=false`) 보존 로직
 
 #### 2.2.3 Frontend — 용어 사전 UI 개선
-- [ ] 용어 목록에 출처 문서, 동의어, 약어, 섹션 태그 컬럼 표시
-- [ ] AI 추출 버튼 → 후보 목록 표시 → 체크박스 선택 → 승인 저장
-- [ ] 수동 추가 시 동의어/약어/섹션 태그 입력 필드
-- [ ] 승인 상태 뱃지 (승인됨 / 미승인)
+- [x] 용어 목록에 출처 문서, 동의어, 약어, 섹션 태그 컬럼 표시
+- [x] AI 추출 버튼 → 후보 목록 표시 → 체크박스 선택 → 승인 저장
+- [x] 수동 추가 시 동의어/약어/섹션 태그 입력 필드
+- [x] 승인 상태 뱃지 (승인됨 / 미승인)
 
 ### 2.3 섹션 관리 재설계 (3-3)
 
 #### 2.3.1 Backend — DB 모델 재설계
-- [ ] RequirementSection 확장 (또는 새 Section 모델):
+- [x] RequirementSection 확장 (또는 새 Section 모델):
   - `description` (Text, nullable) — 섹션 설명/목적
   - `output_format_hint` (Text, nullable) — 출력 형식 힌트
   - `is_required` (Boolean, default=false) — 필수 여부
   - `is_default` (Boolean, default=false) — 기본 제공 섹션 여부
   - `is_active` (Boolean, default=true) — 활성화 상태
   - `type` 필드 제거 또는 자유 문자열로 변경 (FR/QA/Constraints 고정 → 자유 섹션명)
-- [ ] Alembic 마이그레이션
-- [ ] 프로젝트 생성 시 기본 5종 섹션 자동 생성:
+- [x] Alembic 마이그레이션
+- [x] 프로젝트 생성 시 기본 5종 섹션 자동 생성:
   - Overview (필수, 삭제불가)
   - Functional Requirements (필수, 삭제불가)
   - Quality Attributes (필수, 삭제불가)
@@ -122,26 +122,26 @@
   - Interfaces (필수, 삭제불가)
 
 #### 2.3.2 Backend — API 수정
-- [ ] 섹션 삭제 시 `is_default=true`이면 400 에러 (비활성화만 허용)
-- [ ] `PATCH /sections/{id}/toggle` — 활성화/비활성화 토글
-- [ ] `POST /sections/extract` — 지식 문서 기반 섹션 후보 AI 추출
+- [x] 섹션 삭제 시 `is_default=true`이면 400 에러 (비활성화만 허용)
+- [x] `PATCH /sections/{id}/toggle` — 활성화/비활성화 토글
+- [x] `POST /sections/extract` — 지식 문서 기반 섹션 후보 AI 추출
   - 활성 지식 문서 분석 → 추가 섹션 후보 제안
   - 사용자 검토 후 저장
-- [ ] 섹션 목록 조회 시 `is_active`, `is_default`, `is_required` 포함
-- [ ] 프롬프트: 지식 문서 기반 섹션 추출 프롬프트 작성
+- [x] 섹션 목록 조회 시 `is_active`, `is_default`, `is_required` 포함
+- [x] 프롬프트: 지식 문서 기반 섹션 추출 프롬프트 작성
 
 #### 2.3.3 Frontend — 섹션 관리 UI
-- [ ] 프로젝트 상세 내 섹션 관리 탭/페이지
-- [ ] 기본 섹션 5종: 삭제 버튼 비활성, 비활성화 토글만 표시
-- [ ] 커스텀 섹션 추가: 이름, 설명, 출력 형식 힌트, 필수 여부 입력
-- [ ] AI 섹션 추출 버튼 → 후보 목록 → 선택 저장
-- [ ] 드래그 앤 드롭 순서 변경 (SRS 출력 순서 반영)
-- [ ] 섹션별 설명/출력 형식 힌트 인라인 편집
+- [x] 프로젝트 상세 내 섹션 관리 탭/페이지
+- [x] 기본 섹션 5종: 삭제 버튼 비활성, 비활성화 토글만 표시
+- [x] 커스텀 섹션 추가: 이름, 설명, 출력 형식 힌트, 필수 여부 입력
+- [x] AI 섹션 추출 버튼 → 후보 목록 → 선택 저장
+- [x] 드래그 앤 드롭 순서 변경 (SRS 출력 순서 반영)
+- [x] 섹션별 설명/출력 형식 힌트 인라인 편집
 
 ### 2.4 프로젝트 준비도 (3-4)
 
 #### 2.4.1 Backend — API
-- [ ] `GET /projects/{id}/readiness` — 준비도 조회
+- [x] `GET /projects/{id}/readiness` — 준비도 조회
   - `knowledge_count`: 활성 지식 문서 수 (completed 상태)
   - `glossary_approved_count`: 승인된 용어 수
   - `active_section_count`: 활성 섹션 수
@@ -149,10 +149,10 @@
   - 각 항목별 상태 (sufficient / insufficient)
 
 #### 2.4.2 Frontend — 준비도 UI
-- [ ] 프로젝트 상세 페이지에 준비도 카드 표시
-- [ ] 각 항목 클릭 시 해당 탭(지식/용어/섹션)으로 이동
-- [ ] 미비 항목 시각적 강조 (경고 아이콘 + 색상)
-- [ ] Agent 진입 시점에도 준비도 미니뷰 표시 (좌패널)
+- [x] 프로젝트 상세 페이지에 준비도 카드 표시
+- [x] 각 항목 클릭 시 해당 탭(지식/용어/섹션)으로 이동
+- [x] 미비 항목 시각적 강조 (경고 아이콘 + 색상)
+- [x] Agent 진입 시점에도 준비도 미니뷰 표시 (좌패널)
 
 ---
 
