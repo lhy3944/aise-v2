@@ -1,17 +1,17 @@
 'use client';
 
-import { FileText, FlaskConical, Layers, ListChecks } from 'lucide-react';
+import { Database, FileText, FlaskConical, Layers } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectStore } from '@/stores/project-store';
 import { useArtifactStore } from '@/stores/artifact-store';
 import type { ArtifactType } from '@/stores/artifact-store';
-import { RequirementsArtifact } from '@/components/artifacts/RequirementsArtifact';
+import { RecordsArtifact } from '@/components/artifacts/RecordsArtifact';
 import { SrsArtifact } from '@/components/artifacts/SrsArtifact';
 import { DesignArtifact } from '@/components/artifacts/DesignArtifact';
 import { TestCaseArtifact } from '@/components/artifacts/TestCaseArtifact';
 
 const ARTIFACT_TABS = [
-  { value: 'requirements' as const, label: 'Requirements', icon: ListChecks },
+  { value: 'records' as const, label: 'Records', icon: Database },
   { value: 'srs' as const, label: 'SRS', icon: FileText },
   { value: 'design' as const, label: 'Design', icon: Layers },
   { value: 'testcase' as const, label: 'Test Cases', icon: FlaskConical },
@@ -60,8 +60,8 @@ export function ArtifactPanel() {
 
       {/* Content */}
       <div className='flex-1 overflow-hidden'>
-        <TabsContent value='requirements' className='mt-0 h-full'>
-          <RequirementsArtifact projectId={currentProject.project_id} />
+        <TabsContent value='records' className='mt-0 h-full'>
+          <RecordsArtifact projectId={currentProject.project_id} />
         </TabsContent>
         <TabsContent value='srs' className='mt-0 h-full'>
           <SrsArtifact />

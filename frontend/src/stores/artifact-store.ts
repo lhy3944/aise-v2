@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ArtifactType = 'requirements' | 'srs' | 'design' | 'testcase';
+export type ArtifactType = 'records' | 'srs' | 'design' | 'testcase';
 
 export interface ArtifactVersion {
   version_id: string;
@@ -19,7 +19,7 @@ interface ArtifactState {
 export const useArtifactStore = create<ArtifactState>()(
   persist(
     (set) => ({
-      activeTab: 'requirements',
+      activeTab: 'records',
       setActiveTab: (tab) => set({ activeTab: tab }),
     }),
     {

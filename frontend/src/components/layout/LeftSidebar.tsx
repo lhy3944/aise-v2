@@ -10,6 +10,7 @@ import { SettingsDialog } from '@/components/overlay/SettingsDialog';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
+import { ReadinessMiniView } from '@/components/layout/ReadinessMiniView';
 import { useChatStore } from '@/stores/chat-store';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -81,6 +82,11 @@ export function LeftSidebar() {
               {/* Project Selector */}
               <div className='pr-3'>
                 <ProjectSelector />
+              </div>
+
+              {/* Readiness Mini View */}
+              <div className='pr-3'>
+                <ReadinessMiniView />
               </div>
 
               <ThreadList />
