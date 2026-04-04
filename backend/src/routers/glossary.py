@@ -1,4 +1,4 @@
-"""Glossary CRUD + AI 자동 생성 라우터"""
+"""Glossary CRUD + AI 자동 생성/추출 라우터"""
 
 import uuid
 
@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.schemas.api.glossary import (
+    GlossaryApproveRequest,
     GlossaryCreate,
+    GlossaryExtractResponse,
     GlossaryGenerateResponse,
     GlossaryListResponse,
     GlossaryResponse,
@@ -26,7 +28,6 @@ async def list_glossary(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """프로젝트의 용어 목록 조회"""
     return await glossary_svc.list_glossary(db, project_id)
 
 
@@ -36,7 +37,6 @@ async def create_glossary(
     body: GlossaryCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """용어 추가"""
     return await glossary_svc.create_glossary(db, project_id, body)
 
 
@@ -47,7 +47,6 @@ async def update_glossary(
     body: GlossaryUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    """용어 수정"""
     return await glossary_svc.update_glossary(db, project_id, glossary_id, body)
 
 
@@ -57,7 +56,6 @@ async def delete_glossary(
     glossary_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """용어 삭제"""
     await glossary_svc.delete_glossary(db, project_id, glossary_id)
 
 
@@ -66,5 +64,24 @@ async def generate_glossary(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """프로젝트 요구사항 기반 Glossary 초안 자동 생성 (LLM)"""
+    """요구사항 기반 Glossary 초안 자동 생성 (레거시)"""
     return await glossary_svc.generate_glossary(db, project_id)
+
+
+@router.post("/extract", response_model=GlossaryExtractResponse)
+async def extract_glossary(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """지식 문서 기반 용어 후보 추출"""
+    return await glossary_svc.extract_glossary(db, project_id)
+
+
+@router.post("/approve", response_model=GlossaryListResponse, status_code=201)
+async def approve_glossary(
+    project_id: uuid.UUID,
+    body: GlossaryApproveRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """추출된 용어 후보 일괄 승인 저장"""
+    return await glossary_svc.approve_glossary(db, project_id, body)

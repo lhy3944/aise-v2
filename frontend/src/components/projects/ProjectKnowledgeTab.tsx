@@ -1,5 +1,6 @@
 'use client';
 
+import { KnowledgePreviewModal } from '@/components/projects/KnowledgePreviewModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -11,18 +12,7 @@ import type {
   KnowledgeDocumentFileType,
   KnowledgeDocumentStatus,
 } from '@/types/project';
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Eye,
-  FileText,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react';
+import { Ban, Check, Clock, FileText, Loader2, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ProjectKnowledgeTabProps {
@@ -48,11 +38,11 @@ const STATUS_CONFIG: Record<
   pending: { icon: Clock, label: '대기', color: 'text-gray-500' },
   processing: { icon: Loader2, label: '분석중', color: 'text-amber-600 dark:text-amber-400' },
   completed: {
-    icon: CheckCircle2,
+    icon: Check,
     label: '완료',
     color: 'text-green-600 dark:text-green-400',
   },
-  failed: { icon: AlertCircle, label: '실패', color: 'text-red-600 dark:text-red-400' },
+  failed: { icon: Ban, label: '실패', color: 'text-red-600 dark:text-red-400' },
 };
 
 function formatFileSize(bytes: number): string {
@@ -66,11 +56,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState<{
-    name: string;
-    text: string;
-    totalChars: number;
-  } | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlay = useOverlay();
 
@@ -112,7 +98,6 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
           await knowledgeService.upload(projectId, file);
         } catch (err: unknown) {
           const error = err as Error & { status?: number };
-          // 409: 중복 파일 → 덮어쓰기 확인
           if (error.status === 409) {
             overlay.confirm({
               title: '중복 파일',
@@ -130,7 +115,6 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
             });
             continue;
           }
-          // 다른 에러는 글로벌 핸들링
         }
       }
 
@@ -184,26 +168,10 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     [projectId],
   );
 
-  // 미리보기
-  const handlePreview = useCallback(
-    async (doc: KnowledgeDocument) => {
-      try {
-        const preview = await knowledgeService.preview(projectId, doc.document_id);
-        setPreviewDoc({
-          name: preview.name,
-          text: preview.preview_text,
-          totalChars: preview.total_characters,
-        });
-      } catch {
-        // 글로벌 핸들링
-      }
-    },
-    [projectId],
-  );
-
   // 재처리
   const handleReprocess = useCallback(
-    async (doc: KnowledgeDocument) => {
+    async (e: React.MouseEvent, doc: KnowledgeDocument) => {
+      e.stopPropagation();
       try {
         const updated = await knowledgeService.reprocess(projectId, doc.document_id);
         setDocuments((prev) =>
@@ -218,7 +186,8 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
 
   // 삭제
   const handleDelete = useCallback(
-    (doc: KnowledgeDocument) => {
+    (e: React.MouseEvent, doc: KnowledgeDocument) => {
+      e.stopPropagation();
       overlay.confirm({
         title: '문서 삭제',
         description: `"${doc.name}" 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
@@ -236,6 +205,13 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     },
     [projectId, overlay],
   );
+
+  // 카드 클릭 → 미리보기 모달
+  const handleCardClick = useCallback((doc: KnowledgeDocument) => {
+    if (doc.status === 'completed') {
+      setPreviewTarget(doc);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -300,8 +276,16 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
               const Icon = FILE_TYPE_ICON[fileType] ?? FileText;
               const statusConfig = STATUS_CONFIG[doc.status];
               const StatusIcon = statusConfig.icon;
+              const isClickable = doc.status === 'completed';
               return (
-                <div key={doc.document_id} className='flex items-center gap-3 px-4 py-3'>
+                <div
+                  key={doc.document_id}
+                  onClick={() => handleCardClick(doc)}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 transition-colors',
+                    isClickable && 'hover:bg-canvas-surface/70 cursor-pointer',
+                  )}
+                >
                   {/* File type icon */}
                   <div
                     className={cn(
@@ -317,11 +301,9 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                     <p className='text-fg-primary truncate text-sm font-medium'>{doc.name}</p>
                     <div className='text-fg-muted flex items-center gap-2 text-xs'>
                       <span>{formatFileSize(doc.size_bytes)}</span>
-                      {doc.status === 'completed' && (
-                        <span>· {doc.chunk_count}개 청크</span>
-                      )}
+                      {doc.status === 'completed' && <span>· {doc.chunk_count}개 청크</span>}
                       {doc.status === 'failed' && doc.error_message && (
-                        <span className='text-red-500 truncate max-w-48' title={doc.error_message}>
+                        <span className='max-w-48 truncate text-red-500' title={doc.error_message}>
                           · {doc.error_message}
                         </span>
                       )}
@@ -329,43 +311,32 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                   </div>
 
                   {/* Status badge */}
-                  <Badge variant='outline' className={cn('shrink-0 text-[10px]', statusConfig.color)}>
-                    <StatusIcon
-                      className={cn(
-                        'mr-1 size-3',
-                        doc.status === 'processing' && 'animate-spin',
-                      )}
-                    />
+                  <Badge
+                    variant='outline'
+                    className={cn('shrink-0 px-2 text-xs [&>svg]:size-4', statusConfig.color)}
+                  >
+                    <StatusIcon className={cn('', doc.status === 'processing' && 'animate-spin')} />
                     {statusConfig.label}
                   </Badge>
 
                   {/* Active toggle */}
-                  <Switch
-                    checked={doc.is_active}
-                    onCheckedChange={() => handleToggle(doc)}
-                    className='shrink-0'
-                    aria-label={doc.is_active ? '비활성화' : '활성화'}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                      checked={doc.is_active}
+                      onCheckedChange={() => handleToggle(doc)}
+                      className='flex shrink-0'
+                      aria-label={doc.is_active ? '비활성화' : '활성화'}
+                    />
+                  </div>
 
                   {/* Actions */}
                   <div className='flex shrink-0 items-center gap-1'>
-                    {doc.status === 'completed' && (
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='text-fg-muted hover:text-fg-primary size-8'
-                        onClick={() => handlePreview(doc)}
-                        aria-label='미리보기'
-                      >
-                        <Eye className='size-3.5' />
-                      </Button>
-                    )}
                     {doc.status === 'failed' && (
                       <Button
                         variant='ghost'
                         size='icon'
                         className='text-fg-muted hover:text-fg-primary size-8'
-                        onClick={() => handleReprocess(doc)}
+                        onClick={(e) => handleReprocess(e, doc)}
                         aria-label='재시도'
                       >
                         <RefreshCw className='size-3.5' />
@@ -375,7 +346,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                       variant='ghost'
                       size='icon'
                       className='text-fg-muted hover:text-destructive size-8'
-                      onClick={() => handleDelete(doc)}
+                      onClick={(e) => handleDelete(e, doc)}
                       aria-label='삭제'
                     >
                       <Trash2 className='size-3.5' />
@@ -401,33 +372,12 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
         </div>
       )}
 
-      {/* Preview Panel */}
-      {previewDoc && (
-        <div className='border-line-primary bg-canvas-surface rounded-lg border'>
-          <div className='flex items-center justify-between border-b px-4 py-3'>
-            <div>
-              <h4 className='text-fg-primary text-sm font-semibold'>{previewDoc.name}</h4>
-              <p className='text-fg-muted text-xs'>
-                {previewDoc.totalChars.toLocaleString()}자
-                {previewDoc.text.length < previewDoc.totalChars && ' (일부만 표시)'}
-              </p>
-            </div>
-            <Button
-              variant='ghost'
-              size='icon'
-              className='size-8'
-              onClick={() => setPreviewDoc(null)}
-            >
-              <X className='size-4' />
-            </Button>
-          </div>
-          <div className='max-h-80 overflow-y-auto p-4'>
-            <pre className='text-fg-secondary whitespace-pre-wrap text-xs leading-relaxed'>
-              {previewDoc.text}
-            </pre>
-          </div>
-        </div>
-      )}
+      {/* Preview Modal */}
+      <KnowledgePreviewModal
+        document={previewTarget}
+        projectId={projectId}
+        onClose={() => setPreviewTarget(null)}
+      />
     </div>
   );
 }

@@ -151,18 +151,34 @@ export interface GlossaryItem {
   term: string;
   definition: string;
   product_group: string | null;
+  synonyms: string[];
+  abbreviations: string[];
+  section_tags: string[];
+  source_document_id: string | null;
+  source_document_name: string | null;
+  is_auto_extracted: boolean;
+  is_approved: boolean;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GlossaryCreate {
   term: string;
   definition: string;
   product_group?: string | null;
+  synonyms?: string[];
+  abbreviations?: string[];
+  section_tags?: string[];
+  source_document_id?: string | null;
 }
 
 export interface GlossaryUpdate {
   term?: string | null;
   definition?: string | null;
   product_group?: string | null;
+  synonyms?: string[] | null;
+  abbreviations?: string[] | null;
+  section_tags?: string[] | null;
 }
 
 export interface GlossaryListResponse {
@@ -171,6 +187,19 @@ export interface GlossaryListResponse {
 
 export interface GlossaryGenerateResponse {
   generated_glossary: GlossaryCreate[];
+}
+
+export interface GlossaryExtractedItem {
+  term: string;
+  definition: string;
+  synonyms: string[];
+  abbreviations: string[];
+  source_document_id: string | null;
+  source_document_name: string | null;
+}
+
+export interface GlossaryExtractResponse {
+  candidates: GlossaryExtractedItem[];
 }
 
 // --- Chat (대화 모드) ---
