@@ -326,6 +326,31 @@ export interface KnowledgeDocumentPreview {
   total_characters: number;
 }
 
+// --- SRS ---
+
+export interface SrsSection {
+  section_id: string | null;
+  title: string;
+  content: string;
+  order_index: number;
+}
+
+export interface SrsDocument {
+  srs_id: string;
+  project_id: string;
+  version: number;
+  status: string;
+  error_message: string | null;
+  sections: SrsSection[];
+  based_on_records: { record_ids?: string[] } | null;
+  based_on_documents: { documents?: { id: string; name: string }[] } | null;
+  created_at: string;
+}
+
+export interface SrsListResponse {
+  documents: SrsDocument[];
+}
+
 // --- Record ---
 
 export type RecordStatus = 'draft' | 'approved' | 'excluded';
