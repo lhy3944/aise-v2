@@ -1,14 +1,23 @@
 'use client';
 
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
+import { usePanelStore } from '@/stores/panel-store';
 import { useReadinessStore } from '@/stores/readiness-store';
-import { BookOpen, CheckCircle2, FolderOpen, LayoutList, XCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { BookOpen, CheckCircle2, FolderOpen, LayoutList, X, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ProjectReadinessCardProps {
   projectId: string;
@@ -21,9 +30,51 @@ const ITEMS = [
   { key: 'sections' as const, icon: LayoutList, tab: 'sections' },
 ];
 
+function ReadinessDetails({
+  onNavigate,
+}: {
+  onNavigate?: (tab: string) => void;
+}) {
+  const data = useReadinessStore((s) => s.data);
+  if (!data) return null;
+
+  return (
+    <div className='flex flex-col gap-1.5'>
+      {ITEMS.map(({ key, icon: Icon, tab }) => {
+        const item = data[key];
+        return (
+          <button
+            key={key}
+            onClick={() => onNavigate?.(tab)}
+            className='hover:bg-canvas-surface flex items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors'
+          >
+            {item.sufficient ? (
+              <CheckCircle2 className='size-4 shrink-0 text-green-500' />
+            ) : (
+              <XCircle className='size-4 shrink-0 text-amber-500' />
+            )}
+            <span className='text-fg-secondary flex-1 text-sm'>{item.label}</span>
+            <Icon className='text-fg-muted size-4 shrink-0' />
+            <span
+              className={cn(
+                'text-sm font-semibold',
+                item.sufficient ? 'text-green-600' : 'text-amber-600',
+              )}
+            >
+              {item.count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ProjectReadinessCard({ projectId, onNavigate }: ProjectReadinessCardProps) {
   const data = useReadinessStore((s) => s.data);
   const fetch = useReadinessStore((s) => s.fetch);
+  const isMobile = usePanelStore((s) => s.isMobile);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     fetch(projectId);
@@ -31,56 +82,56 @@ export function ProjectReadinessCard({ projectId, onNavigate }: ProjectReadiness
 
   if (!data) return null;
 
+  const dotClass = cn('size-2.5 rounded-full', data.is_ready ? 'bg-green-500' : 'bg-amber-500');
+
+  const triggerButton = (
+    <button
+      className={cn(
+        'flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors md:px-3 md:py-1.5',
+        data.is_ready
+          ? 'border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-400'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400',
+      )}
+    >
+      <span className={dotClass} />
+      <span className='hidden text-xs font-medium md:inline'>
+        {data.is_ready ? '준비 완료' : '준비 필요'}
+      </span>
+    </button>
+  );
+
+  // 모바일: Drawer (바텀시트)
+  if (isMobile) {
+    return (
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+        <DrawerContent>
+          <DrawerHeader className='flex items-center justify-between'>
+            <DrawerTitle className='text-sm'>Agent 실행 준비도</DrawerTitle>
+            <DrawerClose className='text-fg-muted'>
+              <X className='size-4' />
+            </DrawerClose>
+          </DrawerHeader>
+          <div className='px-4 pb-6'>
+            <ReadinessDetails
+              onNavigate={(tab) => {
+                setDrawerOpen(false);
+                onNavigate?.(tab);
+              }}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  // 데스크탑: HoverCard (팝오버)
   return (
     <HoverCard openDelay={200} closeDelay={100}>
-      <HoverCardTrigger asChild>
-        <button
-          className={cn(
-            'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-            data.is_ready
-              ? 'border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-400'
-              : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400',
-          )}
-        >
-          <span
-            className={cn(
-              'size-2 rounded-full',
-              data.is_ready ? 'bg-green-500' : 'bg-amber-500',
-            )}
-          />
-          {data.is_ready ? '준비 완료' : '준비 필요'}
-        </button>
-      </HoverCardTrigger>
-      <HoverCardContent align='start' className='w-64 p-3'>
+      <HoverCardTrigger asChild>{triggerButton}</HoverCardTrigger>
+      <HoverCardContent align='end' className='w-56 p-3'>
         <p className='text-fg-primary mb-2 text-xs font-semibold'>Agent 실행 준비도</p>
-        <div className='flex flex-col gap-1.5'>
-          {ITEMS.map(({ key, icon: Icon, tab }) => {
-            const item = data[key];
-            return (
-              <button
-                key={key}
-                onClick={() => onNavigate?.(tab)}
-                className='hover:bg-canvas-surface flex items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors'
-              >
-                {item.sufficient ? (
-                  <CheckCircle2 className='size-3.5 shrink-0 text-green-500' />
-                ) : (
-                  <XCircle className='size-3.5 shrink-0 text-amber-500' />
-                )}
-                <span className='text-fg-secondary flex-1 text-xs'>{item.label}</span>
-                <Icon className='text-fg-muted size-3.5 shrink-0' />
-                <span
-                  className={cn(
-                    'text-xs font-medium',
-                    item.sufficient ? 'text-green-600' : 'text-amber-600',
-                  )}
-                >
-                  {item.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <ReadinessDetails onNavigate={onNavigate} />
       </HoverCardContent>
     </HoverCard>
   );

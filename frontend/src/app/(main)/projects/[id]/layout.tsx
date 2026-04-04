@@ -6,6 +6,7 @@ import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectReadinessCard } from '@/components/projects/ProjectReadinessCard';
 import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
@@ -15,6 +16,13 @@ import { use, useRef } from 'react';
 interface Props {
   params: Promise<{ id: string }>;
 }
+
+const TABS = [
+  { value: 'overview', icon: Box, label: '기본 정보' },
+  { value: 'knowledge', icon: FolderOpen, label: '지식 저장소' },
+  { value: 'glossary', icon: BookOpen, label: '용어 사전' },
+  { value: 'sections', icon: LayoutList, label: '섹션' },
+];
 
 export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
@@ -38,44 +46,30 @@ export default function ProjectDetailLayout({ params }: Props) {
             maxW,
           )}
         >
-          <div className='border-line-subtle flex items-center justify-between border-b'>
-            <TabsList variant='line' className='w-full justify-start'>
-              <TabsTrigger
-                value='overview'
-                data-value='overview'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-              >
-                <Box className='size-4' />
-                기본 정보
-              </TabsTrigger>
-              <TabsTrigger
-                value='knowledge'
-                data-value='knowledge'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-              >
-                <FolderOpen className='size-4' />
-                지식 저장소
-              </TabsTrigger>
-              <TabsTrigger
-                value='glossary'
-                data-value='glossary'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-              >
-                <BookOpen className='size-4' />
-                용어 사전
-              </TabsTrigger>
-              <TabsTrigger
-                value='sections'
-                data-value='sections'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-              >
-                <LayoutList className='size-4' />
-                섹션
-              </TabsTrigger>
+          <div className='border-line-subtle flex items-center border-b'>
+            <TabsList
+              variant='line'
+              className='flex-1 justify-start overflow-x-auto scrollbar-none'
+            >
+              {TABS.map(({ value, icon: Icon, label }) => (
+                <Tooltip key={value}>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value={value}
+                      data-value={value}
+                      className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
+                    >
+                      <Icon className='size-4' />
+                      <span className='hidden md:inline'>{label}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent className='md:hidden'>{label}</TooltipContent>
+                </Tooltip>
+              ))}
             </TabsList>
 
             {/* Readiness indicator */}
-            <div className='shrink-0 pb-1 pr-2'>
+            <div className='shrink-0 pb-1 pl-2 pr-2'>
               <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
             </div>
           </div>
@@ -85,7 +79,10 @@ export default function ProjectDetailLayout({ params }: Props) {
       {/* Content */}
       <div className='flex-1 overflow-y-auto'>
         <div
-          className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
+          className={cn(
+            'mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
+            maxW,
+          )}
         >
           <TabsContent value='overview'>
             <ProjectOverviewTab projectId={id} />
