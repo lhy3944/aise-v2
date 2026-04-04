@@ -1,5 +1,6 @@
 'use client';
 
+import { ActionCards } from '@/components/chat/ActionCards';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
@@ -182,7 +183,11 @@ export function ChatArea() {
                 </div>
               )}
 
-              <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
+              {currentProject && <ActionCards onAction={sendMessage} />}
+
+              <div className='mt-4'>
+                <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
+              </div>
               <div className='flex flex-col items-center justify-center text-xs/5 tracking-normal'>
                 <div className='text-muted-foreground'>
                   AISE can make mistakes. Check important info.
