@@ -45,35 +45,40 @@ export default function ProjectDetailLayout({ params }: Props) {
             maxW,
           )}
         >
-          <div className='flex items-center'>
-            <TabsList variant='line' className='border-line-subtle min-w-0 flex-1 justify-start border-b'>
-              {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
-                <TabsTrigger
-                  key={value}
-                  value={value}
-                  data-value={value}
-                  className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
-                >
-                  <Icon className='size-4' />
-                  <span className='md:hidden'>{shortLabel}</span>
-                  <span className='hidden md:inline'>{label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {/* Readiness indicator */}
-            <div className='shrink-0 pb-1 pl-2 pr-2'>
-              <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
-            </div>
-          </div>
+          <TabsList
+            variant='line'
+            className='border-line-subtle w-full justify-start border-b'
+          >
+            {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                data-value={value}
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
+              >
+                <Icon className='size-4' />
+                <span className='md:hidden'>{shortLabel}</span>
+                <span className='hidden md:inline'>{label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
       </div>
 
       {/* Content */}
-      <div className='flex-1 overflow-y-auto'>
+      <div className='relative flex-1 overflow-y-auto'>
+        {/* Readiness floating button */}
+        <div className='pointer-events-none sticky top-0 z-10'>
+          <div className={cn('mx-auto px-4 sm:px-6', maxW)}>
+            <div className='pointer-events-auto flex justify-end pt-4'>
+              <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
+            </div>
+          </div>
+        </div>
+
         <div
           className={cn(
-            'mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
+            'mx-auto -mt-6 px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
             maxW,
           )}
         >
