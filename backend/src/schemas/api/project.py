@@ -49,6 +49,14 @@ class ProjectUpdate(BaseModel):
         return self
 
 
+class ProjectReadiness(BaseModel):
+    """프로젝트 준비도 요약 (목록용)"""
+    knowledge: int = Field(default=0, description="활성 지식 문서 수")
+    glossary: int = Field(default=0, description="승인 용어 수")
+    sections: int = Field(default=0, description="활성 섹션 수")
+    is_ready: bool = Field(default=False)
+
+
 class ProjectResponse(BaseModel):
     """프로젝트 응답"""
     project_id: str = Field(description="프로젝트 ID")
@@ -59,6 +67,7 @@ class ProjectResponse(BaseModel):
     modules: list[ProjectModule] = Field(default_factory=list)
     member_count: int = Field(default=0, description="멤버 수")
     status: str = Field(default="active", description="프로젝트 상태")
+    readiness: ProjectReadiness | None = Field(default=None, description="준비도")
     created_at: str = Field(description="생성일시")
     updated_at: str = Field(description="수정일시")
 

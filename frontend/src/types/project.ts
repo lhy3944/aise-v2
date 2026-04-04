@@ -8,6 +8,13 @@ export type ProjectStatus = 'active' | 'archived';
 
 // --- Project ---
 
+export interface ProjectReadiness {
+  knowledge: number;
+  glossary: number;
+  sections: number;
+  is_ready: boolean;
+}
+
 export interface Project {
   project_id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface Project {
   modules: ProjectModule[];
   member_count: number;
   status: ProjectStatus;
+  readiness: ProjectReadiness | null;
   created_at: string;
   updated_at: string;
 }

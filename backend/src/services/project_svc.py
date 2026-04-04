@@ -7,9 +7,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import AppException
+from sqlalchemy import func
+
+from src.models.glossary import GlossaryItem
+from src.models.knowledge import KnowledgeDocument
 from src.models.project import Project, ProjectSettings
+from src.models.requirement import RequirementSection
 from src.schemas.api.project import (
     ProjectCreate,
+    ProjectReadiness,
     ProjectUpdate,
     ProjectSettingsUpdate,
     ProjectResponse,
@@ -46,16 +52,50 @@ def _to_settings_response(settings: ProjectSettings) -> ProjectSettingsResponse:
     )
 
 
+async def _get_readiness(db: AsyncSession, project_id: uuid.UUID) -> ProjectReadiness:
+    """프로젝트 준비도 요약 조회"""
+    knowledge = (await db.execute(
+        select(func.count()).where(
+            KnowledgeDocument.project_id == project_id,
+            KnowledgeDocument.is_active == True, KnowledgeDocument.status == "completed",  # noqa: E712
+        )
+    )).scalar() or 0
+
+    glossary = (await db.execute(
+        select(func.count()).where(
+            GlossaryItem.project_id == project_id,
+            GlossaryItem.is_approved == True,  # noqa: E712
+        )
+    )).scalar() or 0
+
+    sections = (await db.execute(
+        select(func.count()).where(
+            RequirementSection.project_id == project_id,
+            RequirementSection.is_active == True,  # noqa: E712
+        )
+    )).scalar() or 0
+
+    return ProjectReadiness(
+        knowledge=knowledge, glossary=glossary, sections=sections,
+        is_ready=knowledge >= 1 and glossary >= 1 and sections >= 1,
+    )
+
+
 async def list_projects(db: AsyncSession) -> ProjectListResponse:
-    """프로젝트 목록 조회"""
+    """프로젝트 목록 조회 (준비도 포함)"""
     result = await db.execute(
         select(Project).order_by(Project.created_at.desc())
     )
     projects = result.scalars().all()
+
+    responses = []
+    for p in projects:
+        resp = _to_project_response(p)
+        resp.readiness = await _get_readiness(db, p.id)
+        responses.append(resp)
+
     logger.debug(f"프로젝트 목록 조회: {len(projects)}건")
-    return ProjectListResponse(
-        projects=[_to_project_response(p) for p in projects]
-    )
+    return ProjectListResponse(projects=responses)
 
 
 async def _get_project_model(db: AsyncSession, project_id: uuid.UUID) -> Project:

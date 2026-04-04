@@ -5,7 +5,7 @@ import { MODULE_COLORS, MODULE_LABELS } from '@/constants/project';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Project } from '@/types/project';
-import { Box, Clock, Trash2, Users } from 'lucide-react';
+import { BookOpen, Box, Clock, FolderOpen, LayoutList, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 
@@ -56,15 +56,41 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           ))}
         </div>
 
-        <div className='text-fg-muted border-line-primary flex items-center gap-4 border-t border-dotted pt-5 text-xs'>
-          <span className='flex items-center gap-1'>
-            <Clock className='size-4' />
-            {formatDate(project.created_at)}
-          </span>
-          <span className='flex items-center gap-1'>
-            <Users className='size-4' />
-            {project.member_count}
-          </span>
+        <div className='text-fg-muted border-line-primary flex items-center justify-between border-t border-dotted pt-5 text-xs'>
+          <div className='flex items-center gap-4'>
+            <span className='flex items-center gap-1'>
+              <Clock className='size-4' />
+              {formatDate(project.created_at)}
+            </span>
+            <span className='flex items-center gap-1'>
+              <Users className='size-4' />
+              {project.member_count}
+            </span>
+          </div>
+
+          {project.readiness && (
+            <div className='flex items-center gap-2'>
+              <span className='flex items-center gap-1'>
+                <FolderOpen className={cn('size-3', project.readiness.knowledge >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-[10px] font-semibold', project.readiness.knowledge >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                  {project.readiness.knowledge}
+                </span>
+              </span>
+              <span className='flex items-center gap-1'>
+                <BookOpen className={cn('size-3', project.readiness.glossary >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-[10px] font-semibold', project.readiness.glossary >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                  {project.readiness.glossary}
+                </span>
+              </span>
+              <span className='flex items-center gap-1'>
+                <LayoutList className={cn('size-3', project.readiness.sections >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-[10px] font-semibold', project.readiness.sections >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                  {project.readiness.sections}
+                </span>
+              </span>
+              <span className={cn('size-2 rounded-full', project.readiness.is_ready ? 'bg-green-500' : 'bg-amber-500')} />
+            </div>
+          )}
         </div>
       </Link>
 

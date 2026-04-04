@@ -3,14 +3,13 @@
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
-import { ProjectReadinessCard } from '@/components/projects/ProjectReadinessCard';
 import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 import { BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
-import { use, useRef } from 'react';
+import { use } from 'react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -26,17 +25,11 @@ const TABS = [
 export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
-  const tabsRef = useRef<HTMLDivElement>(null);
 
   const maxW = layoutMaxW(fullWidthMode);
 
-  function handleReadinessNavigate(tab: string) {
-    const trigger = tabsRef.current?.querySelector(`[data-value="${tab}"]`) as HTMLElement | null;
-    trigger?.click();
-  }
-
   return (
-    <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden' ref={tabsRef}>
+    <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden'>
       {/* Tab Navigation */}
       <div className='bg-canvas-primary'>
         <div
@@ -53,7 +46,6 @@ export default function ProjectDetailLayout({ params }: Props) {
               <TabsTrigger
                 key={value}
                 value={value}
-                data-value={value}
                 className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
               >
                 <Icon className='size-4' />
@@ -66,19 +58,10 @@ export default function ProjectDetailLayout({ params }: Props) {
       </div>
 
       {/* Content */}
-      <div className='relative flex-1 overflow-y-auto'>
-        {/* Readiness floating button */}
-        <div className='pointer-events-none sticky top-0 z-10'>
-          <div className={cn('mx-auto px-4 sm:px-6', maxW)}>
-            <div className='pointer-events-auto flex justify-end pt-4'>
-              <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
-            </div>
-          </div>
-        </div>
-
+      <div className='flex-1 overflow-y-auto'>
         <div
           className={cn(
-            'mx-auto -mt-6 px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
+            'mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
             maxW,
           )}
         >
