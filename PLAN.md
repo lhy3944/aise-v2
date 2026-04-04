@@ -164,7 +164,7 @@
 ### 3.1 Record 데이터 모델 (4-3 기반)
 
 #### 3.1.1 Backend — DB 모델
-- [ ] `Record` 모델 신규 생성:
+- [x] `Record` 모델 신규 생성:
   - `id` (UUID PK)
   - `project_id` (FK → Project)
   - `section_id` (FK → Section)
@@ -177,72 +177,72 @@
   - `is_auto_extracted` (Boolean, default=false)
   - `order_index` (Integer)
   - `created_at`, `updated_at` (DateTime)
-- [ ] Alembic 마이그레이션
+- [x] Alembic 마이그레이션
 
 #### 3.1.2 Backend — Record CRUD API
-- [ ] `GET /projects/{id}/records` — 레코드 목록 (섹션별 그룹핑, 섹션 필터 지원)
-- [ ] `POST /projects/{id}/records` — 레코드 수동 추가 (사용자 직접 작성)
-- [ ] `PUT /projects/{id}/records/{record_id}` — 레코드 수정
-- [ ] `DELETE /projects/{id}/records/{record_id}` — 레코드 삭제
-- [ ] `PATCH /projects/{id}/records/{record_id}/status` — 상태 변경 (approved/excluded)
-- [ ] `PUT /projects/{id}/records/reorder` — 순서 변경
+- [x] `GET /projects/{id}/records` — 레코드 목록 (섹션별 그룹핑, 섹션 필터 지원)
+- [x] `POST /projects/{id}/records` — 레코드 수동 추가 (사용자 직접 작성)
+- [x] `PUT /projects/{id}/records/{record_id}` — 레코드 수정
+- [x] `DELETE /projects/{id}/records/{record_id}` — 레코드 삭제
+- [x] `PATCH /projects/{id}/records/{record_id}/status` — 상태 변경 (approved/excluded)
+- [x] `PUT /projects/{id}/records/reorder` — 순서 변경
 
 ### 3.2 레코드 추출 Agent (4-3)
 
 #### 3.2.1 Backend — 추출 API
-- [ ] `POST /projects/{id}/records/extract` — 전체 레코드 추출 시작
+- [x] `POST /projects/{id}/records/extract` — 전체 레코드 추출 시작
   - 활성 지식 문서 + 활성 섹션 + 승인된 용어 사전을 컨텍스트로 사용
   - 섹션별로 지식 문서 내용을 분석하여 레코드 추출
   - 결과: Record 목록 (content, section_id, source_document_id, source_location, confidence_score)
   - DB 저장 없이 후보 반환 → 사용자 검토 후 승인
-- [ ] `POST /projects/{id}/records/extract-section` — 특정 섹션만 재추출
+- [x] `POST /projects/{id}/records/extract-section` — 특정 섹션만 재추출
   - 기존 해당 섹션 레코드는 유지, 새 후보만 추가 제안
-- [ ] `POST /projects/{id}/records/approve` — 선택한 추출 후보 일괄 승인 저장
+- [x] `POST /projects/{id}/records/approve` — 선택한 추출 후보 일괄 승인 저장
 
 #### 3.2.2 프롬프트
-- [ ] 레코드 추출 프롬프트 작성:
+- [x] 레코드 추출 프롬프트 작성:
   - 입력: 지식 문서 텍스트 + 섹션 목록(이름/설명/출력 형식) + 용어 사전
   - 출력: 섹션별 레코드 목록 + 원문 출처 + 신뢰도
   - 규칙: 원문에 없는 내용 생성 금지, 출처 반드시 명시
-- [ ] 섹션별 재추출 프롬프트 (특정 섹션 집중)
+- [x] 섹션별 재추출 프롬프트 (특정 섹션 집중)
 
 ### 3.3 Agent 레이아웃 재설계 (4-1)
 
 #### 3.3.1 Frontend — 좌패널 재구성
-- [ ] 프로젝트 선택 드롭다운 (현재 프로젝트 표시 + 전환)
-- [ ] 준비도 미니뷰 (문서/용어/섹션 각각 아이콘+숫자, 클릭 시 프로젝트 상세로 이동)
-- [ ] 대화 스레드 리스트 (기존 유지)
+- [x] 프로젝트 선택 드롭다운 (현재 프로젝트 표시 + 전환)
+- [x] 준비도 미니뷰 (문서/용어/섹션 각각 아이콘+숫자, 클릭 시 프로젝트 상세로 이동)
+- [x] 대화 스레드 리스트 (기존 유지)
 
 #### 3.3.2 Frontend — 우패널 재구성
-- [ ] ArtifactPanel 탭 변경: Requirements → **Records** 탭, SRS 탭 유지
+- [x] ArtifactPanel 탭 변경: Requirements → **Records** 탭, SRS 탭 유지
   - Design, TestCase 탭은 추후 Phase용으로 placeholder 유지
-- [ ] Records 탭: 섹션별 그룹핑 레코드 목록
+- [x] Records 탭: 섹션별 그룹핑 레코드 목록
   - 섹션 필터 (드롭다운 또는 탭)
   - 레코드 카드: ID, 섹션, 내용, 출처(문서명+위치), 신뢰도 뱃지
   - 인라인 편집 / 삭제 / 제외 처리
   - 수동 레코드 추가 버튼
-- [ ] 원문 출처 클릭 → 지식 문서 미리보기 모달 (해당 위치 하이라이트)
+- [x] 원문 출처 클릭 → 지식 문서 미리보기 모달 (해당 위치 하이라이트)
 
 #### 3.3.3 Frontend — 패널 비율 조정
-- [ ] 기본 비율: 좌 2 / 중앙 4 / 우 4 로 변경
-- [ ] 현재 프로젝트 컨텍스트를 상단에 항상 표시
+- [x] 기본 비율: 좌 2 / 중앙 4 / 우 4 로 변경
+- [x] 현재 프로젝트 컨텍스트를 상단에 항상 표시
 
 ### 3.4 액션 카드 + 채팅 연동 (4-2, 4-5)
 
 #### 3.4.1 Frontend — 액션 카드
-- [ ] 초기 화면에 워크플로우 진입 액션 카드 표시:
+- [x] 초기 화면에 워크플로우 진입 액션 카드 표시:
   - "레코드 추출 시작" — 항상 표시, 준비도 미충족 시 비활성
   - "SRS 문서 생성" — 추출된 레코드 있을 때 활성
   - "용어집 검토" — 미승인 용어 있을 때 활성
   - "SRS 재생성" — 기존 SRS 버전 있을 때 활성
-- [ ] 프로젝트 준비도에 따라 카드 활성/비활성 처리
-- [ ] 카드 클릭 시 해당 워크플로우 시작 (채팅에 시스템 메시지 + API 호출)
+- [x] 프로젝트 준비도에 따라 카드 활성/비활성 처리
+- [x] 카드 클릭 시 해당 워크플로우 시작 (채팅에 시스템 메시지 + API 호출)
 
 #### 3.4.2 채팅 ↔ 우패널 연동
-- [ ] 에이전트 작업 완료 시 채팅에 결과 요약 메시지 + 해당 탭 이동 버튼
-- [ ] 우패널에서 레코드 수정 시 채팅에 변경 로그 자동 기록
-- [ ] 우패널 탭은 에이전트 작업 완료 시 자동 전환
-- [ ] 채팅에서 "FR 섹션 다시 추출해줘" → 부분 재추출 트리거
+- [x] 에이전트 작업 완료 시 채팅에 결과 요약 메시지 + 해당 탭 이동 버튼
+- [x] 우패널에서 레코드 수정 시 채팅에 변경 로그 자동 기록
+- [x] 우패널 탭은 에이전트 작업 완료 시 자동 전환
+- [x] 채팅에서 "FR 섹션 다시 추출해줘" → 부분 재추출 트리거
 
 ---
 
