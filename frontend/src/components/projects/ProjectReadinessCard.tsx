@@ -8,16 +8,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 import { useReadinessStore } from '@/stores/readiness-store';
 import { BookOpen, CheckCircle2, FolderOpen, LayoutList, X, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button } from '../ui/button';
 
 interface ProjectReadinessCardProps {
   projectId: string;
@@ -30,11 +27,7 @@ const ITEMS = [
   { key: 'sections' as const, icon: LayoutList, tab: 'sections' },
 ];
 
-function ReadinessDetails({
-  onNavigate,
-}: {
-  onNavigate?: (tab: string) => void;
-}) {
+function ReadinessDetails({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const data = useReadinessStore((s) => s.data);
   if (!data) return null;
 
@@ -85,19 +78,17 @@ export function ProjectReadinessCard({ projectId, onNavigate }: ProjectReadiness
   const dotClass = cn('size-2.5 rounded-full', data.is_ready ? 'bg-green-500' : 'bg-amber-500');
 
   const triggerButton = (
-    <button
+    <Button
+      variant={'outline'}
+      size={'xs'}
       className={cn(
-        'flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors md:px-3 md:py-1.5',
-        data.is_ready
-          ? 'border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-400'
-          : 'border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400',
+        'flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors md:px-3 md:py-1.5',
+        data.is_ready ? 'dark:text-green-400' : 'dark:text-amber-400',
       )}
     >
       <span className={dotClass} />
-      <span className='hidden text-xs font-medium md:inline'>
-        {data.is_ready ? '준비 완료' : '준비 필요'}
-      </span>
-    </button>
+      {data.is_ready ? '설정 완료' : '설정 필요'}
+    </Button>
   );
 
   // 모바일: Drawer (바텀시트)

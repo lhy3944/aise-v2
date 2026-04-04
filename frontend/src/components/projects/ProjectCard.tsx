@@ -71,24 +71,24 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           {project.readiness && (
             <div className='flex items-center gap-2'>
               <span className='flex items-center gap-1'>
-                <FolderOpen className={cn('size-3', project.readiness.knowledge >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-[10px] font-semibold', project.readiness.knowledge >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                <FolderOpen className={cn('size-4', project.readiness.knowledge >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-xs font-semibold', project.readiness.knowledge >= 1 ? 'text-green-600' : 'text-amber-600')}>
                   {project.readiness.knowledge}
                 </span>
               </span>
               <span className='flex items-center gap-1'>
-                <BookOpen className={cn('size-3', project.readiness.glossary >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-[10px] font-semibold', project.readiness.glossary >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                <BookOpen className={cn('size-4', project.readiness.glossary >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-xs font-semibold', project.readiness.glossary >= 1 ? 'text-green-600' : 'text-amber-600')}>
                   {project.readiness.glossary}
                 </span>
               </span>
               <span className='flex items-center gap-1'>
-                <LayoutList className={cn('size-3', project.readiness.sections >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-[10px] font-semibold', project.readiness.sections >= 1 ? 'text-green-600' : 'text-amber-600')}>
+                <LayoutList className={cn('size-4', project.readiness.sections >= 1 ? 'text-green-500' : 'text-amber-500')} />
+                <span className={cn('text-xs font-semibold', project.readiness.sections >= 1 ? 'text-green-600' : 'text-amber-600')}>
                   {project.readiness.sections}
                 </span>
               </span>
-              <span className={cn('size-2 rounded-full', project.readiness.is_ready ? 'bg-green-500' : 'bg-amber-500')} />
+              <span className={cn('size-2.5 rounded-full', project.readiness.is_ready ? 'bg-green-500' : 'bg-amber-500')} />
             </div>
           )}
         </div>

@@ -32,7 +32,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   const showRightPanel = rightPanelOpen;
 
   return (
-    <div className='flex flex-1 flex-col'>
+    <div className='flex h-[calc(100dvh-3.75rem)] flex-col'>
       <div ref={containerRef} className='flex flex-1 overflow-hidden'>
         {/* Mobile sidebar buttons */}
         {isMobile && (
@@ -64,10 +64,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
 
         {/* Content area */}
         <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>
-          <div className='relative flex shrink-0 items-center px-2 py-1.5 sm:px-4'>
-            <div className='flex shrink-0 items-center gap-1'>
-              <PanelToggleBar />
-            </div>
+          <div className='relative flex shrink-0 items-center justify-end px-2 py-1.5 sm:px-4'>
             {isMobile && (
               <div className='absolute inset-x-0 flex justify-center pointer-events-none'>
                 <div className='pointer-events-auto min-w-[200px] max-w-[60%]'>
@@ -75,7 +72,8 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
             )}
-            <div className='ml-auto flex shrink-0 items-center gap-1'>
+            <div className='flex shrink-0 items-center gap-1'>
+              <PanelToggleBar />
               <MobileRightDrawer />
             </div>
           </div>
