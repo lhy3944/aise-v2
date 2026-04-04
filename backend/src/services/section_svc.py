@@ -47,11 +47,34 @@ async def _next_order_index(db: AsyncSession, project_id: uuid.UUID) -> int:
     return (max_idx + 1) if max_idx is not None else 0
 
 
+async def _ensure_default_sections(db: AsyncSession, project_id: uuid.UUID) -> None:
+    """기본 섹션이 없으면 자동 생성 (기존 프로젝트 호환)"""
+    from src.models.requirement import DEFAULT_SECTIONS
+
+    result = await db.execute(
+        select(func.count()).where(
+            RequirementSection.project_id == project_id,
+            RequirementSection.is_default == True,  # noqa: E712
+        )
+    )
+    default_count = result.scalar() or 0
+    if default_count > 0:
+        return
+
+    for sec_def in DEFAULT_SECTIONS:
+        section = RequirementSection(project_id=project_id, **sec_def)
+        db.add(section)
+    await db.commit()
+    logger.info(f"기본 섹션 자동 생성: project_id={project_id}")
+
+
 async def get_sections(
     db: AsyncSession,
     project_id: uuid.UUID,
     type_filter: str | None = None,
 ) -> list[SectionResponse]:
+    await _ensure_default_sections(db, project_id)
+
     stmt = select(RequirementSection).where(RequirementSection.project_id == project_id)
     if type_filter is not None:
         stmt = stmt.where(RequirementSection.type == type_filter)

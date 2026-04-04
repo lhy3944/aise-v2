@@ -4,11 +4,12 @@ import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectReadinessCard } from '@/components/projects/ProjectReadinessCard';
+import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
-import { BookOpen, Box, FolderOpen } from 'lucide-react';
+import { BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
 import { use, useRef } from 'react';
 
 interface Props {
@@ -23,7 +24,6 @@ export default function ProjectDetailLayout({ params }: Props) {
   const maxW = layoutMaxW(fullWidthMode);
 
   function handleReadinessNavigate(tab: string) {
-    // TabsTrigger를 프로그래밍적으로 클릭
     const trigger = tabsRef.current?.querySelector(`[data-value="${tab}"]`) as HTMLElement | null;
     trigger?.click();
   }
@@ -38,32 +38,47 @@ export default function ProjectDetailLayout({ params }: Props) {
             maxW,
           )}
         >
-          <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
-            <TabsTrigger
-              value='overview'
-              data-value='overview'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <Box className='size-4' />
-              기본 정보
-            </TabsTrigger>
-            <TabsTrigger
-              value='glossary'
-              data-value='glossary'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <BookOpen className='size-4' />
-              용어 사전
-            </TabsTrigger>
-            <TabsTrigger
-              value='knowledge'
-              data-value='knowledge'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <FolderOpen className='size-4' />
-              지식 소스
-            </TabsTrigger>
-          </TabsList>
+          <div className='border-line-subtle flex items-center justify-between border-b'>
+            <TabsList variant='line' className='w-full justify-start'>
+              <TabsTrigger
+                value='overview'
+                data-value='overview'
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+              >
+                <Box className='size-4' />
+                기본 정보
+              </TabsTrigger>
+              <TabsTrigger
+                value='knowledge'
+                data-value='knowledge'
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+              >
+                <FolderOpen className='size-4' />
+                지식 저장소
+              </TabsTrigger>
+              <TabsTrigger
+                value='glossary'
+                data-value='glossary'
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+              >
+                <BookOpen className='size-4' />
+                용어 사전
+              </TabsTrigger>
+              <TabsTrigger
+                value='sections'
+                data-value='sections'
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
+              >
+                <LayoutList className='size-4' />
+                섹션
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Readiness indicator */}
+            <div className='shrink-0 pb-1 pr-2'>
+              <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -72,19 +87,17 @@ export default function ProjectDetailLayout({ params }: Props) {
         <div
           className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
         >
-          {/* Readiness Card — 모든 탭에서 상단에 표시 */}
-          <div className='mb-6'>
-            <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
-          </div>
-
           <TabsContent value='overview'>
             <ProjectOverviewTab projectId={id} />
+          </TabsContent>
+          <TabsContent value='knowledge'>
+            <ProjectKnowledgeTab projectId={id} />
           </TabsContent>
           <TabsContent value='glossary'>
             <ProjectGlossaryTab projectId={id} />
           </TabsContent>
-          <TabsContent value='knowledge'>
-            <ProjectKnowledgeTab projectId={id} />
+          <TabsContent value='sections'>
+            <ProjectSectionsTab projectId={id} />
           </TabsContent>
         </div>
       </div>

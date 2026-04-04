@@ -14,6 +14,7 @@ import type {
 } from '@/types/project';
 import { Ban, Check, Clock, FileText, Loader2, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useReadinessStore } from '@/stores/readiness-store';
 
 interface ProjectKnowledgeTabProps {
   projectId: string;
@@ -59,6 +60,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlay = useOverlay();
+  const invalidateReadiness = useReadinessStore((s) => s.invalidate);
 
   // 문서 목록 조회
   const fetchDocuments = useCallback(async () => {
@@ -119,9 +121,10 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
       }
 
       await fetchDocuments();
+      invalidateReadiness();
       setUploading(false);
     },
-    [projectId, fetchDocuments, overlay],
+    [projectId, fetchDocuments, overlay, invalidateReadiness],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -161,11 +164,12 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
         setDocuments((prev) =>
           prev.map((d) => (d.document_id === updated.document_id ? updated : d)),
         );
+        invalidateReadiness();
       } catch {
         // 글로벌 핸들링
       }
     },
-    [projectId],
+    [projectId, invalidateReadiness],
   );
 
   // 재처리
@@ -197,13 +201,14 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
           try {
             await knowledgeService.delete(projectId, doc.document_id);
             setDocuments((prev) => prev.filter((d) => d.document_id !== doc.document_id));
+            invalidateReadiness();
           } catch {
             // 글로벌 핸들링
           }
         },
       });
     },
-    [projectId, overlay],
+    [projectId, overlay, invalidateReadiness],
   );
 
   // 카드 클릭 → 미리보기 모달
