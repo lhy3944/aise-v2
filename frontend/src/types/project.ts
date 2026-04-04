@@ -248,18 +248,35 @@ export interface ProjectSettingsUpdate {
   diagram_tool?: string | null;
 }
 
-// --- Knowledge Source (mock - backend not yet implemented) ---
+// --- Knowledge Document ---
 
-export type KnowledgeSourceFileType = 'pdf' | 'md' | 'docx' | 'xlsx' | 'pptx';
-export type KnowledgeSourceStatus = 'processing' | 'ready' | 'error';
+export type KnowledgeDocumentFileType = 'pdf' | 'md' | 'txt';
+export type KnowledgeDocumentStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export interface KnowledgeSource {
-  id: string;
+export interface KnowledgeDocument {
+  document_id: string;
+  project_id: string;
   name: string;
-  file_type: KnowledgeSourceFileType;
+  file_type: KnowledgeDocumentFileType;
   size_bytes: number;
-  uploaded_at: string;
-  status: KnowledgeSourceStatus;
+  status: KnowledgeDocumentStatus;
+  is_active: boolean;
+  error_message: string | null;
+  chunk_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocumentListResponse {
+  documents: KnowledgeDocument[];
+  total: number;
+}
+
+export interface KnowledgeDocumentPreview {
+  document_id: string;
+  name: string;
+  preview_text: string;
+  total_characters: number;
 }
 
 // --- Common ---

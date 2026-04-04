@@ -1,16 +1,24 @@
-"""임베딩 서비스 -- Azure OpenAI text-embedding-3-large"""
+"""임베딩 서비스 -- OpenAI / Azure OpenAI 자동 전환"""
+
+import os
 
 from loguru import logger
 
 from src.core.exceptions import AppException
-from src.services.llm_svc import get_srs_client
+from src.services.llm_svc import get_client, _get_provider
 
 BATCH_SIZE = 100
 
 
+def _get_embedding_model() -> str:
+    if _get_provider() == "openai":
+        return os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    return "text-embedding-3-large"
+
+
 async def get_embeddings(
     texts: list[str],
-    model: str = "text-embedding-3-large",
+    model: str | None = None,
 ) -> list[list[float]]:
     """텍스트 리스트에 대한 임베딩 벡터를 반환한다.
 
@@ -19,7 +27,8 @@ async def get_embeddings(
     if not texts:
         return []
 
-    client = get_srs_client()
+    resolved_model = model or _get_embedding_model()
+    client = get_client()
     all_embeddings: list[list[float]] = []
 
     for i in range(0, len(texts), BATCH_SIZE):
@@ -28,7 +37,7 @@ async def get_embeddings(
 
         try:
             response = await client.embeddings.create(
-                model=model,
+                model=resolved_model,
                 input=batch,
                 dimensions=1536,
             )

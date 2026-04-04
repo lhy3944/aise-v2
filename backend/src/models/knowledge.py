@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, JSON
+from sqlalchemy import Boolean, String, Text, Integer, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,9 +18,10 @@ class KnowledgeDocument(Base):
     file_type: Mapped[str] = mapped_column(String(20), nullable=False)  # pdf, docx, pptx, xlsx, txt, md
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_key: Mapped[str] = mapped_column(String(500), nullable=False)  # MinIO object key
-    status: Mapped[str] = mapped_column(String(20), default="uploading")  # uploading, processing, ready, error
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processing, completed, failed
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

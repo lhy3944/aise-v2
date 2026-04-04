@@ -1,8 +1,13 @@
 """Knowledge Repository API 스키마"""
 
-import uuid
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel
+
+
+# 문서 상태 타입
+DocumentStatus = Literal["pending", "processing", "completed", "failed"]
 
 
 class KnowledgeDocumentResponse(BaseModel):
@@ -11,7 +16,8 @@ class KnowledgeDocumentResponse(BaseModel):
     name: str
     file_type: str
     size_bytes: int
-    status: str
+    status: DocumentStatus
+    is_active: bool
     error_message: str | None = None
     chunk_count: int
     created_at: datetime
@@ -23,6 +29,17 @@ class KnowledgeDocumentResponse(BaseModel):
 class KnowledgeDocumentListResponse(BaseModel):
     documents: list[KnowledgeDocumentResponse]
     total: int
+
+
+class KnowledgeDocumentToggleRequest(BaseModel):
+    is_active: bool
+
+
+class KnowledgeDocumentPreviewResponse(BaseModel):
+    document_id: str
+    name: str
+    preview_text: str
+    total_characters: int
 
 
 class KnowledgeChatRequest(BaseModel):

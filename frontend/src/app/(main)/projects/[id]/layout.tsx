@@ -68,7 +68,7 @@ export default function ProjectDetailLayout({ params }: Props) {
             <ProjectGlossaryTab projectId={id} />
           </TabsContent>
           <TabsContent value='knowledge'>
-            <ProjectKnowledgeTab />
+            <ProjectKnowledgeTab projectId={id} />
           </TabsContent>
         </div>
       </div>

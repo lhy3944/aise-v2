@@ -14,7 +14,7 @@ from src.models.project import Project
 from src.models.requirement import Requirement
 from src.prompts.agent.chat import build_agent_chat_prompt
 from src.services import embedding_svc
-from src.services.llm_svc import get_srs_client, DEFAULT_MODEL
+from src.services.llm_svc import get_client, _get_default_model
 from src.services.rag_svc import search_similar_chunks
 
 
@@ -69,10 +69,10 @@ async def stream_chat(
             f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
         )
 
-        # 7. Azure OpenAI 스트리밍 호출
-        client = get_srs_client()
+        # 7. LLM 스트리밍 호출
+        client = get_client()
         stream = await client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=_get_default_model(),
             messages=messages,
             temperature=0.3,
             max_completion_tokens=4096,

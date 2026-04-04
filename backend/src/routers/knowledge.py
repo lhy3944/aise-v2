@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
@@ -10,7 +10,9 @@ from src.schemas.api.knowledge import (
     KnowledgeChatRequest,
     KnowledgeChatResponse,
     KnowledgeDocumentListResponse,
+    KnowledgeDocumentPreviewResponse,
     KnowledgeDocumentResponse,
+    KnowledgeDocumentToggleRequest,
 )
 from src.services import knowledge_svc, rag_svc
 
@@ -22,9 +24,10 @@ async def upload_document(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    overwrite: bool = Query(False, description="중복 파일 덮어쓰기 여부"),
     db: AsyncSession = Depends(get_db),
 ):
-    return await knowledge_svc.upload_document(project_id, file, db, background_tasks)
+    return await knowledge_svc.upload_document(project_id, file, db, background_tasks, overwrite=overwrite)
 
 
 @router.get("/documents", response_model=KnowledgeDocumentListResponse)
@@ -42,6 +45,35 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
 ):
     return await knowledge_svc.get_document(project_id, document_id, db)
+
+
+@router.patch("/documents/{document_id}/toggle", response_model=KnowledgeDocumentResponse)
+async def toggle_document(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    body: KnowledgeDocumentToggleRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await knowledge_svc.toggle_document(project_id, document_id, body.is_active, db)
+
+
+@router.post("/documents/{document_id}/reprocess", response_model=KnowledgeDocumentResponse)
+async def reprocess_document(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    return await knowledge_svc.reprocess_document(project_id, document_id, db, background_tasks)
+
+
+@router.get("/documents/{document_id}/preview", response_model=KnowledgeDocumentPreviewResponse)
+async def get_document_preview(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    return await knowledge_svc.get_document_preview(project_id, document_id, db)
 
 
 @router.delete("/documents/{document_id}", status_code=204)

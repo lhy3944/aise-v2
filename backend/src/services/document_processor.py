@@ -4,8 +4,8 @@ import uuid
 
 from loguru import logger
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.database import async_session
 from src.core.exceptions import AppException
 from src.models.knowledge import KnowledgeDocument, KnowledgeChunk
 from src.services import storage_svc, embedding_svc
@@ -83,77 +83,79 @@ def _parse_xlsx(data: bytes) -> str:
     return "\n".join(text_parts)
 
 
-async def process_document(document_id: uuid.UUID, db: AsyncSession) -> None:
+async def process_document(document_id: uuid.UUID) -> None:
     """문서 처리 파이프라인: 다운로드 -> 파싱 -> 청킹 -> 임베딩 -> DB 저장
 
-    BackgroundTasks에서 호출되며, 에러 시 document status를 'error'로 업데이트한다.
+    BackgroundTasks에서 호출되며, 독립된 DB 세션을 생성하여 사용한다.
+    에러 시 document status를 'failed'로 업데이트한다.
     """
     logger.info(f"문서 처리 시작: document_id={document_id}")
 
-    # 1. DB에서 문서 조회
-    result = await db.execute(
-        select(KnowledgeDocument).where(KnowledgeDocument.id == document_id)
-    )
-    doc = result.scalar_one_or_none()
-    if not doc:
-        logger.error(f"문서를 찾을 수 없음: document_id={document_id}")
-        return
-
-    try:
-        # 2. MinIO에서 파일 다운로드
-        bucket = storage_svc.get_default_bucket()
-        file_bytes = await storage_svc.download_file(bucket, doc.storage_key)
-        logger.debug(f"파일 다운로드 완료: {len(file_bytes)} bytes")
-
-        # 3. 파싱
-        text = parse_document(file_bytes, doc.file_type)
-        if not text.strip():
-            raise ValueError("문서에서 텍스트를 추출할 수 없습니다.")
-        logger.debug(f"파싱 완료: {len(text)}자")
-
-        # 4. 청킹
-        chunks = chunk_text(text, max_tokens=500, overlap_tokens=50)
-        if not chunks:
-            raise ValueError("청킹 결과가 비어 있습니다.")
-        logger.debug(f"청킹 완료: {len(chunks)}개 청크")
-
-        # 5. 임베딩
-        embeddings = await embedding_svc.get_embeddings(chunks)
-        logger.debug(f"임베딩 완료: {len(embeddings)}개 벡터")
-
-        # 6. KnowledgeChunk 레코드 생성
-        from src.utils.text_chunker import _get_encoding
-        encoding = _get_encoding()
-
-        for i, (chunk_text_content, embedding) in enumerate(zip(chunks, embeddings)):
-            chunk = KnowledgeChunk(
-                document_id=doc.id,
-                project_id=doc.project_id,
-                chunk_index=i,
-                content=chunk_text_content,
-                token_count=len(encoding.encode(chunk_text_content)),
-                embedding=embedding,
-                metadata_={"document_name": doc.name},
-            )
-            db.add(chunk)
-
-        # 7. 문서 상태 업데이트
-        doc.status = "ready"
-        doc.chunk_count = len(chunks)
-        await db.commit()
-
-        logger.info(f"문서 처리 완료: document_id={document_id}, chunks={len(chunks)}")
-
-    except Exception as e:
-        logger.error(f"문서 처리 실패: document_id={document_id}, error={e}")
-        await db.rollback()
-
-        # 에러 상태로 업데이트
+    async with async_session() as db:
+        # 1. DB에서 문서 조회
         result = await db.execute(
             select(KnowledgeDocument).where(KnowledgeDocument.id == document_id)
         )
         doc = result.scalar_one_or_none()
-        if doc:
-            doc.status = "error"
-            doc.error_message = str(e)[:500]
+        if not doc:
+            logger.error(f"문서를 찾을 수 없음: document_id={document_id}")
+            return
+
+        try:
+            # 2. MinIO에서 파일 다운로드
+            bucket = storage_svc.get_default_bucket()
+            file_bytes = await storage_svc.download_file(bucket, doc.storage_key)
+            logger.debug(f"파일 다운로드 완료: {len(file_bytes)} bytes")
+
+            # 3. 파싱
+            text = parse_document(file_bytes, doc.file_type)
+            if not text.strip():
+                raise ValueError("문서에서 텍스트를 추출할 수 없습니다.")
+            logger.debug(f"파싱 완료: {len(text)}자")
+
+            # 4. 청킹
+            chunks = chunk_text(text, max_tokens=500, overlap_tokens=50)
+            if not chunks:
+                raise ValueError("청킹 결과가 비어 있습니다.")
+            logger.debug(f"청킹 완료: {len(chunks)}개 청크")
+
+            # 5. 임베딩
+            embeddings = await embedding_svc.get_embeddings(chunks)
+            logger.debug(f"임베딩 완료: {len(embeddings)}개 벡터")
+
+            # 6. KnowledgeChunk 레코드 생성
+            from src.utils.text_chunker import _get_encoding
+            encoding = _get_encoding()
+
+            for i, (chunk_text_content, embedding) in enumerate(zip(chunks, embeddings)):
+                chunk = KnowledgeChunk(
+                    document_id=doc.id,
+                    project_id=doc.project_id,
+                    chunk_index=i,
+                    content=chunk_text_content,
+                    token_count=len(encoding.encode(chunk_text_content)),
+                    embedding=embedding,
+                    metadata_={"document_name": doc.name},
+                )
+                db.add(chunk)
+
+            # 7. 문서 상태 업데이트
+            doc.status = "completed"
+            doc.chunk_count = len(chunks)
             await db.commit()
+
+            logger.info(f"문서 처리 완료: document_id={document_id}, chunks={len(chunks)}")
+
+        except Exception as e:
+            logger.error(f"문서 처리 실패: document_id={document_id}, error={e}")
+            await db.rollback()
+
+            # 에러 상태로 업데이트 (새 트랜잭션)
+            result = await db.execute(
+                select(KnowledgeDocument).where(KnowledgeDocument.id == document_id)
+            )
+            doc = result.scalar_one_or_none()
+            if doc:
+                doc.status = "failed"
+                doc.error_message = str(e)[:500]
+                await db.commit()
