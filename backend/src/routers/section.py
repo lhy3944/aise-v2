@@ -1,13 +1,12 @@
-"""Requirement Section CRUD API 라우터"""
+"""Requirement Section CRUD + AI 추출 API 라우터"""
 
 import uuid
 
 from fastapi import APIRouter, Depends, Query
-from loguru import logger
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.schemas.api.common import RequirementType
 from src.schemas.api.requirement import (
     SectionCreate,
     SectionUpdate,
@@ -23,13 +22,16 @@ router = APIRouter(
 )
 
 
+class ToggleRequest(BaseModel):
+    is_active: bool
+
+
 @router.get("", response_model=SectionListResponse)
 async def list_sections(
     project_id: uuid.UUID,
-    type: RequirementType | None = Query(default=None, description="요구사항 유형 필터 (fr, qa, constraints, other)"),
+    type: str | None = Query(default=None, description="섹션 유형 필터"),
     db: AsyncSession = Depends(get_db),
 ):
-    """프로젝트의 요구사항 섹션 목록 조회"""
     sections = await section_svc.get_sections(db, project_id, type_filter=type)
     return SectionListResponse(sections=sections)
 
@@ -40,7 +42,6 @@ async def create_section(
     body: SectionCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """요구사항 섹션 생성"""
     return await section_svc.create_section(db, project_id, body)
 
 
@@ -50,7 +51,6 @@ async def reorder_sections(
     body: SectionReorderRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """요구사항 섹션 순서 변경"""
     updated_count = await section_svc.reorder_sections(db, project_id, body)
     return {"updated_count": updated_count}
 
@@ -62,8 +62,18 @@ async def update_section(
     body: SectionUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    """요구사항 섹션 수정"""
     return await section_svc.update_section(db, project_id, section_id, body)
+
+
+@router.patch("/{section_id}/toggle", response_model=SectionResponse)
+async def toggle_section(
+    project_id: uuid.UUID,
+    section_id: uuid.UUID,
+    body: ToggleRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """섹션 활성화/비활성화 토글"""
+    return await section_svc.toggle_section(db, project_id, section_id, body.is_active)
 
 
 @router.delete("/{section_id}", status_code=204)
@@ -72,5 +82,15 @@ async def delete_section(
     section_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """요구사항 섹션 삭제"""
+    """섹션 삭제 (기본 섹션은 삭제 불가)"""
     await section_svc.delete_section(db, project_id, section_id)
+
+
+@router.post("/extract", response_model=SectionListResponse)
+async def extract_sections(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """지식 문서 기반 섹션 후보 AI 추출"""
+    candidates = await section_svc.extract_sections(db, project_id)
+    return SectionListResponse(sections=candidates)

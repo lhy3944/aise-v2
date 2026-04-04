@@ -48,7 +48,12 @@ export interface ProjectListResponse {
 export interface Section {
   section_id: string;
   name: string;
-  type: RequirementType;
+  type: string;
+  description: string | null;
+  output_format_hint: string | null;
+  is_required: boolean;
+  is_default: boolean;
+  is_active: boolean;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -56,11 +61,16 @@ export interface Section {
 
 export interface SectionCreate {
   name: string;
-  type: RequirementType;
+  type: string;
+  description?: string | null;
+  output_format_hint?: string | null;
+  is_required?: boolean;
 }
 
 export interface SectionUpdate {
-  name: string;
+  name?: string | null;
+  description?: string | null;
+  output_format_hint?: string | null;
 }
 
 export interface SectionReorderRequest {

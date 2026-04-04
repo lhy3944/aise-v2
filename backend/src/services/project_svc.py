@@ -87,6 +87,12 @@ async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectRespon
     settings = ProjectSettings(project_id=project.id)
     db.add(settings)
 
+    # 기본 섹션 5종 자동 생성
+    from src.models.requirement import RequirementSection, DEFAULT_SECTIONS
+    for sec_def in DEFAULT_SECTIONS:
+        section = RequirementSection(project_id=project.id, **sec_def)
+        db.add(section)
+
     await db.commit()
     await db.refresh(project)
     logger.info(f"프로젝트 생성: id={project.id}, name={project.name}")
