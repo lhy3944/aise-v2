@@ -318,6 +318,59 @@ export interface KnowledgeDocumentPreview {
   total_characters: number;
 }
 
+// --- Record ---
+
+export type RecordStatus = 'draft' | 'approved' | 'excluded';
+
+export interface Record {
+  record_id: string;
+  project_id: string;
+  section_id: string | null;
+  section_name: string | null;
+  content: string;
+  display_id: string;
+  source_document_id: string | null;
+  source_document_name: string | null;
+  source_location: string | null;
+  confidence_score: number | null;
+  status: RecordStatus;
+  is_auto_extracted: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecordCreate {
+  content: string;
+  section_id?: string | null;
+  source_document_id?: string | null;
+  source_location?: string | null;
+}
+
+export interface RecordUpdate {
+  content?: string | null;
+  section_id?: string | null;
+}
+
+export interface RecordListResponse {
+  records: Record[];
+  total: number;
+}
+
+export interface RecordExtractedItem {
+  content: string;
+  section_id: string | null;
+  section_name: string | null;
+  source_document_id: string | null;
+  source_document_name: string | null;
+  source_location: string | null;
+  confidence_score: number | null;
+}
+
+export interface RecordExtractResponse {
+  candidates: RecordExtractedItem[];
+}
+
 // --- Readiness ---
 
 export interface ReadinessItem {
