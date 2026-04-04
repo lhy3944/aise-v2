@@ -3,12 +3,13 @@
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
+import { ProjectReadinessCard } from '@/components/projects/ProjectReadinessCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 import { BookOpen, Box, FolderOpen } from 'lucide-react';
-import { use } from 'react';
+import { use, useRef } from 'react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -17,11 +18,18 @@ interface Props {
 export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const maxW = layoutMaxW(fullWidthMode);
 
+  function handleReadinessNavigate(tab: string) {
+    // TabsTrigger를 프로그래밍적으로 클릭
+    const trigger = tabsRef.current?.querySelector(`[data-value="${tab}"]`) as HTMLElement | null;
+    trigger?.click();
+  }
+
   return (
-    <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden'>
+    <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden' ref={tabsRef}>
       {/* Tab Navigation */}
       <div className='bg-canvas-primary'>
         <div
@@ -33,6 +41,7 @@ export default function ProjectDetailLayout({ params }: Props) {
           <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
             <TabsTrigger
               value='overview'
+              data-value='overview'
               className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
             >
               <Box className='size-4' />
@@ -40,6 +49,7 @@ export default function ProjectDetailLayout({ params }: Props) {
             </TabsTrigger>
             <TabsTrigger
               value='glossary'
+              data-value='glossary'
               className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
             >
               <BookOpen className='size-4' />
@@ -47,6 +57,7 @@ export default function ProjectDetailLayout({ params }: Props) {
             </TabsTrigger>
             <TabsTrigger
               value='knowledge'
+              data-value='knowledge'
               className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
             >
               <FolderOpen className='size-4' />
@@ -61,6 +72,11 @@ export default function ProjectDetailLayout({ params }: Props) {
         <div
           className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
         >
+          {/* Readiness Card — 모든 탭에서 상단에 표시 */}
+          <div className='mb-6'>
+            <ProjectReadinessCard projectId={id} onNavigate={handleReadinessNavigate} />
+          </div>
+
           <TabsContent value='overview'>
             <ProjectOverviewTab projectId={id} />
           </TabsContent>

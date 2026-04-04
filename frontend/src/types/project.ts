@@ -318,6 +318,21 @@ export interface KnowledgeDocumentPreview {
   total_characters: number;
 }
 
+// --- Readiness ---
+
+export interface ReadinessItem {
+  label: string;
+  count: number;
+  sufficient: boolean;
+}
+
+export interface ReadinessResponse {
+  knowledge: ReadinessItem;
+  glossary: ReadinessItem;
+  sections: ReadinessItem;
+  is_ready: boolean;
+}
+
 // --- Common ---
 
 export interface ErrorDetail {
