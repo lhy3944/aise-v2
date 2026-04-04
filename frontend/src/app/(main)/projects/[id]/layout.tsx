@@ -6,7 +6,6 @@ import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectReadinessCard } from '@/components/projects/ProjectReadinessCard';
 import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
@@ -18,10 +17,10 @@ interface Props {
 }
 
 const TABS = [
-  { value: 'overview', icon: Box, label: '기본 정보' },
-  { value: 'knowledge', icon: FolderOpen, label: '지식 저장소' },
-  { value: 'glossary', icon: BookOpen, label: '용어 사전' },
-  { value: 'sections', icon: LayoutList, label: '섹션' },
+  { value: 'overview', icon: Box, label: '기본 정보', shortLabel: '정보' },
+  { value: 'knowledge', icon: FolderOpen, label: '지식 저장소', shortLabel: '지식' },
+  { value: 'glossary', icon: BookOpen, label: '용어 사전', shortLabel: '용어' },
+  { value: 'sections', icon: LayoutList, label: '섹션', shortLabel: '섹션' },
 ];
 
 export default function ProjectDetailLayout({ params }: Props) {
@@ -46,25 +45,19 @@ export default function ProjectDetailLayout({ params }: Props) {
             maxW,
           )}
         >
-          <div className='border-line-subtle flex items-center border-b'>
-            <TabsList
-              variant='line'
-              className='flex-1 justify-start overflow-x-auto scrollbar-none'
-            >
-              {TABS.map(({ value, icon: Icon, label }) => (
-                <Tooltip key={value}>
-                  <TooltipTrigger asChild>
-                    <TabsTrigger
-                      value={value}
-                      data-value={value}
-                      className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
-                    >
-                      <Icon className='size-4' />
-                      <span className='hidden md:inline'>{label}</span>
-                    </TabsTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent className='md:hidden'>{label}</TooltipContent>
-                </Tooltip>
+          <div className='flex items-center'>
+            <TabsList variant='line' className='border-line-subtle min-w-0 flex-1 justify-start border-b'>
+              {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  data-value={value}
+                  className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
+                >
+                  <Icon className='size-4' />
+                  <span className='md:hidden'>{shortLabel}</span>
+                  <span className='hidden md:inline'>{label}</span>
+                </TabsTrigger>
               ))}
             </TabsList>
 
