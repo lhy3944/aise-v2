@@ -59,7 +59,7 @@ export function ArtifactPanel() {
       </div>
 
       {/* Content */}
-      <div className='flex-1 overflow-hidden'>
+      <div className='min-h-0 flex-1'>
         <TabsContent value='records' className='mt-0 h-full'>
           <RecordsArtifact projectId={currentProject.project_id} />
         </TabsContent>

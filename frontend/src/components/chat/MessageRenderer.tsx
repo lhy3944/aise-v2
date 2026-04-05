@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { ClarifyQuestion } from '@/components/chat/ClarifyQuestion';
 import { ExtractedRequirements } from '@/components/chat/ExtractedRequirements';
 import { GenerateSrsProposal } from '@/components/chat/GenerateSrsProposal';
+import { ToolCall } from '@/components/ui/ai-elements/tool-call';
 import type { ChatMessage } from '@/stores/chat-store';
 
 interface MessageRendererProps {
@@ -149,10 +150,31 @@ function MessageBubble({
 
           return null;
         })}
+
+        {/* Tool Calls */}
+        {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
+          <div className='w-full'>
+            {message.toolCalls.map((tc, i) => (
+              <ToolCall
+                key={i}
+                name={TOOL_DISPLAY_NAMES[tc.name] ?? tc.name}
+                state={tc.state}
+                input={Object.keys(tc.arguments).length > 0 ? tc.arguments : undefined}
+                output={tc.result}
+                error={tc.error}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  extract_records: '레코드 추출',
+  generate_srs: 'SRS 문서 생성',
+};
 
 export function MessageRenderer({
   messages,

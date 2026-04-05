@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface ToolCallData {
+  name: string;
+  arguments: Record<string, unknown>;
+  state: 'running' | 'completed' | 'error';
+  result?: string;
+  error?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -10,6 +18,8 @@ export interface ChatMessage {
     type: 'clarify' | 'requirements' | 'generate_srs';
     data: unknown;
   } | null;
+  /** Function Calling 도구 호출 */
+  toolCalls?: ToolCallData[];
   createdAt: string;
 }
 

@@ -10,22 +10,27 @@ export interface AgentChatRequest {
   history: { role: string; content: string }[];
 }
 
+export interface ToolCallEvent {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface SSEEvent {
-  type: 'token' | 'done' | 'error';
+  type: 'token' | 'tool_call' | 'done' | 'error';
   content?: string;
+  name?: string;
+  arguments?: Record<string, unknown>;
 }
 
 /**
  * Agent Chat SSE 스트리밍 호출
- * @param onToken - 토큰 수신 콜백
- * @param onDone - 완료 콜백
- * @param onError - 에러 콜백
  * @returns abort 함수
  */
 export function streamAgentChat(
   request: AgentChatRequest,
   callbacks: {
     onToken: (token: string) => void;
+    onToolCall: (toolCall: ToolCallEvent) => void;
     onDone: () => void;
     onError: (error: string) => void;
   },
@@ -75,6 +80,14 @@ export function streamAgentChat(
               case 'token':
                 if (event.content) callbacks.onToken(event.content);
                 break;
+              case 'tool_call':
+                if (event.name) {
+                  callbacks.onToolCall({
+                    name: event.name,
+                    arguments: event.arguments ?? {},
+                  });
+                }
+                break;
               case 'done':
                 callbacks.onDone();
                 return;
@@ -88,7 +101,6 @@ export function streamAgentChat(
         }
       }
 
-      // 스트림이 끝났는데 done 이벤트가 없었으면
       callbacks.onDone();
     } catch (err) {
       if (controller.signal.aborted) return;

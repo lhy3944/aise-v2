@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { recordService } from '@/services/record-service';
 import { streamAgentChat } from '@/services/agent-service';
 import { useArtifactStore } from '@/stores/artifact-store';
-import type { ChatMessage } from '@/stores/chat-store';
+import type { ChatMessage, ToolCallData } from '@/stores/chat-store';
 import { useChatStore } from '@/stores/chat-store';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -40,6 +40,12 @@ export function ChatArea() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
 
+  // Record store
+  const setExtracting = useRecordStore((s) => s.setExtracting);
+  const setCandidates = useRecordStore((s) => s.setCandidates);
+  const setExtractError = useRecordStore((s) => s.setExtractError);
+  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
@@ -47,19 +53,63 @@ export function ChatArea() {
     }
   }, [messages.length, isStreaming]);
 
+  // 레코드 추출 실행
+  const triggerExtractRecords = useCallback(
+    async (projectId: string, threadId: string) => {
+      setExtracting(true);
+      setActiveTab('records');
+      setRightPanelPreset(LayoutMode.SPLIT);
+      const updateLast = useChatStore.getState().updateLastAssistantMessage;
+      try {
+        const result = await recordService.extract(projectId);
+        setCandidates(result.candidates);
+        // tool call 상태를 completed로 업데이트
+        updateLast(threadId, (msg) => ({
+          ...msg,
+          toolCalls: msg.toolCalls?.map((tc) =>
+            tc.name === 'extract_records' ? { ...tc, state: 'completed' as const, result: `${result.candidates.length}개 후보 추출` } : tc,
+          ),
+        }));
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : '레코드 추출 실패';
+        setExtractError(errorMsg);
+        updateLast(threadId, (msg) => ({
+          ...msg,
+          toolCalls: msg.toolCalls?.map((tc) =>
+            tc.name === 'extract_records' ? { ...tc, state: 'error' as const, error: errorMsg } : tc,
+          ),
+        }));
+      }
+    },
+    [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
+  );
+
+  // Tool call 실행 디스패처
+  const executeToolCall = useCallback(
+    (threadId: string, name: string, args: Record<string, unknown>) => {
+      if (!currentProject) return;
+      switch (name) {
+        case 'extract_records':
+          triggerExtractRecords(currentProject.project_id, threadId);
+          break;
+        case 'generate_srs':
+          // TODO: SRS 생성 연동
+          break;
+      }
+    },
+    [currentProject, triggerExtractRecords],
+  );
+
   const sendMessage = useCallback(
     (text: string) => {
       if (!text.trim() || !currentProject || isStreaming) return;
 
-      // 1. 세션이 없으면 생성
       let threadId = activeThreadId;
       if (!threadId) {
         threadId = createThread(currentProject.project_id, text);
-        // 우패널 오픈 (대화 시작 시)
         setRightPanelPreset(LayoutMode.SPLIT);
       }
 
-      // 2. 사용자 메시지 추가
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
         role: 'user',
@@ -69,7 +119,6 @@ export function ChatArea() {
       addMessage(threadId, userMsg);
       setInputValue('');
 
-      // 3. 어시스턴트 빈 메시지 추가 (스트리밍용)
       const assistantMsg: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant',
@@ -79,11 +128,12 @@ export function ChatArea() {
       addMessage(threadId, assistantMsg);
       setStreaming(true);
 
-      // 4. SSE 스트리밍 시작
       const history = (useChatStore.getState().getActiveThread()?.messages ?? [])
         .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .slice(0, -2) // 방금 추가한 두 메시지 제외
+        .slice(0, -2)
         .map((m) => ({ role: m.role, content: m.content }));
+
+      const updateLastAssistant = useChatStore.getState().updateLastAssistantMessage;
 
       const abort = streamAgentChat(
         {
@@ -95,13 +145,20 @@ export function ChatArea() {
           onToken: (token) => {
             appendToLastAssistant(threadId!, token);
           },
+          onToolCall: (toolCall) => {
+            const tc: ToolCallData = {
+              name: toolCall.name,
+              arguments: toolCall.arguments,
+              state: 'running',
+            };
+            updateLastAssistant(threadId!, (msg) => ({
+              ...msg,
+              toolCalls: [...(msg.toolCalls ?? []), tc],
+            }));
+            executeToolCall(threadId!, toolCall.name, toolCall.arguments);
+          },
           onDone: () => {
             setStreaming(false);
-            // [EXTRACT_RECORDS] 태그 감지
-            const lastMsg = useChatStore.getState().getActiveThread()?.messages.at(-1);
-            if (lastMsg?.content.includes('[EXTRACT_RECORDS]') && currentProject) {
-              triggerExtractRecords(currentProject.project_id);
-            }
           },
           onError: (error) => {
             appendToLastAssistant(threadId!, `\n\n⚠️ ${error}`);
@@ -113,15 +170,9 @@ export function ChatArea() {
       abortRef.current = abort;
     },
     [
-      currentProject,
-      isStreaming,
-      activeThreadId,
-      createThread,
-      addMessage,
-      setInputValue,
-      appendToLastAssistant,
-      setStreaming,
-      setRightPanelPreset,
+      currentProject, isStreaming, activeThreadId, createThread,
+      addMessage, setInputValue, appendToLastAssistant, setStreaming,
+      setRightPanelPreset, executeToolCall,
     ],
   );
 
@@ -132,15 +183,12 @@ export function ChatArea() {
 
   // Handlers for structured messages
   const handleClarifyAnswer = useCallback(
-    (answer: string) => {
-      sendMessage(answer);
-    },
+    (answer: string) => sendMessage(answer),
     [sendMessage],
   );
 
   const handleAcceptRequirements = useCallback(
     (reqs: { type: string; text: string }[]) => {
-      // TODO: 요구사항을 RequirementsArtifact에 추가하는 로직
       const summary = reqs.map((r) => `[${r.type.toUpperCase()}] ${r.text}`).join('\n');
       sendMessage(`다음 요구사항을 반영했습니다:\n${summary}\n\n계속 진행해주세요.`);
     },
@@ -150,27 +198,6 @@ export function ChatArea() {
   const handleConfirmGenerateSrs = useCallback(() => {
     sendMessage('SRS 문서 생성을 시작해주세요.');
   }, [sendMessage]);
-
-  const setExtracting = useRecordStore((s) => s.setExtracting);
-  const setCandidates = useRecordStore((s) => s.setCandidates);
-  const setExtractError = useRecordStore((s) => s.setExtractError);
-  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
-
-  const triggerExtractRecords = useCallback(
-    async (projectId: string) => {
-      setExtracting(true);
-      setActiveTab('records');
-      setRightPanelPreset(LayoutMode.SPLIT);
-      try {
-        const result = await recordService.extract(projectId);
-        setCandidates(result.candidates);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : '레코드 추출 실패';
-        setExtractError(msg);
-      }
-    },
-    [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
-  );
 
   const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
 

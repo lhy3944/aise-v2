@@ -1,4 +1,4 @@
-"""Agent Chat 서비스 -- SSE 스트리밍 기반 대화"""
+"""Agent Chat 서비스 -- SSE 스트리밍 + Function Calling 기반 대화"""
 
 import json
 import uuid
@@ -17,6 +17,39 @@ from src.services import embedding_svc
 from src.services.llm_svc import get_client, _get_default_model
 from src.services.rag_svc import search_similar_chunks
 
+# Function Calling 도구 정의
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "extract_records",
+            "description": "지식 문서에서 섹션별 레코드를 추출합니다. 사용자가 레코드 추출, 요구사항 추출, 문서 분석 등을 요청할 때 호출합니다.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "section_id": {
+                        "type": "string",
+                        "description": "특정 섹션만 추출할 경우 섹션 ID. 전체 추출 시 생략.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_srs",
+            "description": "승인된 레코드를 기반으로 SRS 문서를 생성합니다. 사용자가 SRS 생성, 문서 작성 등을 요청할 때 호출합니다.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+]
+
 
 async def stream_chat(
     project_id: uuid.UUID,
@@ -24,10 +57,11 @@ async def stream_chat(
     history: list[dict],
     db: AsyncSession,
 ) -> AsyncGenerator[str, None]:
-    """Agent Chat SSE 스트리밍 응답 생성
+    """Agent Chat SSE 스트리밍 응답 생성 (Function Calling 지원)
 
     Yields SSE events:
     - data: {"type": "token", "content": "..."} -- 텍스트 토큰
+    - data: {"type": "tool_call", "name": "...", "arguments": {...}} -- 도구 호출
     - data: {"type": "done"} -- 스트리밍 완료
     - data: {"type": "error", "content": "..."} -- 에러
     """
@@ -69,20 +103,55 @@ async def stream_chat(
             f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
         )
 
-        # 7. LLM 스트리밍 호출
+        # 7. LLM 스트리밍 호출 (Function Calling 포함)
         client = get_client()
         stream = await client.chat.completions.create(
             model=_get_default_model(),
             messages=messages,
+            tools=TOOLS,
             temperature=0.3,
             max_completion_tokens=4096,
             stream=True,
         )
 
+        # 스트리밍 청크 처리 — tool_call과 텍스트를 분리
+        tool_call_chunks: dict[int, dict] = {}  # index → {name, arguments}
+
         async for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                token = chunk.choices[0].delta.content
-                yield _sse_event({"type": "token", "content": token})
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            # 텍스트 토큰
+            if delta.content:
+                yield _sse_event({"type": "token", "content": delta.content})
+
+            # Tool call 청크 누적
+            if delta.tool_calls:
+                for tc in delta.tool_calls:
+                    idx = tc.index
+                    if idx not in tool_call_chunks:
+                        tool_call_chunks[idx] = {"name": "", "arguments": ""}
+                    if tc.function and tc.function.name:
+                        tool_call_chunks[idx]["name"] = tc.function.name
+                    if tc.function and tc.function.arguments:
+                        tool_call_chunks[idx]["arguments"] += tc.function.arguments
+
+        # 스트리밍 완료 후 tool_call 이벤트 전송
+        for idx in sorted(tool_call_chunks.keys()):
+            tc = tool_call_chunks[idx]
+            try:
+                args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+            except json.JSONDecodeError:
+                args = {}
+
+            logger.info(f"Tool call 감지: name={tc['name']}, args={args}")
+            yield _sse_event({
+                "type": "tool_call",
+                "name": tc["name"],
+                "arguments": args,
+            })
 
         yield _sse_event({"type": "done"})
         logger.info(f"Agent Chat 스트리밍 완료: project_id={project_id}")
@@ -97,11 +166,8 @@ async def _fetch_knowledge_chunks(
     message: str,
     db: AsyncSession,
 ) -> list[dict]:
-    """Knowledge Repository에서 관련 청크를 검색한다."""
     try:
         chunks_with_scores = await search_similar_chunks(project_id, message, 5, db)
-
-        # 문서 이름 조회
         doc_ids = {c.document_id for c, _ in chunks_with_scores}
         doc_name_map: dict[uuid.UUID, str] = {}
         if doc_ids:
@@ -125,36 +191,24 @@ async def _fetch_knowledge_chunks(
         return []
 
 
-async def _fetch_glossary(
-    project_id: uuid.UUID,
-    db: AsyncSession,
-) -> list[dict]:
-    """프로젝트 Glossary를 조회한다."""
+async def _fetch_glossary(project_id: uuid.UUID, db: AsyncSession) -> list[dict]:
     try:
         g_result = await db.execute(
             select(GlossaryItem)
             .where(GlossaryItem.project_id == project_id)
             .order_by(GlossaryItem.term)
         )
-        return [
-            {"term": g.term, "definition": g.definition}
-            for g in g_result.scalars().all()
-        ]
+        return [{"term": g.term, "definition": g.definition} for g in g_result.scalars().all()]
     except Exception as e:
         logger.warning(f"Glossary 조회 실패 (계속 진행): {e}")
         return []
 
 
-async def _fetch_requirements(
-    project_id: uuid.UUID,
-    db: AsyncSession,
-) -> list[dict]:
-    """프로젝트의 선택된 요구사항을 조회한다."""
+async def _fetch_requirements(project_id: uuid.UUID, db: AsyncSession) -> list[dict]:
     try:
         r_result = await db.execute(
             select(Requirement)
-            .where(Requirement.project_id == project_id)
-            .where(Requirement.is_selected == True)  # noqa: E712
+            .where(Requirement.project_id == project_id, Requirement.is_selected == True)  # noqa: E712
             .order_by(Requirement.order_index)
         )
         return [
@@ -172,5 +226,4 @@ async def _fetch_requirements(
 
 
 def _sse_event(data: dict) -> str:
-    """SSE 이벤트 문자열 생성"""
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
