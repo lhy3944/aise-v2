@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { recordService } from '@/services/record-service';
-import type { Record as RecordType, RecordStatus } from '@/types/project';
+import { useRecordStore } from '@/stores/record-store';
+import type { Record as RecordType, RecordCreate, RecordExtractedItem, RecordStatus } from '@/types/project';
 import {
   CheckCircle2,
+  Database,
   FileText,
   Loader2,
   MinusCircle,
-  Pencil,
-  Plus,
   Trash2,
   XCircle,
 } from 'lucide-react';
@@ -49,6 +49,13 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
   const [records, setRecords] = useState<RecordType[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionFilter, setSectionFilter] = useState<string | null>(null);
+
+  const extracting = useRecordStore((s) => s.extracting);
+  const candidates = useRecordStore((s) => s.candidates);
+  const extractError = useRecordStore((s) => s.extractError);
+  const clearCandidates = useRecordStore((s) => s.clearCandidates);
+  const [selectedCandidates, setSelectedCandidates] = useState<Set<number>>(new Set());
+  const [approving, setApproving] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     try {
@@ -108,10 +115,174 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
     [projectId],
   );
 
+  // 후보 전체 선택/해제
+  const toggleAllCandidates = useCallback(() => {
+    if (selectedCandidates.size === candidates.length) {
+      setSelectedCandidates(new Set());
+    } else {
+      setSelectedCandidates(new Set(candidates.map((_, i) => i)));
+    }
+  }, [candidates, selectedCandidates.size]);
+
+  const toggleCandidate = useCallback((idx: number) => {
+    setSelectedCandidates((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
+
+  // 선택된 후보 승인
+  const handleApproveCandidates = useCallback(async () => {
+    if (selectedCandidates.size === 0) return;
+    setApproving(true);
+    const items: RecordCreate[] = Array.from(selectedCandidates).map((idx) => {
+      const c = candidates[idx];
+      return {
+        content: c.content,
+        section_id: c.section_id ?? undefined,
+        source_document_id: c.source_document_id ?? undefined,
+        source_location: c.source_location ?? undefined,
+      };
+    });
+
+    try {
+      await recordService.approve(projectId, items);
+      clearCandidates();
+      setSelectedCandidates(new Set());
+      await fetchRecords();
+    } catch {
+      // 글로벌 핸들링
+    } finally {
+      setApproving(false);
+    }
+  }, [projectId, selectedCandidates, candidates, clearCandidates, fetchRecords]);
+
+  // 후보가 도착하면 전체 선택
+  useEffect(() => {
+    if (candidates.length > 0) {
+      setSelectedCandidates(new Set(candidates.map((_, i) => i)));
+    }
+  }, [candidates]);
+
   if (loading) {
     return (
       <div className='flex h-full items-center justify-center'>
         <Loader2 className='text-fg-muted size-6 animate-spin' />
+      </div>
+    );
+  }
+
+  // 추출 중 상태
+  if (extracting) {
+    return (
+      <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
+        <Loader2 className='text-accent-primary mb-3 size-10 animate-spin' />
+        <p className='text-fg-primary text-sm font-medium'>레코드 추출 중...</p>
+        <p className='text-fg-muted mt-1 text-xs'>지식 문서를 분석하고 있습니다</p>
+      </div>
+    );
+  }
+
+  // 추출 에러
+  if (extractError) {
+    return (
+      <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
+        <XCircle className='mb-3 size-10 text-red-500' />
+        <p className='text-fg-primary text-sm font-medium'>추출 실패</p>
+        <p className='text-fg-muted mt-1 text-xs'>{extractError}</p>
+      </div>
+    );
+  }
+
+  // 후보 승인 대기
+  if (candidates.length > 0) {
+    return (
+      <div className='flex h-full flex-col'>
+        {/* Header */}
+        <div className='border-line-primary flex items-center justify-between border-b px-4 py-2'>
+          <div className='flex items-center gap-2'>
+            <Database className='text-accent-primary size-4' />
+            <span className='text-fg-primary text-xs font-semibold'>
+              {candidates.length}개 후보 추출됨
+            </span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-7 text-xs'
+              onClick={toggleAllCandidates}
+            >
+              {selectedCandidates.size === candidates.length ? '전체 해제' : '전체 선택'}
+            </Button>
+            <Button
+              size='sm'
+              className='h-7 text-xs'
+              onClick={handleApproveCandidates}
+              disabled={selectedCandidates.size === 0 || approving}
+            >
+              {approving ? <Loader2 className='mr-1 size-3 animate-spin' /> : null}
+              {selectedCandidates.size}개 승인
+            </Button>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-7 text-xs text-red-500'
+              onClick={clearCandidates}
+            >
+              취소
+            </Button>
+          </div>
+        </div>
+
+        {/* Candidate list */}
+        <ScrollArea className='flex-1'>
+          <div className='p-3'>
+            <div className='flex flex-col gap-1.5'>
+              {candidates.map((candidate, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => toggleCandidate(idx)}
+                  className={cn(
+                    'border-line-primary flex items-start gap-2 rounded-md border px-3 py-2 text-left transition-colors',
+                    selectedCandidates.has(idx)
+                      ? 'border-accent-primary/50 bg-accent-primary/5'
+                      : 'hover:bg-canvas-surface/50',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border',
+                      selectedCandidates.has(idx)
+                        ? 'border-accent-primary bg-accent-primary text-white'
+                        : 'border-line-primary',
+                    )}
+                  >
+                    {selectedCandidates.has(idx) && <CheckCircle2 className='size-3' />}
+                  </div>
+                  <div className='min-w-0 flex-1'>
+                    <div className='mb-1 flex items-center gap-2'>
+                      {candidate.section_name && (
+                        <Badge variant='outline' className='text-[10px]'>
+                          {candidate.section_name}
+                        </Badge>
+                      )}
+                      <ConfidenceBadge score={candidate.confidence_score} />
+                    </div>
+                    <p className='text-fg-primary text-xs leading-relaxed'>{candidate.content}</p>
+                    {candidate.source_document_name && (
+                      <p className='text-fg-muted mt-1 text-[10px]'>
+                        출처: {candidate.source_document_name}
+                        {candidate.source_location && ` · ${candidate.source_location}`}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </ScrollArea>
       </div>
     );
   }

@@ -5,11 +5,14 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
 import { cn } from '@/lib/utils';
+import { recordService } from '@/services/record-service';
 import { streamAgentChat } from '@/services/agent-service';
+import { useArtifactStore } from '@/stores/artifact-store';
 import type { ChatMessage } from '@/stores/chat-store';
 import { useChatStore } from '@/stores/chat-store';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
+import { useRecordStore } from '@/stores/record-store';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef } from 'react';
 
@@ -94,6 +97,11 @@ export function ChatArea() {
           },
           onDone: () => {
             setStreaming(false);
+            // [EXTRACT_RECORDS] 태그 감지
+            const lastMsg = useChatStore.getState().getActiveThread()?.messages.at(-1);
+            if (lastMsg?.content.includes('[EXTRACT_RECORDS]') && currentProject) {
+              triggerExtractRecords(currentProject.project_id);
+            }
           },
           onError: (error) => {
             appendToLastAssistant(threadId!, `\n\n⚠️ ${error}`);
@@ -142,6 +150,27 @@ export function ChatArea() {
   const handleConfirmGenerateSrs = useCallback(() => {
     sendMessage('SRS 문서 생성을 시작해주세요.');
   }, [sendMessage]);
+
+  const setExtracting = useRecordStore((s) => s.setExtracting);
+  const setCandidates = useRecordStore((s) => s.setCandidates);
+  const setExtractError = useRecordStore((s) => s.setExtractError);
+  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
+
+  const triggerExtractRecords = useCallback(
+    async (projectId: string) => {
+      setExtracting(true);
+      setActiveTab('records');
+      setRightPanelPreset(LayoutMode.SPLIT);
+      try {
+        const result = await recordService.extract(projectId);
+        setCandidates(result.candidates);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '레코드 추출 실패';
+        setExtractError(msg);
+      }
+    },
+    [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
+  );
 
   const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
 
