@@ -181,24 +181,6 @@ export function ChatArea() {
     return () => abortRef.current?.();
   }, []);
 
-  // Handlers for structured messages
-  const handleClarifyAnswer = useCallback(
-    (answer: string) => sendMessage(answer),
-    [sendMessage],
-  );
-
-  const handleAcceptRequirements = useCallback(
-    (reqs: { type: string; text: string }[]) => {
-      const summary = reqs.map((r) => `[${r.type.toUpperCase()}] ${r.text}`).join('\n');
-      sendMessage(`다음 요구사항을 반영했습니다:\n${summary}\n\n계속 진행해주세요.`);
-    },
-    [sendMessage],
-  );
-
-  const handleConfirmGenerateSrs = useCallback(() => {
-    sendMessage('SRS 문서 생성을 시작해주세요.');
-  }, [sendMessage]);
-
   const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
 
   return (
@@ -253,28 +235,27 @@ export function ChatArea() {
             </div>
           </motion.div>
         ) : (
-          /* === 대화 모드: 메시지 + 하단 입력 === */
+          /* === 대화 모드: 상단 메시지 + 하단 여백 + 고정 입력 === */
           <motion.div
             key='chat'
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
             className='flex flex-1 flex-col overflow-hidden'
           >
-            {/* 메시지 영역 */}
-            <div ref={scrollRef} className='flex-1 overflow-y-auto px-4 py-4'>
-              <div className={cn('mx-auto', maxW)}>
+            {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
+            <div ref={scrollRef} className='flex-1 overflow-y-auto px-4'>
+              <div className={cn('mx-auto pt-6', maxW)}>
                 <MessageRenderer
                   messages={messages}
                   isStreaming={isStreaming}
-                  onClarifyAnswer={handleClarifyAnswer}
-                  onAcceptRequirements={handleAcceptRequirements}
-                  onConfirmGenerateSrs={handleConfirmGenerateSrs}
                 />
               </div>
+              {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
+              <div className='min-h-[40vh]' />
             </div>
 
-            {/* 하단 입력 */}
-            <div className='shrink-0 border-t border-transparent px-4 pt-2 pb-4'>
+            {/* 하단 고정 입력 */}
+            <div className='shrink-0 px-4 pt-2 pb-4'>
               <div className={cn('mx-auto', maxW)}>
                 <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
               </div>
