@@ -47,17 +47,17 @@ export function Modal({
         className={cn('flex flex-col gap-0 p-0', SIZE_CLASSES[size])}
         showCloseButton={showCloseButton}
         onOpenAutoFocus={(e) => {
-          // Focus the first visible input/textarea inside the modal content
-          // instead of Radix's default focus trap target (close button / dialog itself).
-          // This prevents the autoFocus→focus-steal cycle on mobile.
-          const container = e.target as HTMLElement;
-          const firstInput = container?.querySelector?.<HTMLElement>(
-            'input:not([type=hidden]), textarea, [contenteditable]',
-          );
-          if (firstInput) {
-            e.preventDefault();
-            firstInput.focus();
-          }
+          // Prevent Radix default focus (goes to close button / dialog itself).
+          // Instead, find the first input inside the modal and focus it.
+          // requestAnimationFrame ensures the DOM is settled after open animation.
+          e.preventDefault();
+          requestAnimationFrame(() => {
+            const dialog = document.querySelector<HTMLElement>('[data-slot="dialog-content"]');
+            const firstInput = dialog?.querySelector<HTMLElement>(
+              'input:not([type=hidden]), textarea, [contenteditable]',
+            );
+            firstInput?.focus();
+          });
         }}
         onPointerDownOutside={(e) => {
           if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) {
