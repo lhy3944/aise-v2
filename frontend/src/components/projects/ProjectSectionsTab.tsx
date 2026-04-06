@@ -41,7 +41,12 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    onSubmit({ name: name.trim(), type: type.trim(), description: description.trim(), outputFormatHint: outputFormatHint.trim() });
+    onSubmit({
+      name: name.trim(),
+      type: type.trim(),
+      description: description.trim(),
+      outputFormatHint: outputFormatHint.trim(),
+    });
   };
 
   return (
@@ -151,6 +156,90 @@ function InlineAddRow({ onAdd, onCancel }: InlineAddRowProps) {
   );
 }
 
+/* ─── Drag-and-Drop Hook (Pointer Events — works on desktop + mobile) ─── */
+
+interface UseSectionDragOptions {
+  sections: Section[];
+  onReorder: (reordered: Section[]) => void;
+}
+
+function useSectionDrag({ sections, onReorder }: UseSectionDragOptions) {
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const dragStartY = useRef(0);
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const isDragging = useRef(false);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent, index: number) => {
+    // Only start on grip handle (data-grip attribute)
+    const target = e.target as HTMLElement;
+    if (!target.closest('[data-grip]')) return;
+
+    e.preventDefault();
+    isDragging.current = true;
+    setDragIndex(index);
+    setOverIndex(index);
+    dragStartY.current = e.clientY;
+
+    // Capture pointer so we get events even outside the element
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }, []);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging.current || dragIndex === null) return;
+
+      // Find which row the pointer is over
+      for (const [idx, el] of rowRefs.current.entries()) {
+        const rect = el.getBoundingClientRect();
+        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          setOverIndex(idx);
+          break;
+        }
+      }
+    },
+    [dragIndex],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    if (!isDragging.current || dragIndex === null || overIndex === null) {
+      isDragging.current = false;
+      setDragIndex(null);
+      setOverIndex(null);
+      return;
+    }
+
+    isDragging.current = false;
+
+    if (dragIndex !== overIndex) {
+      const reordered = [...sections];
+      const [moved] = reordered.splice(dragIndex, 1);
+      reordered.splice(overIndex, 0, moved);
+      onReorder(reordered);
+    }
+
+    setDragIndex(null);
+    setOverIndex(null);
+  }, [dragIndex, overIndex, sections, onReorder]);
+
+  const setRowRef = useCallback((index: number, el: HTMLDivElement | null) => {
+    if (el) {
+      rowRefs.current.set(index, el);
+    } else {
+      rowRefs.current.delete(index);
+    }
+  }, []);
+
+  return {
+    dragIndex,
+    overIndex,
+    setRowRef,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+  };
+}
+
 /* ─── Main Component ─── */
 
 export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
@@ -176,6 +265,28 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
     fetchSections();
   }, [fetchSections]);
 
+  /* ─── Drag & Drop ─── */
+
+  const handleReorder = useCallback(
+    async (reordered: Section[]) => {
+      setSections(reordered);
+      try {
+        await sectionService.reorder(projectId, {
+          ordered_ids: reordered.map((s) => s.section_id),
+        });
+      } catch {
+        // Revert on failure
+        fetchSections();
+      }
+    },
+    [projectId, fetchSections],
+  );
+
+  const { dragIndex, overIndex, setRowRef, handlePointerDown, handlePointerMove, handlePointerUp } =
+    useSectionDrag({ sections, onReorder: handleReorder });
+
+  /* ─── Toggle / Delete ─── */
+
   const handleToggle = useCallback(
     async (section: Section) => {
       try {
@@ -184,7 +295,9 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           section.section_id,
           !section.is_active,
         );
-        setSections((prev) => prev.map((s) => (s.section_id === updated.section_id ? updated : s)));
+        setSections((prev) =>
+          prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
+        );
         invalidateReadiness();
       } catch {
         // 글로벌 핸들링
@@ -346,87 +459,100 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
         </div>
 
         <div className='border-line-primary divide-line-primary divide-y rounded-lg border'>
-          {sections.map((section) => (
-            <div
-              key={section.section_id}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3',
-                !section.is_active && 'opacity-50',
-              )}
-            >
-              {/* Drag handle — hidden on mobile */}
-              <GripVertical className='text-fg-muted size-4 shrink-0 cursor-grab max-md:hidden' />
+          {sections.map((section, index) => {
+            const isDragSource = dragIndex === index;
+            const isDropTarget = overIndex === index && dragIndex !== null && dragIndex !== index;
 
-              {/* Content area: name + badges on line 1, type + description on line 2 */}
-              <div className='min-w-0 flex-1'>
-                <div className='flex items-center gap-1.5'>
-                  <p className='text-fg-primary truncate text-sm font-medium'>{section.name}</p>
-                  {section.is_default && (
-                    <Badge variant='secondary' className='shrink-0 gap-1 text-xs'>
-                      <Lock className='size-2.5' />
-                      기본
+            return (
+              <div
+                key={section.section_id}
+                ref={(el) => setRowRef(index, el)}
+                onPointerDown={(e) => handlePointerDown(e, index)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 transition-colors',
+                  !section.is_active && 'opacity-50',
+                  isDragSource && 'bg-canvas-secondary opacity-60',
+                  isDropTarget && 'border-accent-primary border-t-2',
+                )}
+              >
+                {/* Drag handle */}
+                <div
+                  data-grip
+                  className='text-fg-muted shrink-0 cursor-grab touch-none active:cursor-grabbing'
+                >
+                  <GripVertical className='size-4' />
+                </div>
+
+                {/* Content area */}
+                <div className='min-w-0 flex-1'>
+                  <div className='flex items-center gap-1.5'>
+                    <p className='text-fg-primary truncate text-sm font-medium'>{section.name}</p>
+                    {section.is_default && (
+                      <Badge variant='secondary' className='shrink-0 gap-1 text-xs'>
+                        <Lock className='size-2.5' />
+                        기본
+                      </Badge>
+                    )}
+                  </div>
+                  <div className='mt-0.5 flex flex-wrap items-center gap-1.5'>
+                    <Badge variant='default' className='shrink-0 text-xs'>
+                      {section.type}
                     </Badge>
+                    {section.description && (
+                      <span className='text-fg-muted text-xs'>{section.description}</span>
+                    )}
+                  </div>
+                  {section.output_format_hint && (
+                    <p className='text-fg-muted mt-0.5 text-xs italic'>
+                      출력 힌트: {section.output_format_hint}
+                    </p>
                   )}
                 </div>
-                <div className='mt-0.5 flex flex-wrap items-center gap-1.5'>
-                  <Badge variant='default' className='shrink-0 text-xs'>
-                    {section.type}
-                  </Badge>
-                  {section.description && (
-                    <span className='text-fg-muted text-xs'>{section.description}</span>
+
+                {/* Actions: toggle + edit + delete — always far right */}
+                <div className='flex shrink-0 items-center gap-1'>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                      checked={section.is_active}
+                      onCheckedChange={() => handleToggle(section)}
+                      className='shrink-0'
+                      aria-label={section.is_active ? '비활성화' : '활성화'}
+                    />
+                  </div>
+
+                  {!section.is_default && (
+                    <>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='text-fg-muted hover:text-fg-primary size-8 shrink-0'
+                        onClick={() => handleEdit(section)}
+                        aria-label='편집'
+                      >
+                        <Pencil className='size-3.5' />
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='text-fg-muted hover:text-destructive size-8 shrink-0'
+                        onClick={() => handleDelete(section)}
+                        aria-label='삭제'
+                      >
+                        <Trash2 className='size-3.5' />
+                      </Button>
+                    </>
                   )}
+                  {section.is_default && <div className='size-8 shrink-0' />}
                 </div>
-                {section.output_format_hint && (
-                  <p className='text-fg-muted mt-0.5 text-xs italic'>
-                    출력 힌트: {section.output_format_hint}
-                  </p>
-                )}
               </div>
-
-              {/* Actions: toggle + edit + delete — always far right */}
-              <div className='flex shrink-0 items-center gap-1'>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={section.is_active}
-                    onCheckedChange={() => handleToggle(section)}
-                    className='shrink-0'
-                    aria-label={section.is_active ? '비활성화' : '활성화'}
-                  />
-                </div>
-
-                {!section.is_default && (
-                  <>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='text-fg-muted hover:text-fg-primary size-8 shrink-0'
-                      onClick={() => handleEdit(section)}
-                      aria-label='편집'
-                    >
-                      <Pencil className='size-3.5' />
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='text-fg-muted hover:text-destructive size-8 shrink-0'
-                      onClick={() => handleDelete(section)}
-                      aria-label='삭제'
-                    >
-                      <Trash2 className='size-3.5' />
-                    </Button>
-                  </>
-                )}
-                {section.is_default && <div className='size-8 shrink-0' />}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Inline Add Row — desktop only */}
           {adding && !isMobile && (
-            <InlineAddRow
-              onAdd={handleInlineAdd}
-              onCancel={() => setAdding(false)}
-            />
+            <InlineAddRow onAdd={handleInlineAdd} onCancel={() => setAdding(false)} />
           )}
         </div>
       </div>
