@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
 import { BookOpen, Check, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -208,9 +209,22 @@ export function GlossaryTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const productGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const item of items) {
+      if (item.product_group) groups.add(item.product_group);
+    }
+    return Array.from(groups).sort();
+  }, [items]);
 
   const filtered = useMemo(() => {
     let result = items;
+
+    if (activeFilter) {
+      result = result.filter((item) => item.product_group === activeFilter);
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -219,7 +233,7 @@ export function GlossaryTable({
       );
     }
     return result;
-  }, [items, search]);
+  }, [items, search, activeFilter]);
 
   const allSelected = filtered.length > 0 && filtered.every((item) => selectedIds.has(item.glossary_id));
   const someSelected = filtered.some((item) => selectedIds.has(item.glossary_id)) && !allSelected;
