@@ -52,7 +52,9 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-1.5'>
-        <Label htmlFor='section-name'>섹션 이름 *</Label>
+        <Label htmlFor='section-name'>
+          섹션 이름 <span className='text-destructive'>*</span>
+        </Label>
         <Input
           id='section-name'
           placeholder='예: Performance Requirements'
@@ -511,18 +513,9 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                   )}
                 </div>
 
-                {/* Actions: toggle + edit + delete — always far right */}
-                <div className='flex shrink-0 items-center gap-1'>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                      checked={section.is_active}
-                      onCheckedChange={() => handleToggle(section)}
-                      className='shrink-0'
-                      aria-label={section.is_active ? '비활성화' : '활성화'}
-                    />
-                  </div>
-
-                  {!section.is_default && (
+                {/* Edit + Delete buttons */}
+                <div className='flex shrink-0 items-center gap-0.5'>
+                  {!section.is_default ? (
                     <>
                       <Button
                         variant='ghost'
@@ -543,8 +536,18 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                         <Trash2 className='size-3.5' />
                       </Button>
                     </>
+                  ) : (
+                    <div className='w-16 shrink-0' />
                   )}
-                  {section.is_default && <div className='size-8 shrink-0' />}
+                </div>
+
+                {/* Toggle — always far right end */}
+                <div className='shrink-0' onClick={(e) => e.stopPropagation()}>
+                  <Switch
+                    checked={section.is_active}
+                    onCheckedChange={() => handleToggle(section)}
+                    aria-label={section.is_active ? '비활성화' : '활성화'}
+                  />
                 </div>
               </div>
             );
