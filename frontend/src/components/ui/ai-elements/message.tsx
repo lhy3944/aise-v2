@@ -1,9 +1,13 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { cjk } from '@streamdown/cjk';
+import { code } from '@streamdown/code';
+import { math } from '@streamdown/math';
+import { mermaid } from '@streamdown/mermaid';
 import { Bot, Copy, User } from 'lucide-react';
-import { type ReactNode, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { type ReactNode, memo, useCallback } from 'react';
+import { Streamdown } from 'streamdown';
 
 // ── Message Container ──
 
@@ -64,8 +68,8 @@ export function MessageContent({ from, children, className }: MessageContentProp
   return (
     <div
       className={cn(
-        'flex max-w-[85%] flex-col gap-1.5',
-        from === 'user' ? 'items-end' : 'items-start',
+        'flex flex-col gap-1.5',
+        from === 'user' ? 'max-w-[85%] items-end' : 'w-full items-start',
         className,
       )}
     >
@@ -76,28 +80,37 @@ export function MessageContent({ from, children, className }: MessageContentProp
 
 // ── Markdown Response (assistant) ──
 
+const streamdownPlugins = { cjk, code, math, mermaid };
+
 interface MessageResponseProps {
   children: string;
   streaming?: boolean;
   className?: string;
 }
 
-export function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
-  if (!content && !streaming) return null;
+export const MessageResponse = memo(
+  function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
+    if (!content && !streaming) return null;
 
-  return (
-    <div className={cn('text-fg-primary text-sm leading-relaxed', className)}>
-      {content ? (
-        <div className='prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 max-w-none'>
-          <ReactMarkdown>{content}</ReactMarkdown>
-        </div>
-      ) : null}
-      {streaming && (
-        <span className='ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-current align-middle' />
-      )}
-    </div>
-  );
-}
+    return (
+      <div className={cn('text-fg-primary text-base leading-relaxed', className)}>
+        {content ? (
+          <Streamdown
+            className='w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+            plugins={streamdownPlugins}
+            isAnimating={streaming}
+          >
+            {content}
+          </Streamdown>
+        ) : null}
+        {streaming && !content && (
+          <span className='ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-current align-middle' />
+        )}
+      </div>
+    );
+  },
+  (prev, next) => prev.children === next.children && prev.streaming === next.streaming,
+);
 
 // ── User Bubble ──
 
@@ -110,7 +123,7 @@ export function MessageBubble({ children, className }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
+        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-base leading-relaxed whitespace-pre-wrap',
         className,
       )}
     >

@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* font-size overrides */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+
   /* shadcn core */
   --color-background: var(--background);
   --color-foreground: var(--foreground);

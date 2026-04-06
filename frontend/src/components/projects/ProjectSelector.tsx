@@ -72,7 +72,6 @@ export function ProjectSelector({ collapsed = false }: ProjectSelectorProps) {
   }
 
   function handleOpenCreate() {
-    setOpen(false);
     setCreateOpen(true);
   }
 

@@ -2,12 +2,14 @@
 
 import {
   Message,
+  MessageActions,
   MessageBubble,
   MessageContent,
   MessageResponse,
-  MessageActions,
 } from '@/components/ui/ai-elements/message';
+import { Shimmer } from '@/components/ui/ai-elements/shimmer';
 import { ToolCall } from '@/components/ui/ai-elements/tool-call';
+import { Spinner } from '@/components/ui/spinner';
 import type { ChatMessage } from '@/stores/chat-store';
 
 interface MessageRendererProps {
@@ -39,8 +41,18 @@ function MessageItem({
           <MessageBubble>{message.content}</MessageBubble>
         ) : (
           <>
+            {/* 스트림 응답 대기 중 shimmer */}
+            {showCursor && !message.content && (
+              <div className='flex items-center gap-2'>
+                <Spinner className='size-5' />
+                <Shimmer className='text-base' duration={1.5} spread={1.5}>
+                  응답을 생성하고 있습니다...
+                </Shimmer>
+              </div>
+            )}
+
             {/* 텍스트 응답 (마크다운) */}
-            <MessageResponse streaming={showCursor}>
+            <MessageResponse streaming={showCursor && !!message.content}>
               {message.content}
             </MessageResponse>
 
@@ -61,9 +73,7 @@ function MessageItem({
             )}
 
             {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
-            {!showCursor && message.content && (
-              <MessageActions content={message.content} />
-            )}
+            {!showCursor && message.content && <MessageActions content={message.content} />}
           </>
         )}
       </MessageContent>

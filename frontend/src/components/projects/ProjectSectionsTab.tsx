@@ -1,5 +1,21 @@
 'use client';
 
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,88 +174,109 @@ function InlineAddRow({ onAdd, onCancel }: InlineAddRowProps) {
   );
 }
 
-/* ─── Drag-and-Drop Hook (Pointer Events — works on desktop + mobile) ─── */
+/* ─── Sortable Section Row ─── */
 
-interface UseSectionDragOptions {
-  sections: Section[];
-  onReorder: (reordered: Section[]) => void;
+interface SortableSectionRowProps {
+  section: Section;
+  onToggle: (section: Section) => void;
+  onEdit: (section: Section) => void;
+  onDelete: (section: Section) => void;
 }
 
-function useSectionDrag({ sections, onReorder }: UseSectionDragOptions) {
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
-  const dragStartY = useRef(0);
-  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const isDragging = useRef(false);
+function SortableSectionRow({ section, onToggle, onEdit, onDelete }: SortableSectionRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: section.section_id,
+  });
 
-  const handlePointerDown = useCallback((e: React.PointerEvent, index: number) => {
-    // Only start on grip handle (data-grip attribute)
-    const target = e.target as HTMLElement;
-    if (!target.closest('[data-grip]')) return;
-
-    e.preventDefault();
-    isDragging.current = true;
-    setDragIndex(index);
-    setOverIndex(index);
-    dragStartY.current = e.clientY;
-
-    // Capture pointer so we get events even outside the element
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  }, []);
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!isDragging.current || dragIndex === null) return;
-
-      // Find which row the pointer is over
-      for (const [idx, el] of rowRefs.current.entries()) {
-        const rect = el.getBoundingClientRect();
-        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          setOverIndex(idx);
-          break;
-        }
-      }
-    },
-    [dragIndex],
-  );
-
-  const handlePointerUp = useCallback(() => {
-    if (!isDragging.current || dragIndex === null || overIndex === null) {
-      isDragging.current = false;
-      setDragIndex(null);
-      setOverIndex(null);
-      return;
-    }
-
-    isDragging.current = false;
-
-    if (dragIndex !== overIndex) {
-      const reordered = [...sections];
-      const [moved] = reordered.splice(dragIndex, 1);
-      reordered.splice(overIndex, 0, moved);
-      onReorder(reordered);
-    }
-
-    setDragIndex(null);
-    setOverIndex(null);
-  }, [dragIndex, overIndex, sections, onReorder]);
-
-  const setRowRef = useCallback((index: number, el: HTMLDivElement | null) => {
-    if (el) {
-      rowRefs.current.set(index, el);
-    } else {
-      rowRefs.current.delete(index);
-    }
-  }, []);
-
-  return {
-    dragIndex,
-    overIndex,
-    setRowRef,
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
   };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex gap-3 px-4 py-3 transition-colors',
+        !section.is_active && 'opacity-50',
+        isDragging && 'bg-canvas-secondary z-10 opacity-80 shadow-md',
+      )}
+    >
+      {/* Drag handle */}
+      <button
+        type='button'
+        className='text-fg-muted flex shrink-0 cursor-grab self-center touch-none active:cursor-grabbing'
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className='size-4' />
+      </button>
+
+      {/* Content area */}
+      <div className='min-w-0 flex-1'>
+        <div className='flex items-center gap-1.5'>
+          <p className='text-fg-primary truncate text-sm font-medium'>{section.name}</p>
+          {section.is_default && (
+            <Badge variant='secondary' className='shrink-0 gap-1 text-xs'>
+              <Lock className='size-2.5' />
+              기본
+            </Badge>
+          )}
+        </div>
+        <div className='mt-0.5 flex flex-wrap items-center gap-1.5'>
+          <Badge variant='default' className='shrink-0 text-xs'>
+            {section.type}
+          </Badge>
+          {section.description && (
+            <span className='text-fg-muted text-xs'>{section.description}</span>
+          )}
+        </div>
+        {section.output_format_hint && (
+          <p className='text-fg-muted mt-0.5 text-xs italic'>
+            출력 힌트: {section.output_format_hint}
+          </p>
+        )}
+      </div>
+
+      {/* Edit + Delete buttons */}
+      <div className='flex shrink-0 items-center gap-0.5 self-center'>
+        {!section.is_default ? (
+          <>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='text-fg-muted hover:text-fg-primary size-8 shrink-0'
+              onClick={() => onEdit(section)}
+              aria-label='편집'
+            >
+              <Pencil className='size-3.5' />
+            </Button>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='text-fg-muted hover:text-destructive size-8 shrink-0'
+              onClick={() => onDelete(section)}
+              aria-label='삭제'
+            >
+              <Trash2 className='size-3.5' />
+            </Button>
+          </>
+        ) : (
+          <div className='w-16 shrink-0' />
+        )}
+      </div>
+
+      {/* Toggle */}
+      <div className='shrink-0 self-center' onClick={(e) => e.stopPropagation()}>
+        <Switch
+          checked={section.is_active}
+          onCheckedChange={() => onToggle(section)}
+          aria-label={section.is_active ? '비활성화' : '활성화'}
+        />
+      </div>
+    </div>
+  );
 }
 
 /* ─── Main Component ─── */
@@ -267,25 +304,37 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
     fetchSections();
   }, [fetchSections]);
 
-  /* ─── Drag & Drop ─── */
+  /* ─── Drag & Drop (dnd-kit) ─── */
 
-  const handleReorder = useCallback(
-    async (reordered: Section[]) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sections.findIndex((s) => s.section_id === active.id);
+      const newIndex = sections.findIndex((s) => s.section_id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = [...sections];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+
       setSections(reordered);
       try {
         await sectionService.reorder(projectId, {
           ordered_ids: reordered.map((s) => s.section_id),
         });
       } catch {
-        // Revert on failure
         fetchSections();
       }
     },
-    [projectId, fetchSections],
+    [sections, projectId, fetchSections],
   );
-
-  const { dragIndex, overIndex, setRowRef, handlePointerDown, handlePointerMove, handlePointerUp } =
-    useSectionDrag({ sections, onReorder: handleReorder });
 
   /* ─── Toggle / Delete ─── */
 
@@ -460,104 +509,33 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           </Button>
         </div>
 
-        <div className='border-line-primary divide-line-primary divide-y rounded-lg border'>
-          {sections.map((section, index) => {
-            const isDragSource = dragIndex === index;
-            const isDropTarget = overIndex === index && dragIndex !== null && dragIndex !== index;
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={sections.map((s) => s.section_id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className='border-line-primary divide-line-primary divide-y rounded-lg border'>
+              {sections.map((section) => (
+                <SortableSectionRow
+                  key={section.section_id}
+                  section={section}
+                  onToggle={handleToggle}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
 
-            return (
-              <div
-                key={section.section_id}
-                ref={(el) => setRowRef(index, el)}
-                onPointerDown={(e) => handlePointerDown(e, index)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                className={cn(
-                  'flex gap-3 px-4 py-3 transition-colors',
-                  !section.is_active && 'opacity-50',
-                  isDragSource && 'bg-canvas-secondary opacity-60',
-                  isDropTarget && 'border-accent-primary border-t-2',
-                )}
-              >
-                {/* Drag handle — vertically centered */}
-                <div
-                  data-grip
-                  className='text-fg-muted flex shrink-0 cursor-grab self-center touch-none active:cursor-grabbing'
-                >
-                  <GripVertical className='size-4' />
-                </div>
-
-                {/* Content area */}
-                <div className='min-w-0 flex-1'>
-                  <div className='flex items-center gap-1.5'>
-                    <p className='text-fg-primary truncate text-sm font-medium'>{section.name}</p>
-                    {section.is_default && (
-                      <Badge variant='secondary' className='shrink-0 gap-1 text-xs'>
-                        <Lock className='size-2.5' />
-                        기본
-                      </Badge>
-                    )}
-                  </div>
-                  <div className='mt-0.5 flex flex-wrap items-center gap-1.5'>
-                    <Badge variant='default' className='shrink-0 text-xs'>
-                      {section.type}
-                    </Badge>
-                    {section.description && (
-                      <span className='text-fg-muted text-xs'>{section.description}</span>
-                    )}
-                  </div>
-                  {section.output_format_hint && (
-                    <p className='text-fg-muted mt-0.5 text-xs italic'>
-                      출력 힌트: {section.output_format_hint}
-                    </p>
-                  )}
-                </div>
-
-                {/* Edit + Delete buttons — vertically centered */}
-                <div className='flex shrink-0 items-center gap-0.5 self-center'>
-                  {!section.is_default ? (
-                    <>
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='text-fg-muted hover:text-fg-primary size-8 shrink-0'
-                        onClick={() => handleEdit(section)}
-                        aria-label='편집'
-                      >
-                        <Pencil className='size-3.5' />
-                      </Button>
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='text-fg-muted hover:text-destructive size-8 shrink-0'
-                        onClick={() => handleDelete(section)}
-                        aria-label='삭제'
-                      >
-                        <Trash2 className='size-3.5' />
-                      </Button>
-                    </>
-                  ) : (
-                    <div className='w-16 shrink-0' />
-                  )}
-                </div>
-
-                {/* Toggle — always far right end, vertically centered */}
-                <div className='shrink-0 self-center' onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    checked={section.is_active}
-                    onCheckedChange={() => handleToggle(section)}
-                    aria-label={section.is_active ? '비활성화' : '활성화'}
-                  />
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Inline Add Row — desktop only */}
-          {adding && !isMobile && (
-            <InlineAddRow onAdd={handleInlineAdd} onCancel={() => setAdding(false)} />
-          )}
-        </div>
+              {/* Inline Add Row — desktop only */}
+              {adding && !isMobile && (
+                <InlineAddRow onAdd={handleInlineAdd} onCancel={() => setAdding(false)} />
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   );

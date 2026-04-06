@@ -13,8 +13,9 @@ import { useChatStore } from '@/stores/chat-store';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useRecordStore } from '@/stores/record-store';
+import { ArrowDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 
@@ -39,6 +40,7 @@ export function ChatArea() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   // Record store
   const setExtracting = useRecordStore((s) => s.setExtracting);
@@ -46,12 +48,33 @@ export function ChatArea() {
   const setExtractError = useRecordStore((s) => s.setExtractError);
   const setActiveTab = useArtifactStore((s) => s.setActiveTab);
 
-  // Auto-scroll to bottom on new messages
+  const BOTTOM_THRESHOLD = 80;
+
+  // Scroll position tracking
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setIsAtBottom(distanceFromBottom <= BOTTOM_THRESHOLD);
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Auto-scroll only when user is at bottom
+  useEffect(() => {
+    if (isAtBottom && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length, isStreaming]);
+  }, [messages, isAtBottom]);
+
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, []);
 
   // 레코드 추출 실행
   const triggerExtractRecords = useCallback(
@@ -241,20 +264,39 @@ export function ChatArea() {
             className='flex flex-1 flex-col overflow-hidden'
           >
             {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
-            <ScrollArea className='flex-1 overflow-hidden' viewportRef={scrollRef}>
-              <div className={cn('mx-auto px-4 pt-6', maxW)}>
-                <MessageRenderer
-                  messages={messages}
-                  isStreaming={isStreaming}
-                />
-              </div>
-              {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
-              <div className='min-h-[40vh]' />
-            </ScrollArea>
+            <div className='relative flex-1 overflow-hidden'>
+              <ScrollArea className='h-full' viewportRef={scrollRef}>
+                <div className={cn('mx-auto px-4 pt-6 transition-[max-width] duration-300', maxW)}>
+                  <MessageRenderer
+                    messages={messages}
+                    isStreaming={isStreaming}
+                  />
+                </div>
+                {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
+                <div className='min-h-[40vh]' />
+              </ScrollArea>
+
+              {/* Scroll to bottom floating button */}
+              <AnimatePresence>
+                {!isAtBottom && hasMessages && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={scrollToBottom}
+                    className='bg-canvas-surface border-line-primary text-fg-secondary hover:text-fg-primary absolute bottom-3 left-1/2 -translate-x-1/2 cursor-pointer rounded-full border p-2 shadow-md transition-colors'
+                    aria-label='하단으로 스크롤'
+                  >
+                    <ArrowDown className='size-4' />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* 하단 고정 입력 */}
             <div className='shrink-0 px-4 pt-2 pb-4'>
-              <div className={cn('mx-auto', maxW)}>
+              <div className={cn('mx-auto transition-[max-width] duration-300', maxW)}>
                 <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
               </div>
             </div>

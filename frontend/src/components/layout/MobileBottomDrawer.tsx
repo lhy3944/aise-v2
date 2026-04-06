@@ -12,15 +12,12 @@ import {
 } from '@/components/ui/drawer';
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
 import { useChatStore } from '@/stores/chat-store';
-import { useProjectStore } from '@/stores/project-store';
 import { Ellipsis, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { SettingsDialog } from '../overlay/SettingsDialog';
 
 export function MobileBottomDrawer() {
-  const createThread = useChatStore((s) => s.createThread);
   const setActiveThread = useChatStore((s) => s.setActiveThread);
-  const currentProject = useProjectStore((s) => s.currentProject);
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -34,11 +31,7 @@ export function MobileBottomDrawer() {
   }));
 
   const handleCreateThread = () => {
-    if (currentProject) {
-      createThread(currentProject.project_id);
-    } else {
-      setActiveThread(null);
-    }
+    setActiveThread(null);
     setOpen(false);
   };
 
