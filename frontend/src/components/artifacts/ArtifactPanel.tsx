@@ -44,9 +44,9 @@ export function ArtifactPanel() {
       className='flex h-full flex-col'
     >
       {/* Tab Bar */}
-      <div className='shrink-0 px-2 pt-2'>
+      <div className='shrink-0 overflow-hidden px-2 pt-2'>
         <div className='relative'>
-          <ScrollArea className='w-full *:data-[slot=scroll-area-viewport]:overflow-y-hidden'>
+          <ScrollArea className='w-full *:data-[slot=scroll-area-viewport]:!overflow-y-hidden'>
             <TabsList variant='line' className='border-line-subtle w-max min-w-full justify-start pb-0.5'>
               {ARTIFACT_TABS.map((tab) => (
                 <TabsTrigger
@@ -59,11 +59,11 @@ export function ArtifactPanel() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <ScrollBar orientation='horizontal' />
+            <ScrollBar orientation='horizontal' className='h-0.5' />
           </ScrollArea>
           {/* Scroll fade indicators */}
-          <div className='from-background pointer-events-none absolute top-0 bottom-2.5 left-0 w-4 bg-linear-to-r to-transparent' />
-          <div className='from-background pointer-events-none absolute top-0 right-0 bottom-2.5 w-8 bg-linear-to-l to-transparent' />
+          <div className='from-background pointer-events-none absolute inset-y-0 left-0 w-4 bg-linear-to-r to-transparent' />
+          <div className='from-background pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l to-transparent' />
         </div>
       </div>
 
