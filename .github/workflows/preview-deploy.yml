@@ -47,7 +47,7 @@ jobs:
 
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
-            git pull origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
 
             export HOST_IP=$(hostname -I | awk '{print $1}')
 

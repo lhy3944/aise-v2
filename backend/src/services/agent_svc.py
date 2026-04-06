@@ -1,0 +1,229 @@
+"""Agent Chat 서비스 -- SSE 스트리밍 + Function Calling 기반 대화"""
+
+import json
+import uuid
+from collections.abc import AsyncGenerator
+
+from loguru import logger
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.models.glossary import GlossaryItem
+from src.models.knowledge import KnowledgeChunk, KnowledgeDocument
+from src.models.project import Project
+from src.models.requirement import Requirement
+from src.prompts.agent.chat import build_agent_chat_prompt
+from src.services import embedding_svc
+from src.services.llm_svc import get_client, _get_default_model
+from src.services.rag_svc import search_similar_chunks
+
+# Function Calling 도구 정의
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "extract_records",
+            "description": "지식 문서에서 섹션별 레코드를 추출합니다. 사용자가 레코드 추출, 요구사항 추출, 문서 분석 등을 요청할 때 호출합니다.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "section_id": {
+                        "type": "string",
+                        "description": "특정 섹션만 추출할 경우 섹션 ID. 전체 추출 시 생략.",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_srs",
+            "description": "승인된 레코드를 기반으로 SRS 문서를 생성합니다. 사용자가 SRS 생성, 문서 작성 등을 요청할 때 호출합니다.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+]
+
+
+async def stream_chat(
+    project_id: uuid.UUID,
+    message: str,
+    history: list[dict],
+    db: AsyncSession,
+) -> AsyncGenerator[str, None]:
+    """Agent Chat SSE 스트리밍 응답 생성 (Function Calling 지원)
+
+    Yields SSE events:
+    - data: {"type": "token", "content": "..."} -- 텍스트 토큰
+    - data: {"type": "tool_call", "name": "...", "arguments": {...}} -- 도구 호출
+    - data: {"type": "done"} -- 스트리밍 완료
+    - data: {"type": "error", "content": "..."} -- 에러
+    """
+    try:
+        # 1. 프로젝트 조회
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        project = result.scalar_one_or_none()
+        if not project:
+            yield _sse_event({"type": "error", "content": "프로젝트를 찾을 수 없습니다."})
+            return
+
+        # 2. Knowledge 검색 (RAG)
+        knowledge_chunks = await _fetch_knowledge_chunks(project_id, message, db)
+
+        # 3. Glossary 조회
+        glossary = await _fetch_glossary(project_id, db)
+
+        # 4. 기존 요구사항 조회
+        requirements = await _fetch_requirements(project_id, db)
+
+        # 5. 시스템 프롬프트 빌드
+        system_prompt = build_agent_chat_prompt(
+            project_name=project.name,
+            project_description=project.description,
+            project_domain=project.domain,
+            knowledge_context=knowledge_chunks,
+            glossary=glossary,
+            requirements=requirements,
+        )
+
+        # 6. 메시지 구성
+        messages = [{"role": "system", "content": system_prompt}]
+        for h in history:
+            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+        messages.append({"role": "user", "content": message})
+
+        logger.info(
+            f"Agent Chat 스트리밍 시작: project_id={project_id}, "
+            f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
+        )
+
+        # 7. LLM 스트리밍 호출 (Function Calling 포함)
+        client = get_client()
+        stream = await client.chat.completions.create(
+            model=_get_default_model(),
+            messages=messages,
+            tools=TOOLS,
+            temperature=0.3,
+            max_completion_tokens=4096,
+            stream=True,
+        )
+
+        # 스트리밍 청크 처리 — tool_call과 텍스트를 분리
+        tool_call_chunks: dict[int, dict] = {}  # index → {name, arguments}
+
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            # 텍스트 토큰
+            if delta.content:
+                yield _sse_event({"type": "token", "content": delta.content})
+
+            # Tool call 청크 누적
+            if delta.tool_calls:
+                for tc in delta.tool_calls:
+                    idx = tc.index
+                    if idx not in tool_call_chunks:
+                        tool_call_chunks[idx] = {"name": "", "arguments": ""}
+                    if tc.function and tc.function.name:
+                        tool_call_chunks[idx]["name"] = tc.function.name
+                    if tc.function and tc.function.arguments:
+                        tool_call_chunks[idx]["arguments"] += tc.function.arguments
+
+        # 스트리밍 완료 후 tool_call 이벤트 전송
+        for idx in sorted(tool_call_chunks.keys()):
+            tc = tool_call_chunks[idx]
+            try:
+                args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+            except json.JSONDecodeError:
+                args = {}
+
+            logger.info(f"Tool call 감지: name={tc['name']}, args={args}")
+            yield _sse_event({
+                "type": "tool_call",
+                "name": tc["name"],
+                "arguments": args,
+            })
+
+        yield _sse_event({"type": "done"})
+        logger.info(f"Agent Chat 스트리밍 완료: project_id={project_id}")
+
+    except Exception as e:
+        logger.error(f"Agent Chat 스트리밍 실패: {e}")
+        yield _sse_event({"type": "error", "content": f"AI 응답 생성에 실패했습니다: {str(e)}"})
+
+
+async def _fetch_knowledge_chunks(
+    project_id: uuid.UUID,
+    message: str,
+    db: AsyncSession,
+) -> list[dict]:
+    try:
+        chunks_with_scores = await search_similar_chunks(project_id, message, 5, db)
+        doc_ids = {c.document_id for c, _ in chunks_with_scores}
+        doc_name_map: dict[uuid.UUID, str] = {}
+        if doc_ids:
+            doc_result = await db.execute(
+                select(KnowledgeDocument.id, KnowledgeDocument.name)
+                .where(KnowledgeDocument.id.in_(doc_ids))
+            )
+            for did, dname in doc_result.all():
+                doc_name_map[did] = dname
+
+        return [
+            {
+                "document_name": doc_name_map.get(chunk.document_id, "Unknown"),
+                "chunk_index": chunk.chunk_index,
+                "content": chunk.content,
+            }
+            for chunk, score in chunks_with_scores
+        ]
+    except Exception as e:
+        logger.warning(f"Knowledge 검색 실패 (계속 진행): {e}")
+        return []
+
+
+async def _fetch_glossary(project_id: uuid.UUID, db: AsyncSession) -> list[dict]:
+    try:
+        g_result = await db.execute(
+            select(GlossaryItem)
+            .where(GlossaryItem.project_id == project_id)
+            .order_by(GlossaryItem.term)
+        )
+        return [{"term": g.term, "definition": g.definition} for g in g_result.scalars().all()]
+    except Exception as e:
+        logger.warning(f"Glossary 조회 실패 (계속 진행): {e}")
+        return []
+
+
+async def _fetch_requirements(project_id: uuid.UUID, db: AsyncSession) -> list[dict]:
+    try:
+        r_result = await db.execute(
+            select(Requirement)
+            .where(Requirement.project_id == project_id, Requirement.is_selected == True)  # noqa: E712
+            .order_by(Requirement.order_index)
+        )
+        return [
+            {
+                "display_id": r.display_id,
+                "type": r.type,
+                "original_text": r.original_text,
+                "refined_text": r.refined_text,
+            }
+            for r in r_result.scalars().all()
+        ]
+    except Exception as e:
+        logger.warning(f"요구사항 조회 실패 (계속 진행): {e}")
+        return []
+
+
+def _sse_event(data: dict) -> str:
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"

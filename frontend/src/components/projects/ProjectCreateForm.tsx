@@ -9,28 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import type { ProjectCreate, ProjectModule } from '@/types/project';
 import { useState } from 'react';
 
-const MODULE_INFO: {
-  value: ProjectModule;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'requirements',
-    label: 'Requirements',
-    description: '요구사항 관리 + SRS 생성',
-  },
-  {
-    value: 'design',
-    label: 'Design',
-    description: 'UCD/UCS/SAD 설계 문서 생성',
-  },
-  {
-    value: 'testcase',
-    label: 'Test Case',
-    description: '테스트 케이스 자동 생성',
-  },
-];
-
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'All', modules: ['requirements', 'design', 'testcase'] },
   { label: 'Requirements Only', modules: ['requirements'] },

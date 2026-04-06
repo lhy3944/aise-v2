@@ -3,16 +3,24 @@
 import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
+import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
-import { BookOpen, Box, FolderOpen } from 'lucide-react';
+import { BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
 import { use } from 'react';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
+
+const TABS = [
+  { value: 'overview', icon: Box, label: '기본 정보', shortLabel: '정보' },
+  { value: 'knowledge', icon: FolderOpen, label: '지식 저장소', shortLabel: '지식' },
+  { value: 'glossary', icon: BookOpen, label: '용어 사전', shortLabel: '용어' },
+  { value: 'sections', icon: LayoutList, label: '섹션', shortLabel: '섹션' },
+];
 
 export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
@@ -30,28 +38,21 @@ export default function ProjectDetailLayout({ params }: Props) {
             maxW,
           )}
         >
-          <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
-            <TabsTrigger
-              value='overview'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <Box className='size-4' />
-              기본 정보
-            </TabsTrigger>
-            <TabsTrigger
-              value='glossary'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <BookOpen className='size-4' />
-              용어 사전
-            </TabsTrigger>
-            <TabsTrigger
-              value='knowledge'
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary px-6 md:flex-initial'
-            >
-              <FolderOpen className='size-4' />
-              지식 소스
-            </TabsTrigger>
+          <TabsList
+            variant='line'
+            className='border-line-subtle w-full justify-start border-b'
+          >
+            {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
+              >
+                <Icon className='size-4' />
+                <span className='md:hidden'>{shortLabel}</span>
+                <span className='hidden md:inline'>{label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
       </div>
@@ -59,16 +60,22 @@ export default function ProjectDetailLayout({ params }: Props) {
       {/* Content */}
       <div className='flex-1 overflow-y-auto'>
         <div
-          className={cn('mx-auto px-6 py-6 transition-[max-width] duration-300 ease-in-out', maxW)}
+          className={cn(
+            'mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
+            maxW,
+          )}
         >
           <TabsContent value='overview'>
             <ProjectOverviewTab projectId={id} />
           </TabsContent>
+          <TabsContent value='knowledge'>
+            <ProjectKnowledgeTab projectId={id} />
+          </TabsContent>
           <TabsContent value='glossary'>
             <ProjectGlossaryTab projectId={id} />
           </TabsContent>
-          <TabsContent value='knowledge'>
-            <ProjectKnowledgeTab />
+          <TabsContent value='sections'>
+            <ProjectSectionsTab projectId={id} />
           </TabsContent>
         </div>
       </div>

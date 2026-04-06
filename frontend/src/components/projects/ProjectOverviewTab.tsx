@@ -9,17 +9,19 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { MODULE_COLORS, MODULE_LABELS } from '@/constants/project';
 import { useDeferredLoading } from '@/hooks/useDeferredLoading';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useOverlay } from '@/hooks/useOverlay';
 import { ApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
+import { useReadinessStore } from '@/stores/readiness-store';
 import type { Project, ProjectModule } from '@/types/project';
+import { BookOpen, FolderOpen, LayoutList, Pencil, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { Pencil, Trash2 } from 'lucide-react';
 
 const MODULE_PRESETS: { label: string; modules: ProjectModule[] }[] = [
   { label: 'All', modules: ['requirements', 'design', 'testcase'] },
@@ -38,6 +40,8 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
   const overlay = useOverlay();
   const updateProjectInStore = useProjectStore((s) => s.updateProject);
   const removeProjectFromStore = useProjectStore((s) => s.removeProject);
+  const readiness = useReadinessStore((s) => s.data);
+  const fetchReadiness = useReadinessStore((s) => s.fetch);
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +69,8 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchReadiness(projectId);
+  }, [fetchData, fetchReadiness, projectId]);
 
   function resetProjectForm(p: Project) {
     setName(p.name);
@@ -129,7 +134,19 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
   if (loading) return null;
 
   if (!project) {
-    return <p className='text-fg-muted text-sm'>프로젝트를 찾을 수 없습니다.</p>;
+    return (
+      <div className='flex flex-col items-center justify-center py-12 text-center'>
+        {/* <div className='flex items-center gap-2 text-fg-muted'>
+          <Search className='size-6' />
+          <p className='text-sm sm:text-md'>프로젝트를 찾을 수 없습니다.</p>
+        </div> */}
+        <div className='bg-canvas-surface mb-4 flex size-16 items-center justify-center rounded-full'>
+          <Search className='text-fg-muted size-6' />
+        </div>
+        <p className='text-fg-primary text-sm font-medium'>프로젝트를 찾을 수 없습니다.</p>
+        <p className='text-fg-muted mt-1 text-sm'>삭제되었거나 존재하지 않는 프로젝트입니다.</p>
+      </div>
+    );
   }
 
   return (
@@ -244,7 +261,55 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
             <div className='flex items-start justify-between gap-4 pb-5'>
               <div className='flex flex-col gap-1'>
                 <Label variant='field'>프로젝트</Label>
-                <span className='text-sm font-medium'>{project.name}</span>
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm font-medium'>{project.name}</span>
+                  {readiness && (
+                    <HoverCard openDelay={200}>
+                      <HoverCardTrigger asChild>
+                        <span
+                          className={cn(
+                            'size-2.5 shrink-0 cursor-pointer rounded-full',
+                            readiness.is_ready ? 'bg-green-500' : 'bg-amber-500',
+                          )}
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent align='start' className='w-56'>
+                        <p className='mb-2 text-xs font-semibold'>
+                          {readiness.is_ready ? '준비 완료' : '준비 미완료'}
+                        </p>
+                        <div className='flex flex-col gap-1.5 text-xs'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-fg-muted flex items-center gap-1'>
+                              <FolderOpen className='size-3.5' />
+                              지식 문서
+                            </span>
+                            <span className={readiness.knowledge.sufficient ? 'text-green-600' : 'text-amber-600'}>
+                              {readiness.knowledge.count}개
+                            </span>
+                          </div>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-fg-muted flex items-center gap-1'>
+                              <BookOpen className='size-3.5' />
+                              용어
+                            </span>
+                            <span className={readiness.glossary.sufficient ? 'text-green-600' : 'text-fg-muted'}>
+                              {readiness.glossary.count}개
+                            </span>
+                          </div>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-fg-muted flex items-center gap-1'>
+                              <LayoutList className='size-3.5' />
+                              섹션
+                            </span>
+                            <span className={readiness.sections.sufficient ? 'text-green-600' : 'text-amber-600'}>
+                              {readiness.sections.count}개
+                            </span>
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  )}
+                </div>
               </div>
               <div className='flex items-center gap-1'>
                 <Tooltip>
@@ -325,7 +390,7 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
             </div>
 
             {/* 수정일 / 생성일 */}
-            <div className='grid grid-cols-2 gap-3 pt-5'>
+            <div className='grid grid-cols-2 gap-3 py-5'>
               <div className='flex flex-col gap-1'>
                 <Label variant='field'>수정일</Label>
                 <span className='text-sm'>{formatDateTime(project.updated_at)}</span>
@@ -335,6 +400,7 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
                 <span className='text-sm'>{formatDateTime(project.created_at)}</span>
               </div>
             </div>
+
           </div>
         )}
       </div>

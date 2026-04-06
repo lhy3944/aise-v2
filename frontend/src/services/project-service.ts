@@ -6,6 +6,7 @@ import type {
   ProjectSettings,
   ProjectSettingsUpdate,
   ProjectUpdate,
+  ReadinessResponse,
 } from '@/types/project';
 
 const BASE = '/api/v1/projects';
@@ -25,4 +26,6 @@ export const projectService = {
 
   updateSettings: (id: string, data: ProjectSettingsUpdate) =>
     api.put<ProjectSettings>(`${BASE}/${id}/settings`, data),
+
+  getReadiness: (id: string) => api.get<ReadinessResponse>(`${BASE}/${id}/readiness`),
 };

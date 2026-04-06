@@ -1,260 +1,324 @@
 # AISE 2.0 - 작업 계획 (PLAN)
 
-> 요구사항 문서: `docs/requirements/` (FR-PF, FR-RQ, FR-TC)
-> API 인터페이스: `docs/interface.md`
 > 진행 상황: `PROGRESS.md`
 
 ---
 
-## Phase 1: MVP — 프로젝트 + 요구사항 + AI 어시스트
+## Phase 1: MVP — 프로젝트 + 요구사항 + AI 어시스트 ✅ 완료
 
 > 핵심 가치: "요구사항을 입력하면 AI가 정제/보완해주는" 기본 루프 완성
+> ※ Phase 2에서 Record 기반으로 전환됨. 기존 Requirements/Assist 코드는 레퍼런스로 보존.
+
+<details>
+<summary>Phase 1 상세 (접기)</summary>
 
 ### 1.1 인프라 / 기반
 - [x] PostgreSQL DB 연결 설정 (SQLAlchemy + asyncpg)
 - [x] DB 마이그레이션 설정 (Alembic)
 - [x] Azure OpenAI 연동 서비스 (`services/llm_svc.py`) — Responses API 기반
 - [x] Frontend API 클라이언트 설정 (Backend 연동)
-- [ ] ~~SSO(Keycloak) 연동~~ → Phase 6으로 이동
 
 ### 1.2 프로젝트 관리 (FR-PF-02)
 - [x] DB 모델: Project
 - [x] API: Project CRUD (`/api/v1/projects`)
 - [x] API: 프로젝트 설정 (`/api/v1/projects/{id}/settings`)
-- [x] API: 모듈 선택 (All / Requirements+Design / Test Case)
-- [x] Frontend: 프로젝트 목록 페이지
-- [x] Frontend: 프로젝트 생성/수정/삭제
+- [x] API: 모듈 선택
+- [x] Frontend: 프로젝트 목록/생성/수정/삭제
 
-### 1.3 요구사항 관리 (FR-RQ-01)
-- [x] DB 모델: Requirement (type: FR/QA/Constraints/Other)
-- [x] API: Requirement CRUD (`/api/v1/projects/{id}/requirements`)
-- [x] API: 요구사항 일괄 선택/해제
-- [x] API: 요구사항 저장 (버전 생성)
-- [x] Frontend: 요구사항 입력/목록 페이지 (FR/QA/Constraints/Other 탭)
-- [x] Frontend: 요구사항 선택/수정/삭제 UI
-- [x] DB: `display_id` (자동 넘버링, 예: FR-001) + `order_index` (드래그 순서) 필드 추가 (FR-RQ-01-20~21)
-- [x] API: 요구사항 생성 시 `display_id` 자동 부여 (타입별 max seq + 1)
-- [x] API: 요구사항 순서 변경 (`PUT /requirements/reorder`) (FR-RQ-01-21)
-- [x] Frontend: 요구사항 테이블 뷰 (넘버링/내용/포함여부/액션) (FR-RQ-01-22)
-- [x] Frontend: 드래그 앤 드롭 순서 변경
+### 1.3 요구사항 관리 (FR-RQ-01) → Phase 2에서 Record로 대체
+- [x] Requirement CRUD + 넘버링 + 순서 변경 + 테이블 뷰
+- [x] 섹션(그룹핑) CRUD + 드래그 앤 드롭
 
-### 1.4 AI 어시스트 — 구조화 모드 (FR-RQ-01-01~03)
-- [x] API: 자연어 → 요구사항 정제 (`/api/v1/projects/{id}/assist/refine`)
-- [x] API: 보완/제안 (`/api/v1/projects/{id}/assist/suggest`)
-- [x] 프롬프트: 정제(refine) 프롬프트 작성
-- [x] 프롬프트: 보완/제안 프롬프트 작성
-- [x] Frontend: 원본 vs LLM 제안 비교 UI
-- [x] Frontend: 제안 수락/거절 인터랙션
+### 1.4~1.5 AI 어시스트 → Phase 3에서 Agent Chat으로 대체
+- [x] 구조화 모드 (Refine, Suggest)
+- [x] 대화 모드 (Chat + 요구사항 추출)
 
-### 1.5 AI 어시스트 — 대화 모드 (FR-RQ-01-04~07)
-- [x] API: 대화형 요구사항 정의 Chat (`/api/v1/projects/{id}/assist/chat`)
-- [x] API: 대화에서 FR/QA/Constraints/Other 자동 추출 + 추가 제안
-- [x] 프롬프트: 대화 모드 프롬프트 (대화 → 요구사항 추출)
-- [x] Frontend: 대화 모드 Chat 인터페이스
-- [x] Frontend: 추출된 요구사항 수락/거절/수정 UI
-- [x] Frontend: 구조화 모드 ↔ 대화 모드 전환 UI
-- [x] Frontend: 대화 모드 하단에 요구사항 테이블 현황 표시 (FR/QA/CON 탭)
+### 1.6 Glossary → Phase 2에서 확장
+- [x] Glossary CRUD + AI 자동 생성
 
-#### 1.5.1 대화 모드 개선 (FR-RQ-01-04~06 재설계)
-- [x] 프롬프트: 자연스러운 대화체 톤으로 변경 (정형화된 질문 나열 → 자연스러운 대화)
-- [x] 프롬프트: 기존 요구사항을 배경 컨텍스트로만 활용 (중복 방지, 명시적 나열 X)
-- [x] 프롬프트: 추출 타이밍 변경 — 매 응답 자동 추출 → 사용자 요청 시에만 ('정리해줘' 등)
-- [x] 프롬프트: 명확한 입력은 즉시 정제 제안 + 모호한 입력은 대화로 구체화
-- [x] 프롬프트: 대화 내 refine 지원 ('이거 다듬어줘' → 정제 결과 제안)
-- [x] API: 추출 결과를 타입별(FR/QA/CON) 그룹화하여 반환 (프론트에서 그룹화)
-- [x] Frontend: 추출 결과를 타입별 체크박스 목록으로 표시 (ExtractedRequirementList)
-- [x] Frontend: 체크한 항목 확인 다이얼로그 → 테이블에 반영
+### 1.7 Knowledge Repository → Phase 2에서 확장
+- [x] Backend: pgvector + MinIO + RAG Chat API
+- [x] Frontend: API 연동 (Phase 2.1에서 처리)
 
-### 1.6 Glossary (FR-RQ-01-17~19)
-- [x] DB 모델: Glossary
-- [x] API: Glossary CRUD (`/api/v1/projects/{id}/glossary`)
-- [x] API: Glossary 자동 생성
-- [x] Frontend: 용어 관리 페이지
+### 1.8 Frontend 구조 재설계
+- [x] /agent 라우트 + ArtifactPanel + RequirementsArtifact
+
+</details>
 
 ---
 
-## Phase 2: Review + 섹션 그룹핑 + SRS 생성 + Import/Classification
+## Phase 2: 프로젝트 기반 — 지식 저장소 + 용어 사전 + 섹션 관리 + 준비도
 
-> 핵심 가치: "입력 품질 검증 → SRS 문서 생성" 파이프라인 완성
+> 핵심 가치: "Agent 실행 전 프로젝트 기반 데이터를 준비하는" 단계 완성
+> 의존성: Phase 1 인프라 (DB, MinIO, LLM) 활용
 
-### 2.0 요구사항 섹션(그룹핑) 기능 (FR-RQ-01-23~30) ★ 최우선
-- [x] DB 모델: RequirementSection (project_id, type, name, order_index)
-- [x] API: 섹션 CRUD (`/api/v1/projects/{id}/requirement-sections`)
-- [x] API: 섹션 순서 변경 (`PUT /requirement-sections/reorder`)
-- [x] API: 요구사항에 section_id 필드 추가 + 섹션 간 이동
-- [x] API: 요구사항 조회 시 섹션별 그룹핑 응답
-- [x] Frontend: 섹션 추가/이름변경/삭제 UI
-- [x] Frontend: 섹션별 접기/펼치기 (collapse/expand)
-- [x] Frontend: 요구사항 드래그 앤 드롭으로 섹션 간 이동
-- [x] Frontend: 섹션 헤더 드래그로 섹션 순서 변경
-- [ ] SRS 생성 시 섹션 구조 → 문서 챕터 반영 (2.2와 연동)
-- [ ] Import/Classification 시 섹션 자동 추출 (2.4와 연동)
+### 2.1 지식 저장소 강화 (3-1)
 
-### 2.1 요구사항 Review (FR-RQ-02)
-- [x] API: 요구사항 Review (`/api/v1/projects/{id}/review/requirements`)
-- [ ] API: Review 수정 제안 수락/거절 흐름
-- [x] 프롬프트: Review 프롬프트 작성 (충돌/중복/모호성 검출 + 수정 제안)
-- [ ] Frontend: Review 결과 표시 + 수정 제안 수락/거절 UI
+#### 2.1.1 Backend — DB 모델 확장
+- [x] KnowledgeDocument에 `is_active` (Boolean, default=true) 필드 추가
+- [x] KnowledgeDocument 상태값 정리: uploading→pending, processing, ready→completed, error→failed
+- [x] Alembic 마이그레이션 생성 + 양쪽 DB 적용
 
-### 2.2 SRS 생성 (FR-RQ-07)
-- [ ] API: SRS 생성 (`/api/v1/projects/{id}/srs/generate`)
-- [ ] API: SRS 조회
-- [ ] Deep Agents: SRS 생성 에이전트 (`agents/srs_agent.py`)
-- [ ] 프롬프트: SRS 생성 프롬프트 (IEEE 830 템플릿 기반)
-- [ ] Frontend: SRS 생성 요청 + 미리보기 페이지 + 진행률 표시
+#### 2.1.2 Backend — API 확장
+- [x] `PATCH /documents/{id}/toggle` — 활성화/비활성화 토글
+- [x] 문서 목록 조회 시 `is_active` 필드 포함
+- [x] 업로드 시 중복 파일 감지 (동일 project + 동일 파일명) → 409 응답 + 클라이언트에서 덮어쓰기 확인
+- [x] 문서 미리보기 API: `GET /documents/{id}/preview` — 첫 N줄 또는 첫 페이지 텍스트 반환
+- [x] 지원 포맷 제한: txt, md, pdf (기존 docx/pptx/xlsx는 추후 확장)
 
-### 2.3 SRS Review (FR-RQ-08)
-- [ ] API: SRS Review (`/api/v1/projects/{id}/srs/{id}/review`)
-- [ ] API: SRS Review 수정 제안 수락/거절 (`/api/v1/.../review/{id}/apply`)
-- [ ] API: SRS 재생성 (`/api/v1/projects/{id}/srs/{id}/regenerate`)
-- [ ] 프롬프트: SRS Review 프롬프트 (완전성/일관성/명확성 검토)
-- [ ] Frontend: SRS Review 결과 + 섹션별 수정 제안 UI
+#### 2.1.3 Frontend — ProjectKnowledgeTab API 연동
+- [x] Mock 데이터 → 실제 API 호출로 교체 (목록, 업로드, 삭제)
+- [x] 문서별 상태 표시: pending / processing / completed / failed (아이콘 + 텍스트)
+- [x] 활성화/비활성화 토글 스위치 UI
+- [x] 중복 업로드 시 확인 다이얼로그 ("덮어쓰기 하시겠습니까?")
+- [x] 문서 클릭 시 미리보기 패널/모달 (원문 텍스트 표시)
+- [x] 실패 문서: 에러 메시지 표시 + 재업로드 버튼
 
-### 2.4 Import / Classification (FR-PF-05, FR-RQ-06)
-- [ ] API: 파일 업로드 (`/api/v1/projects/{id}/import/file`)
-- [ ] API: 문서 파싱 + 미리보기 (`/api/v1/projects/{id}/import/{id}/parse`)
-- [ ] API: Jira Import (`/api/v1/projects/{id}/import/jira`)
-- [ ] API: Classification 요청 — 2-pass 방식 (`/api/v1/projects/{id}/classify`)
-- [ ] 프롬프트: 1차 pass 프롬프트 (문서 구조/섹션 파악)
-- [ ] 프롬프트: 2차 pass 프롬프트 (섹션별 FR/QA/Constraints/Other 추출)
-- [ ] Classification 후처리: 중복 탐지 + 신뢰도 산출
-- [ ] Frontend: 문서 업로드 + 파싱 미리보기 UI
-- [ ] Frontend: 분류 결과 확인/수정/재분류 UI + 진행률 표시
-- [ ] Frontend: Classification → 요구사항 목록 자동 반영 UI
+### 2.2 용어 사전 확장 (3-2)
 
-### 2.5 Export (FR-PF-05)
-- [ ] API: Export (`/api/v1/projects/{id}/export`) — PDF, Markdown, Word
-- [ ] API: Jira/Polarion 업로드
-- [ ] `utils/` 변환기: Markdown → PDF, Markdown → Word
+#### 2.2.1 Backend — DB 모델 확장
+- [x] GlossaryItem에 필드 추가:
+  - `source_document_id` (UUID FK → KnowledgeDocument, nullable, SET NULL)
+  - `synonyms` (ARRAY(String), default=[])
+  - `abbreviations` (ARRAY(String), default=[])
+  - `section_tags` (ARRAY(String), default=[])
+  - `is_auto_extracted` (Boolean, default=false) — AI 추출 여부
+  - `is_approved` (Boolean, default=false) — 사용자 승인 여부
+  - `created_at`, `updated_at` (DateTime)
+- [x] Alembic 마이그레이션
+
+#### 2.2.2 Backend — API 확장
+- [x] `POST /glossary/extract` — **지식 문서 기반** 용어 후보 추출 (기존 generate는 요구사항 기반)
+  - 활성 지식 문서의 chunk를 컨텍스트로 사용
+  - 추출 결과: term, definition, source_document_id, synonyms, abbreviations
+  - DB 저장 없이 후보 목록 반환 (사용자 검토 후 저장)
+- [x] `POST /glossary/approve` — 선택한 후보 일괄 승인 저장
+- [x] `PUT /glossary/{id}` 확장 — synonyms, abbreviations, section_tags 수정 지원
+- [x] 프롬프트: 지식 문서 기반 용어 추출 프롬프트 작성
+- [x] 재추출 시 기존 수동 편집 항목(`is_auto_extracted=false`) 보존 로직
+
+#### 2.2.3 Frontend — 용어 사전 UI 개선
+- [x] 용어 목록에 출처 문서, 동의어, 약어, 섹션 태그 컬럼 표시
+- [x] AI 추출 버튼 → 후보 목록 표시 → 체크박스 선택 → 승인 저장
+- [x] 수동 추가 시 동의어/약어/섹션 태그 입력 필드
+- [x] 승인 상태 뱃지 (승인됨 / 미승인)
+
+### 2.3 섹션 관리 재설계 (3-3)
+
+#### 2.3.1 Backend — DB 모델 재설계
+- [x] RequirementSection 확장 (또는 새 Section 모델):
+  - `description` (Text, nullable) — 섹션 설명/목적
+  - `output_format_hint` (Text, nullable) — 출력 형식 힌트
+  - `is_required` (Boolean, default=false) — 필수 여부
+  - `is_default` (Boolean, default=false) — 기본 제공 섹션 여부
+  - `is_active` (Boolean, default=true) — 활성화 상태
+  - `type` 필드 제거 또는 자유 문자열로 변경 (FR/QA/Constraints 고정 → 자유 섹션명)
+- [x] Alembic 마이그레이션
+- [x] 프로젝트 생성 시 기본 5종 섹션 자동 생성:
+  - Overview (필수, 삭제불가)
+  - Functional Requirements (필수, 삭제불가)
+  - Quality Attributes (필수, 삭제불가)
+  - Constraints (필수, 삭제불가)
+  - Interfaces (필수, 삭제불가)
+
+#### 2.3.2 Backend — API 수정
+- [x] 섹션 삭제 시 `is_default=true`이면 400 에러 (비활성화만 허용)
+- [x] `PATCH /sections/{id}/toggle` — 활성화/비활성화 토글
+- [x] `POST /sections/extract` — 지식 문서 기반 섹션 후보 AI 추출
+  - 활성 지식 문서 분석 → 추가 섹션 후보 제안
+  - 사용자 검토 후 저장
+- [x] 섹션 목록 조회 시 `is_active`, `is_default`, `is_required` 포함
+- [x] 프롬프트: 지식 문서 기반 섹션 추출 프롬프트 작성
+
+#### 2.3.3 Frontend — 섹션 관리 UI
+- [x] 프로젝트 상세 내 섹션 관리 탭/페이지
+- [x] 기본 섹션 5종: 삭제 버튼 비활성, 비활성화 토글만 표시
+- [x] 커스텀 섹션 추가: 이름, 설명, 출력 형식 힌트, 필수 여부 입력
+- [x] AI 섹션 추출 버튼 → 후보 목록 → 선택 저장
+- [x] 드래그 앤 드롭 순서 변경 (SRS 출력 순서 반영)
+- [x] 섹션별 설명/출력 형식 힌트 인라인 편집
+
+### 2.4 프로젝트 준비도 (3-4)
+
+#### 2.4.1 Backend — API
+- [x] `GET /projects/{id}/readiness` — 준비도 조회
+  - `knowledge_count`: 활성 지식 문서 수 (completed 상태)
+  - `glossary_approved_count`: 승인된 용어 수
+  - `active_section_count`: 활성 섹션 수
+  - `is_ready`: 최소 기준 충족 여부 (문서 ≥1, 용어 ≥1, 섹션 ≥1)
+  - 각 항목별 상태 (sufficient / insufficient)
+
+#### 2.4.2 Frontend — 준비도 UI
+- [x] 프로젝트 상세 페이지에 준비도 카드 표시
+- [x] 각 항목 클릭 시 해당 탭(지식/용어/섹션)으로 이동
+- [x] 미비 항목 시각적 강조 (경고 아이콘 + 색상)
+- [x] Agent 진입 시점에도 준비도 미니뷰 표시 (좌패널)
+
+---
+
+## Phase 3: Agent 코어 — 레이아웃 + 레코드 추출
+
+> 핵심 가치: "지식 문서에서 AI가 섹션별 레코드를 추출하는" 핵심 워크플로우 완성
+> 의존성: Phase 2 (지식 문서, 섹션, 용어 사전이 준비된 상태)
+
+### 3.1 Record 데이터 모델 (4-3 기반)
+
+#### 3.1.1 Backend — DB 모델
+- [x] `Record` 모델 신규 생성:
+  - `id` (UUID PK)
+  - `project_id` (FK → Project)
+  - `section_id` (FK → Section)
+  - `content` (Text) — 레코드 본문
+  - `display_id` (String) — 자동 넘버링 (예: OVR-001, FR-001)
+  - `source_document_id` (FK → KnowledgeDocument, nullable)
+  - `source_location` (String, nullable) — 원문 위치 (페이지, 줄 번호 등)
+  - `confidence_score` (Float, nullable) — AI 추출 신뢰도 (0.0~1.0)
+  - `status` (String) — draft / approved / excluded
+  - `is_auto_extracted` (Boolean, default=false)
+  - `order_index` (Integer)
+  - `created_at`, `updated_at` (DateTime)
+- [x] Alembic 마이그레이션
+
+#### 3.1.2 Backend — Record CRUD API
+- [x] `GET /projects/{id}/records` — 레코드 목록 (섹션별 그룹핑, 섹션 필터 지원)
+- [x] `POST /projects/{id}/records` — 레코드 수동 추가 (사용자 직접 작성)
+- [x] `PUT /projects/{id}/records/{record_id}` — 레코드 수정
+- [x] `DELETE /projects/{id}/records/{record_id}` — 레코드 삭제
+- [x] `PATCH /projects/{id}/records/{record_id}/status` — 상태 변경 (approved/excluded)
+- [x] `PUT /projects/{id}/records/reorder` — 순서 변경
+
+### 3.2 레코드 추출 Agent (4-3)
+
+#### 3.2.1 Backend — 추출 API
+- [x] `POST /projects/{id}/records/extract` — 전체 레코드 추출 시작
+  - 활성 지식 문서 + 활성 섹션 + 승인된 용어 사전을 컨텍스트로 사용
+  - 섹션별로 지식 문서 내용을 분석하여 레코드 추출
+  - 결과: Record 목록 (content, section_id, source_document_id, source_location, confidence_score)
+  - DB 저장 없이 후보 반환 → 사용자 검토 후 승인
+- [x] `POST /projects/{id}/records/extract-section` — 특정 섹션만 재추출
+  - 기존 해당 섹션 레코드는 유지, 새 후보만 추가 제안
+- [x] `POST /projects/{id}/records/approve` — 선택한 추출 후보 일괄 승인 저장
+
+#### 3.2.2 프롬프트
+- [x] 레코드 추출 프롬프트 작성:
+  - 입력: 지식 문서 텍스트 + 섹션 목록(이름/설명/출력 형식) + 용어 사전
+  - 출력: 섹션별 레코드 목록 + 원문 출처 + 신뢰도
+  - 규칙: 원문에 없는 내용 생성 금지, 출처 반드시 명시
+- [x] 섹션별 재추출 프롬프트 (특정 섹션 집중)
+
+### 3.3 Agent 레이아웃 재설계 (4-1)
+
+#### 3.3.1 Frontend — 좌패널 재구성
+- [x] 프로젝트 선택 드롭다운 (현재 프로젝트 표시 + 전환)
+- [x] 준비도 미니뷰 (문서/용어/섹션 각각 아이콘+숫자, 클릭 시 프로젝트 상세로 이동)
+- [x] 대화 스레드 리스트 (기존 유지)
+
+#### 3.3.2 Frontend — 우패널 재구성
+- [x] ArtifactPanel 탭 변경: Requirements → **Records** 탭, SRS 탭 유지
+  - Design, TestCase 탭은 추후 Phase용으로 placeholder 유지
+- [x] Records 탭: 섹션별 그룹핑 레코드 목록
+  - 섹션 필터 (드롭다운 또는 탭)
+  - 레코드 카드: ID, 섹션, 내용, 출처(문서명+위치), 신뢰도 뱃지
+  - 인라인 편집 / 삭제 / 제외 처리
+  - 수동 레코드 추가 버튼
+- [x] 원문 출처 클릭 → 지식 문서 미리보기 모달 (해당 위치 하이라이트)
+
+#### 3.3.3 Frontend — 패널 비율 조정
+- [x] 기본 비율: 좌 2 / 중앙 4 / 우 4 로 변경
+- [x] 현재 프로젝트 컨텍스트를 상단에 항상 표시
+
+### 3.4 액션 카드 + 채팅 연동 (4-2, 4-5)
+
+#### 3.4.1 Frontend — 액션 카드
+- [x] 초기 화면에 워크플로우 진입 액션 카드 표시:
+  - "레코드 추출 시작" — 항상 표시, 준비도 미충족 시 비활성
+  - "SRS 문서 생성" — 추출된 레코드 있을 때 활성
+  - "용어집 검토" — 미승인 용어 있을 때 활성
+  - "SRS 재생성" — 기존 SRS 버전 있을 때 활성
+- [x] 프로젝트 준비도에 따라 카드 활성/비활성 처리
+- [x] 카드 클릭 시 해당 워크플로우 시작 (채팅에 시스템 메시지 + API 호출)
+
+#### 3.4.2 채팅 ↔ 우패널 연동
+- [x] 에이전트 작업 완료 시 채팅에 결과 요약 메시지 + 해당 탭 이동 버튼
+- [x] 우패널에서 레코드 수정 시 채팅에 변경 로그 자동 기록
+- [x] 우패널 탭은 에이전트 작업 완료 시 자동 전환
+- [x] 채팅에서 "FR 섹션 다시 추출해줘" → 부분 재추출 트리거
+
+---
+
+## Phase 4: SRS 생성 + 내보내기
+
+> 핵심 가치: "승인된 레코드 → SRS 문서 생성" 파이프라인 완성
+> 의존성: Phase 3 (레코드 추출 완료 상태)
+
+### 4.1 SRS 생성 (4-4)
+
+#### 4.1.1 Backend — DB 모델
+- [ ] `SrsDocument` 모델:
+  - `id` (UUID PK)
+  - `project_id` (FK → Project)
+  - `version` (Integer) — 생성 버전
+  - `content` (Text) — Markdown 형태 SRS 본문
+  - `status` (String) — generating / completed / failed
+  - `based_on_records` (JSON) — 기반 레코드 ID 목록 (추적성)
+  - `based_on_documents` (JSON) — 기반 지식 문서 목록
+  - `created_at` (DateTime)
+- [ ] `SrsSection` 모델 (SRS 내 섹션별 분리):
+  - `id`, `srs_document_id`, `section_id`, `content`, `order_index`
+- [ ] Alembic 마이그레이션
+
+#### 4.1.2 Backend — API
+- [ ] `POST /projects/{id}/srs/generate` — SRS 생성 시작
+  - 승인된(approved) 레코드 + 용어 사전 기반
+  - 섹션 순서대로 문서 구성
+- [ ] `GET /projects/{id}/srs` — SRS 목록 (버전별)
+- [ ] `GET /projects/{id}/srs/{srs_id}` — SRS 상세 조회
+- [ ] `PUT /projects/{id}/srs/{srs_id}/sections/{section_id}` — SRS 섹션 인라인 편집
+- [ ] `POST /projects/{id}/srs/{srs_id}/regenerate` — SRS 재생성
+
+#### 4.1.3 프롬프트
+- [ ] SRS 생성 프롬프트 (IEEE 830 기반, 섹션별 레코드 → 문서 챕터)
+- [ ] SRS 내 원본 레코드 참조 마킹 (Traceability)
+
+#### 4.1.4 Frontend — SRS 탭
+- [ ] SRS 렌더링 (Markdown → HTML, 섹션별 구분)
+- [ ] 각 항목에서 원본 레코드 및 출처 문서 링크 (클릭 시 이동)
+- [ ] 인라인 편집 지원 (섹션별 편집 모드)
+- [ ] 생성 이력: 버전 목록 + 기반 문서 정보
+
+### 4.2 내보내기
+- [ ] API: `POST /projects/{id}/srs/{srs_id}/export` — md, pdf 지원
 - [ ] Frontend: Export 버튼 + 형식 선택 UI
 
 ---
 
-## Phase 3: TestCase 생성
+## Phase 5: TestCase 생성 (추후 상세화)
 
-> 핵심 가치: "요구사항 기반 TC 자동 생성" — 독립모드 + 연동모드
+> 핵심 가치: "레코드/SRS 기반 TC 자동 생성"
 
-### 3.1 연동 모드 TC (FR-TC-03)
-- [ ] API: TC 생성 (`/api/v1/projects/{id}/testcases/generate`)
-- [ ] API: TC CRUD
-- [ ] API: TC 일괄 선택/해제
-- [ ] API: TC 저장 (버전 생성)
-- [ ] Deep Agents: TC 생성 에이전트 (`agents/tc_agent.py`)
-- [ ] 프롬프트: TC 생성 프롬프트 (동치 분할, 경계값 분석 등)
-- [ ] Frontend: TC 생성 요청 + 기법 선택 UI
-- [ ] Frontend: TC 목록/수정/삭제 + 요구사항 매핑 표시 (FR-TC-01-09)
-
-### 3.2 독립 모드 TC (FR-TC-02)
-- [ ] API: 독립모드 분류 (`/api/v1/testcases/classify`)
-- [ ] API: 독립모드 TC 생성 (`/api/v1/testcases/generate-standalone`)
-- [ ] Frontend: 독립모드 문서 업로드/자연어 입력
-- [ ] Frontend: 분류 결과 확인 후 TC 생성
-
-### 3.3 TC Chat (FR-TC-01-07)
-- [ ] API: TC Chat (`/api/v1/projects/{id}/testcases/chat`)
-- [ ] Frontend: Chat으로 TC 수정 인터페이스
-
-### 3.4 TC Review (FR-TC-04)
-- [ ] API: TC Review (`/api/v1/projects/{id}/review/testcases`)
-- [ ] 프롬프트: TC Review 프롬프트 (커버리지 80% 검증)
-- [ ] Frontend: TC Review 결과 + 커버리지 표시
-
-### 3.5 TC Export (FR-TC-05)
-- [ ] API: TC Export (`/api/v1/projects/{id}/testcases/export`) — Jira, Polarion, Excel, Markdown
-- [ ] Frontend: TC Export UI
+- [ ] TC 모델 + CRUD
+- [ ] TC 생성 Agent (레코드 기반)
+- [ ] TC Review
+- [ ] TC Export
 
 ---
 
-## Phase 4: Design (Use Case Diagram / Specification)
-
-> 핵심 가치: "요구사항 → 설계 산출물 자동 생성" + SAD 문서
-
-### 4.1 Use Case Diagram (FR-RQ-03)
-- [ ] API: UCD 생성 (`/api/v1/projects/{id}/usecase-diagrams/generate`)
-- [ ] API: UCD 코드 직접 수정
-- [ ] API: UCD Chat 수정
-- [ ] API: UCD 저장 (버전)
-- [ ] Deep Agents: Design 에이전트 (`agents/design_agent.py`)
-- [ ] 프롬프트: UCD 생성 프롬프트 (PlantUML/Mermaid)
-- [ ] Frontend: 코드 에디터 + 다이어그램 미리보기 (split view)
-
-### 4.2 Use Case Specification (FR-RQ-04)
-- [ ] API: UCS 생성 (UCD 기반)
-- [ ] API: UCS 후보 선택/수정/삭제
-- [ ] Frontend: Specification 목록 + 후보 선택 UI
-
-### 4.3 Interaction Diagram (FR-RQ-04-04)
-- [ ] API: Interaction Diagram 생성 (UCS 기반)
-- [ ] Frontend: Interaction Diagram 코드/미리보기
-
-### 4.4 System Models — Logical / Dynamic / Physical (FR-RQ-04-07)
-- [ ] API: System Context, Logical, Dynamic, Physical Design 생성
-- [ ] Frontend: 각 모델 페이지
-
-### 4.5 UCD/UCS Review (FR-RQ-02-05~06)
-- [ ] API: UCD Review, UCS Review
-- [ ] Frontend: Design Review 결과 UI
-
-### 4.6 SAD 생성
-- [ ] API: SAD 문서 생성 (Design 산출물 기반)
-- [ ] Frontend: SAD 미리보기/Export
-
----
-
-## Phase 5: 버전관리 + 추적성
+## Phase 6: 버전관리 + 추적성 (추후 상세화)
 
 > 핵심 가치: "산출물 간 연결 + 변경 시 영향 파악"
 
-### 5.1 버전 관리 (FR-RQ-09, FR-TC-06)
-- [ ] API: 버전 이력 조회 (`/api/v1/projects/{id}/versions`)
-- [ ] API: 버전 비교 (diff)
-- [ ] API: 이전 버전 복원
-- [ ] Frontend: 버전 이력 타임라인 UI
-- [ ] Frontend: 버전 비교(diff) 뷰
-
-### 5.2 요구사항 추적성 (FR-RQ-10, FR-TC-07)
-- [ ] 추적성 자동 기록 (generate/save 시 연결 생성)
-- [ ] API: 추적성 매트릭스 조회
-- [ ] 최신 기반 여부 표시 (`is_outdated` 플래그)
-- [ ] API: outdated 산출물 재생성 트리거
-- [ ] Frontend: Traceability Matrix 뷰
-- [ ] Frontend: outdated 알림 + 재생성 버튼
-
-### 5.3 Drift 버전 자동 유지 (FR-RQ-01-13, FR-RQ-03-07, FR-TC-01-08)
-- [ ] 아키텍처 결정: auto-save 방식 (API polling / WebSocket / 로컬 스토리지)
-- [ ] 구현: 저장하지 않아도 마지막 상태 유지
+- [ ] 레코드 → SRS → TC 간 추적성 매트릭스
+- [ ] SRS 버전 간 diff 표시
+- [ ] 지식 문서 변경 시 outdated 알림
 
 ---
 
-## Phase 6: 멤버 관리 + 알림 + 플랫폼 완성
+## Phase 7: 멤버 관리 + SSO + 플랫폼 완성 (추후 상세화)
 
-> 핵심 가치: "팀 협업 기능 완성"
-
-### 6.1 멤버 관리 (FR-PF-03)
-- [ ] DB 모델: ProjectMember (역할: Owner/Editor/Viewer) ※ 향후 Reviewer 확장 가능
-- [ ] API: 멤버 초대/역할변경/제거
-- [ ] API: 역할별 권한 체크 미들웨어
-- [ ] Frontend: 멤버 관리 페이지
-
-### 6.2 알림 (FR-PF-07)
-- [ ] DB 모델: Notification
-- [ ] API: 알림 목록/읽음 처리
-- [ ] 알림 트리거: Review 요청, 멤버 초대, 버전 변경
-- [ ] Frontend: 알림 패널 UI
-
-### 6.3 프로필 / 대시보드 (FR-PF-04, FR-PF-09)
-- [ ] API: 프로필 수정 (`PUT /api/v1/users/me`)
-- [ ] Frontend: 프로필 페이지
-- [ ] Frontend: 대시보드 (최근 프로젝트, 미확인 알림)
-
-### 6.4 SSO 연동 (FR-PF-01)
-- [ ] Keycloak SSO 연동 — `GET /api/v1/users/me`
-- [ ] LDAP 사용자 정보 기반 자동 로그인
-- [ ] 세션 만료 시 리다이렉트
-
-### 6.5 도움말 (FR-PF-08)
-- [ ] Frontend: Help 페이지 (정적 콘텐츠)
-- [ ] Frontend: 기능별 툴팁/인라인 가이드
+- [ ] SSO(Keycloak) 연동
+- [ ] 멤버 관리 (Owner/Editor/Viewer)
+- [ ] 알림 시스템
+- [ ] 대시보드
 
 ---
 
@@ -262,9 +326,19 @@
 
 | Phase | 내용 | 핵심 가치 |
 |-------|------|-----------|
-| **1 (MVP)** | 프로젝트 + 요구사항 + AI 어시스트 + Glossary | 기본 루프 완성 |
-| **2** | Review + SRS 생성 + Import/Classification/Export | SRS 파이프라인 완성 |
-| **3** | TestCase 생성 (연동/독립/Chat/Review/Export) | TC 파이프라인 완성 |
-| **4** | Design (UCD/UCS/Interaction/Models) + SAD | 설계 파이프라인 완성 |
-| **5** | 버전관리 + 추적성 + Drift | 산출물 관리 완성 |
-| **6** | 멤버 관리 + 알림 + 대시보드 + 도움말 | 팀 협업 완성 |
+| **1** ✅ | 프로젝트 + 요구사항 + AI 어시스트 + Glossary | 기본 루프 완성 (레퍼런스) |
+| **2** 🔜 | 지식 저장소 + 용어 사전 + 섹션 관리 + 준비도 | 프로젝트 기반 데이터 준비 |
+| **3** | Agent 레이아웃 + 레코드 추출 + 액션 카드 | 핵심 워크플로우 완성 |
+| **4** | SRS 생성 + 내보내기 | SRS 파이프라인 완성 |
+| **5** | TestCase 생성 | TC 파이프라인 완성 |
+| **6** | 버전관리 + 추적성 | 산출물 관리 완성 |
+| **7** | 멤버 관리 + SSO + 플랫폼 | 팀 협업 완성 |
+
+---
+
+## 미결 사항
+
+- [ ] 레코드 신뢰도 스코어 임계값 기준 (몇 % 이하를 검토 필요로 표시할지)
+- [ ] SRS 버전 간 diff 표시 방식
+- [ ] 프로젝트 준비도 최소 기준 수치 (문서 N개 이상 등)
+- [ ] 지식 문서 중복 업로드 정책 (덮어쓰기 vs 버전 구분) — 우선 덮어쓰기 확인으로 구현

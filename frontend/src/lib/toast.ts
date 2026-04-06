@@ -1,6 +1,4 @@
-import { useToastStore } from '@/stores/toast-store';
-
-const DEFAULT_DURATION = 4000;
+import { toast } from 'sonner';
 
 /**
  * 표준 Toast 헬퍼
@@ -10,17 +8,26 @@ const DEFAULT_DURATION = 4000;
  *   showToast.error('저장에 실패했습니다', '네트워크 오류')
  *   showToast.info('처리 중입니다')
  *   showToast.warning('주의가 필요합니다')
+ *   showToast.loading('저장 중...')
+ *   showToast.promise(asyncFn(), { loading: '저장 중...', success: '완료', error: '실패' })
+ *   showToast.dismiss(id)
  */
 export const showToast = {
-  success: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'success', message, description, duration: DEFAULT_DURATION }),
+  success: (message: string, description?: string, id?: string | number) =>
+    toast.success(message, { description, id }),
 
-  error: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'error', message, description, duration: 6000 }),
+  error: (message: string, description?: string, id?: string | number) =>
+    toast.error(message, { description, duration: 5000, id }),
 
-  info: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'info', message, description, duration: DEFAULT_DURATION }),
+  info: (message: string, description?: string, id?: string | number) =>
+    toast.info(message, { description, id }),
 
-  warning: (message: string, description?: string) =>
-    useToastStore.getState().add({ type: 'warning', message, description, duration: 5000 }),
+  warning: (message: string, description?: string, id?: string | number) =>
+    toast.warning(message, { description, duration: 5000, id }),
+
+  loading: (message: string, id?: string | number) => toast.loading(message, { id }),
+
+  promise: toast.promise,
+
+  dismiss: toast.dismiss,
 };

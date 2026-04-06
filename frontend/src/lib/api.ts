@@ -36,8 +36,12 @@ async function handleGlobalError(error: ApiError): Promise<void> {
   // 글로벌 에러 토스트 (동적 import로 서버 사이드 안전)
   const { showToast } = await import('@/lib/toast');
 
+  const toastId = `api-error-${error.status}-${error.code}`;
+
   if (error.status >= 500) {
-    showToast.error('서버 오류가 발생했습니다', error.detail ?? undefined);
+    showToast.error('서버 오류가 발생했습니다', error.detail ?? error.message, toastId);
+  } else if (error.status >= 400) {
+    showToast.error(error.message, error.detail ?? undefined, toastId);
   }
 }
 
@@ -61,17 +65,25 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const response = await fetch(`${API_BASE}${path}`, config);
 
   if (!response.ok) {
-    let errorBody: ErrorResponse;
+    let errorInfo: ErrorResponse['error'] = {
+      code: 'UNKNOWN_ERROR',
+      message: response.statusText || '알 수 없는 오류가 발생했습니다',
+    };
+
     try {
-      errorBody = await response.json();
+      const body = await response.json();
+      if (body?.error?.message) {
+        errorInfo = body.error;
+      } else if (body?.detail) {
+        errorInfo = { code: 'API_ERROR', message: body.detail };
+      } else if (body?.message) {
+        errorInfo = { code: 'API_ERROR', message: body.message };
+      }
     } catch {
-      throw new ApiError(response.status, {
-        code: 'UNKNOWN_ERROR',
-        message: response.statusText || 'An unknown error occurred',
-      });
+      // JSON 파싱 실패 — 기본 errorInfo 사용
     }
 
-    const apiError = new ApiError(response.status, errorBody.error);
+    const apiError = new ApiError(response.status, errorInfo);
 
     if (!skipErrorHandling) {
       await handleGlobalError(apiError);

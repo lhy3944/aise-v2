@@ -182,7 +182,7 @@ export function SettingsDialog({ open, onOpenChange, initialTab }: SettingsDialo
           <div className='border-line-primary hidden border-b px-6 pt-6 pb-4 md:block'>
             <h2 className='text-fg-primary text-lg font-semibold'>{activeItem?.label}</h2>
           </div>
-          <ScrollArea className='flex flex-1 flex-col items-start gap-[32px] self-stretch overflow-y-auto px-4 py-4'>
+          <ScrollArea className='flex flex-1 flex-col items-start gap-[32px] -stretch overflow-y-auto px-4 py-4'>
             {activeItem?.content}
           </ScrollArea>
         </div>

@@ -1,49 +1,308 @@
 'use client';
 
-import { motion } from 'motion/react';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { recordService } from '@/services/record-service';
+import { streamAgentChat } from '@/services/agent-service';
+import { useArtifactStore } from '@/stores/artifact-store';
+import type { ChatMessage, ToolCallData } from '@/stores/chat-store';
 import { useChatStore } from '@/stores/chat-store';
-import { usePanelStore } from '@/stores/panel-store';
+import { LayoutMode, usePanelStore } from '@/stores/panel-store';
+import { useProjectStore } from '@/stores/project-store';
+import { useRecordStore } from '@/stores/record-store';
+import { ArrowDown } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+const EMPTY_MESSAGES: ChatMessage[] = [];
 
 export function ChatArea() {
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
+  const setRightPanelPreset = usePanelStore((s) => s.setRightPanelPreset);
+  const currentProject = useProjectStore((s) => s.currentProject);
+
+  const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
+  const activeThreadId = useChatStore((s) => s.activeThreadId);
+  const isStreaming = useChatStore((s) => s.isStreaming);
+  const createThread = useChatStore((s) => s.createThread);
+  const addMessage = useChatStore((s) => s.addMessage);
+  const appendToLastAssistant = useChatStore((s) => s.appendToLastAssistant);
+  const setStreaming = useChatStore((s) => s.setStreaming);
+
+  const messages = useChatStore(
+    (s) => s.threads.find((t) => t.id === s.activeThreadId)?.messages ?? EMPTY_MESSAGES,
+  );
+  const hasMessages = messages.length > 0;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<(() => void) | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  // Record store
+  const setExtracting = useRecordStore((s) => s.setExtracting);
+  const setCandidates = useRecordStore((s) => s.setCandidates);
+  const setExtractError = useRecordStore((s) => s.setExtractError);
+  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
+
+  const BOTTOM_THRESHOLD = 80;
+
+  // Scroll position tracking
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setIsAtBottom(distanceFromBottom <= BOTTOM_THRESHOLD);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Auto-scroll only when user is at bottom
+  useEffect(() => {
+    if (isAtBottom && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isAtBottom]);
+
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, []);
+
+  // 레코드 추출 실행
+  const triggerExtractRecords = useCallback(
+    async (projectId: string, threadId: string) => {
+      setExtracting(true);
+      setActiveTab('records');
+      setRightPanelPreset(LayoutMode.SPLIT);
+      const updateLast = useChatStore.getState().updateLastAssistantMessage;
+      try {
+        const result = await recordService.extract(projectId);
+        setCandidates(result.candidates);
+        // tool call 상태를 completed로 업데이트
+        updateLast(threadId, (msg) => ({
+          ...msg,
+          toolCalls: msg.toolCalls?.map((tc) =>
+            tc.name === 'extract_records' ? { ...tc, state: 'completed' as const, result: `${result.candidates.length}개 후보 추출` } : tc,
+          ),
+        }));
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : '레코드 추출 실패';
+        setExtractError(errorMsg);
+        updateLast(threadId, (msg) => ({
+          ...msg,
+          toolCalls: msg.toolCalls?.map((tc) =>
+            tc.name === 'extract_records' ? { ...tc, state: 'error' as const, error: errorMsg } : tc,
+          ),
+        }));
+      }
+    },
+    [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
+  );
+
+  // Tool call 실행 디스패처
+  const executeToolCall = useCallback(
+    (threadId: string, name: string, args: Record<string, unknown>) => {
+      if (!currentProject) return;
+      switch (name) {
+        case 'extract_records':
+          triggerExtractRecords(currentProject.project_id, threadId);
+          break;
+        case 'generate_srs':
+          // TODO: SRS 생성 연동
+          break;
+      }
+    },
+    [currentProject, triggerExtractRecords],
+  );
+
+  const sendMessage = useCallback(
+    (text: string) => {
+      if (!text.trim() || !currentProject || isStreaming) return;
+
+      let threadId = activeThreadId;
+      if (!threadId) {
+        threadId = createThread(currentProject.project_id, text);
+        setRightPanelPreset(LayoutMode.SPLIT);
+      }
+
+      const userMsg: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+      addMessage(threadId, userMsg);
+      setInputValue('');
+
+      const assistantMsg: ChatMessage = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: '',
+        createdAt: new Date().toISOString(),
+      };
+      addMessage(threadId, assistantMsg);
+      setStreaming(true);
+
+      const history = (useChatStore.getState().getActiveThread()?.messages ?? [])
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(0, -2)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const updateLastAssistant = useChatStore.getState().updateLastAssistantMessage;
+
+      const abort = streamAgentChat(
+        {
+          project_id: currentProject.project_id,
+          message: text,
+          history,
+        },
+        {
+          onToken: (token) => {
+            appendToLastAssistant(threadId!, token);
+          },
+          onToolCall: (toolCall) => {
+            const tc: ToolCallData = {
+              name: toolCall.name,
+              arguments: toolCall.arguments,
+              state: 'running',
+            };
+            updateLastAssistant(threadId!, (msg) => ({
+              ...msg,
+              toolCalls: [...(msg.toolCalls ?? []), tc],
+            }));
+            executeToolCall(threadId!, toolCall.name, toolCall.arguments);
+          },
+          onDone: () => {
+            setStreaming(false);
+          },
+          onError: (error) => {
+            appendToLastAssistant(threadId!, `\n\n⚠️ ${error}`);
+            setStreaming(false);
+          },
+        },
+      );
+
+      abortRef.current = abort;
+    },
+    [
+      currentProject, isStreaming, activeThreadId, createThread,
+      addMessage, setInputValue, appendToLastAssistant, setStreaming,
+      setRightPanelPreset, executeToolCall,
+    ],
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => abortRef.current?.();
+  }, []);
+
+  const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
 
   return (
-    <div className='flex flex-1 flex-col justify-start px-4 pt-[12vh]'>
-      <div
-        className={cn(
-          'mx-auto w-full transition-[max-width] duration-300 ease-in-out',
-          fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]',
+    <div className='flex flex-1 flex-col overflow-hidden'>
+      <AnimatePresence mode='wait'>
+        {!hasMessages ? (
+          /* === 빈 화면: 중앙 프롬프트 === */
+          <motion.div
+            key='empty'
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
+            className='flex flex-1 flex-col justify-start px-4 pt-[12vh]'
+          >
+            <div className={cn('mx-auto w-full transition-[max-width] duration-300', maxW)}>
+              <div className='flex justify-center py-4'>
+                <h1 className='text-fg-primary flex items-center justify-center text-4xl font-bold'>
+                  {['A', 'I', 'S', 'E', '\u00A0', '3', '.', '0'].map((char, i) => (
+                    <motion.span
+                      key={i}
+                      className='inline-block'
+                      animate={{ y: [0, -6, 0] }}
+                      transition={{
+                        duration: 0.4,
+                        repeat: Infinity,
+                        repeatDelay: 5,
+                        delay: i * 0.1,
+                      }}
+                    >
+                      {char}
+                    </motion.span>
+                  ))}
+                </h1>
+              </div>
+
+              {!currentProject && (
+                <div className='text-fg-muted mb-4 text-center text-sm'>
+                  사이드바에서 프로젝트를 선택하면 AI 어시스턴트와 대화를 시작할 수 있습니다.
+                </div>
+              )}
+
+              <div className='mt-4'>
+                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
+              </div>
+              <div className='flex flex-col items-center justify-center text-xs/5 tracking-normal'>
+                <div className='text-muted-foreground'>
+                  AISE can make mistakes. Check important info.
+                </div>
+              </div>
+              <PromptSuggestions rows={1} onSelect={setInputValue} />
+            </div>
+          </motion.div>
+        ) : (
+          /* === 대화 모드: 상단 메시지 + 하단 여백 + 고정 입력 === */
+          <motion.div
+            key='chat'
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
+            className='flex flex-1 flex-col overflow-hidden'
+          >
+            {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
+            <div className='relative flex-1 overflow-hidden'>
+              <ScrollArea className='h-full' viewportRef={scrollRef}>
+                <div className={cn('mx-auto px-4 pt-6 transition-[max-width] duration-300', maxW)}>
+                  <MessageRenderer
+                    messages={messages}
+                    isStreaming={isStreaming}
+                  />
+                </div>
+                {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
+                <div className='min-h-[40vh]' />
+              </ScrollArea>
+
+              {/* Scroll to bottom floating button */}
+              <AnimatePresence>
+                {!isAtBottom && hasMessages && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={scrollToBottom}
+                    className='bg-canvas-surface border-line-primary text-fg-secondary hover:text-fg-primary absolute bottom-3 left-1/2 -translate-x-1/2 cursor-pointer rounded-full border p-2 shadow-md transition-colors'
+                    aria-label='하단으로 스크롤'
+                  >
+                    <ArrowDown className='size-4' />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* 하단 고정 입력 */}
+            <div className='shrink-0 px-4 pt-2 pb-4'>
+              <div className={cn('mx-auto transition-[max-width] duration-300', maxW)}>
+                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
+              </div>
+            </div>
+          </motion.div>
         )}
-      >
-        <div className='flex justify-center py-4'>
-          <h1 className='text-fg-primary flex items-center justify-center text-4xl font-bold'>
-            {['A', 'I', 'S', 'E', '\u00A0', '3', '.', '0'].map((char, i) => (
-              <motion.span
-                key={char}
-                className='inline-block'
-                animate={{ y: [0, -6, 0] }}
-                transition={{
-                  duration: 0.4,
-                  repeat: Infinity,
-                  repeatDelay: 5,
-                  delay: i * 0.1,
-                }}
-              >
-                {char}
-              </motion.span>
-            ))}
-          </h1>
-        </div>
-        <ChatInput />
-        <div className='flex flex-col items-center justify-center text-xs/5 tracking-normal'>
-          <div className='text-muted-foreground'>AISE can make mistakes. Check important info.</div>
-        </div>
-        <PromptSuggestions rows={1} onSelect={setInputValue} />
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

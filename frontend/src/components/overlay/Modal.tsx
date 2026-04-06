@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { ModalOptions } from '@/stores/overlay-store';
+import type { ReactNode } from 'react';
 
 const SIZE_CLASSES: Record<NonNullable<ModalOptions['size']>, string> = {
   sm: 'max-w-[400px]',
@@ -45,7 +45,13 @@ export function Modal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={cn('flex flex-col gap-0 p-0', SIZE_CLASSES[size])}
-        showCloseButton={showCloseButton}
+        showCloseButton={showCloseButton}        
+        autoFocus
+        onPointerDownOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) {
+            e.preventDefault();
+          }
+        }}
       >
         {(title || description) && (
           <DialogHeader className='border-line-primary border-b px-6 py-4'>

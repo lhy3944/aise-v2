@@ -79,7 +79,7 @@ aise2.0/
 ├── docs/                # 문서
 │   └── requirements/    # 시스템 요구사항 정의서 (FR-PF, FR-RQ, FR-TC)
 ├── references/          # 조사/분석 결과 저장 (YYYY-MM-DD_주제.md)
-├── docker-compose.yml   # PostgreSQL (개발용)
+├── docker-compose.yml   # PostgreSQL (pgvector) + MinIO (개발용)
 ├── start-dev.sh         # 개발 서버 시작 (DB + Backend + Frontend)
 ├── backend/             # FastAPI 백엔드
 │   ├── pyproject.toml

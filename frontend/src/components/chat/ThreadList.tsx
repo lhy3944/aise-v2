@@ -25,6 +25,7 @@ export function ThreadList() {
   const threads = useChatStore((s) => s.threads);
   const activeThreadId = useChatStore((s) => s.activeThreadId);
   const setActiveThread = useChatStore((s) => s.setActiveThread);
+  const deleteThread = useChatStore((s) => s.deleteThread);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function ThreadList() {
               thread={thread}
               isActive={thread.id === activeThreadId}
               onClick={() => setActiveThread(thread.id)}
+              onDelete={() => deleteThread(thread.id)}
             />
           ))}
         </div>

@@ -9,12 +9,16 @@ from .common import RequirementType
 class SectionCreate(BaseModel):
     """섹션 생성 요청"""
     name: str = Field(min_length=1, max_length=200, description="섹션명")
-    type: RequirementType = Field(description="요구사항 유형 (fr/qa/constraints)")
+    type: str = Field(description="섹션 유형 (자유 문자열)")
+    description: str | None = Field(default=None, description="섹션 설명/목적")
+    output_format_hint: str | None = Field(default=None, description="출력 형식 힌트")
 
 
 class SectionUpdate(BaseModel):
     """섹션 수정 요청"""
-    name: str = Field(min_length=1, max_length=200, description="섹션명")
+    name: str | None = Field(default=None, min_length=1, max_length=200, description="섹션명")
+    description: str | None = Field(default=None, description="섹션 설명/목적")
+    output_format_hint: str | None = Field(default=None, description="출력 형식 힌트")
 
 
 class SectionReorderRequest(BaseModel):
@@ -26,7 +30,11 @@ class SectionResponse(BaseModel):
     """섹션 응답"""
     section_id: str = Field(description="섹션 ID")
     name: str = Field(description="섹션명")
-    type: RequirementType = Field(description="유형")
+    type: str = Field(description="유형")
+    description: str | None = Field(default=None)
+    output_format_hint: str | None = Field(default=None)
+    is_default: bool = Field(default=False)
+    is_active: bool = Field(default=True)
     order_index: int = Field(description="표시 순서")
     created_at: str = Field(description="생성일시")
     updated_at: str = Field(description="수정일시")

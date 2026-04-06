@@ -8,6 +8,13 @@ export type ProjectStatus = 'active' | 'archived';
 
 // --- Project ---
 
+export interface ProjectReadiness {
+  knowledge: number;
+  glossary: number;
+  sections: number;
+  is_ready: boolean;
+}
+
 export interface Project {
   project_id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface Project {
   modules: ProjectModule[];
   member_count: number;
   status: ProjectStatus;
+  readiness: ProjectReadiness | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,7 +56,11 @@ export interface ProjectListResponse {
 export interface Section {
   section_id: string;
   name: string;
-  type: RequirementType;
+  type: string;
+  description: string | null;
+  output_format_hint: string | null;
+  is_default: boolean;
+  is_active: boolean;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -56,11 +68,15 @@ export interface Section {
 
 export interface SectionCreate {
   name: string;
-  type: RequirementType;
+  type: string;
+  description?: string | null;
+  output_format_hint?: string | null;
 }
 
 export interface SectionUpdate {
-  name: string;
+  name?: string | null;
+  description?: string | null;
+  output_format_hint?: string | null;
 }
 
 export interface SectionReorderRequest {
@@ -151,18 +167,34 @@ export interface GlossaryItem {
   term: string;
   definition: string;
   product_group: string | null;
+  synonyms: string[];
+  abbreviations: string[];
+  section_tags: string[];
+  source_document_id: string | null;
+  source_document_name: string | null;
+  is_auto_extracted: boolean;
+  is_approved: boolean;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface GlossaryCreate {
   term: string;
   definition: string;
   product_group?: string | null;
+  synonyms?: string[];
+  abbreviations?: string[];
+  section_tags?: string[];
+  source_document_id?: string | null;
 }
 
 export interface GlossaryUpdate {
   term?: string | null;
   definition?: string | null;
   product_group?: string | null;
+  synonyms?: string[] | null;
+  abbreviations?: string[] | null;
+  section_tags?: string[] | null;
 }
 
 export interface GlossaryListResponse {
@@ -171,6 +203,19 @@ export interface GlossaryListResponse {
 
 export interface GlossaryGenerateResponse {
   generated_glossary: GlossaryCreate[];
+}
+
+export interface GlossaryExtractedItem {
+  term: string;
+  definition: string;
+  synonyms: string[];
+  abbreviations: string[];
+  source_document_id: string | null;
+  source_document_name: string | null;
+}
+
+export interface GlossaryExtractResponse {
+  candidates: GlossaryExtractedItem[];
 }
 
 // --- Chat (대화 모드) ---
@@ -248,18 +293,128 @@ export interface ProjectSettingsUpdate {
   diagram_tool?: string | null;
 }
 
-// --- Knowledge Source (mock - backend not yet implemented) ---
+// --- Knowledge Document ---
 
-export type KnowledgeSourceFileType = 'pdf' | 'md' | 'docx' | 'xlsx' | 'pptx';
-export type KnowledgeSourceStatus = 'processing' | 'ready' | 'error';
+export type KnowledgeDocumentFileType = 'pdf' | 'md' | 'txt';
+export type KnowledgeDocumentStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export interface KnowledgeSource {
-  id: string;
+export interface KnowledgeDocument {
+  document_id: string;
+  project_id: string;
   name: string;
-  file_type: KnowledgeSourceFileType;
+  file_type: KnowledgeDocumentFileType;
   size_bytes: number;
-  uploaded_at: string;
-  status: KnowledgeSourceStatus;
+  status: KnowledgeDocumentStatus;
+  is_active: boolean;
+  error_message: string | null;
+  chunk_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocumentListResponse {
+  documents: KnowledgeDocument[];
+  total: number;
+}
+
+export interface KnowledgeDocumentPreview {
+  document_id: string;
+  name: string;
+  preview_text: string;
+  total_characters: number;
+}
+
+// --- SRS ---
+
+export interface SrsSection {
+  section_id: string | null;
+  title: string;
+  content: string;
+  order_index: number;
+}
+
+export interface SrsDocument {
+  srs_id: string;
+  project_id: string;
+  version: number;
+  status: string;
+  error_message: string | null;
+  sections: SrsSection[];
+  based_on_records: { record_ids?: string[] } | null;
+  based_on_documents: { documents?: { id: string; name: string }[] } | null;
+  created_at: string;
+}
+
+export interface SrsListResponse {
+  documents: SrsDocument[];
+}
+
+// --- Record ---
+
+export type RecordStatus = 'draft' | 'approved' | 'excluded';
+
+export interface Record {
+  record_id: string;
+  project_id: string;
+  section_id: string | null;
+  section_name: string | null;
+  content: string;
+  display_id: string;
+  source_document_id: string | null;
+  source_document_name: string | null;
+  source_location: string | null;
+  confidence_score: number | null;
+  status: RecordStatus;
+  is_auto_extracted: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecordCreate {
+  content: string;
+  section_id?: string | null;
+  source_document_id?: string | null;
+  source_location?: string | null;
+}
+
+export interface RecordUpdate {
+  content?: string | null;
+  section_id?: string | null;
+}
+
+export interface RecordListResponse {
+  records: Record[];
+  total: number;
+}
+
+export interface RecordExtractedItem {
+  content: string;
+  section_id: string | null;
+  section_name: string | null;
+  source_document_id: string | null;
+  source_document_name: string | null;
+  source_location: string | null;
+  confidence_score: number | null;
+}
+
+export interface RecordExtractResponse {
+  candidates: RecordExtractedItem[];
+}
+
+// --- Readiness ---
+
+export interface ReadinessItem {
+  label: string;
+  count: number;
+  sufficient: boolean;
+}
+
+export interface ReadinessResponse {
+  knowledge: ReadinessItem;
+  glossary: ReadinessItem;
+  sections: ReadinessItem;
+  is_ready: boolean;
 }
 
 // --- Common ---

@@ -1,8 +1,8 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
-import { cn } from '@/lib/utils';
 
 function Drawer({ ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
   return <DrawerPrimitive.Root data-slot='drawer' {...props} />;
@@ -48,6 +48,14 @@ function DrawerContent({
     <DrawerPortal data-slot='drawer-portal'>
       <DrawerOverlay className={overlayClassName} />
       <DrawerPrimitive.Content
+        onPointerDownOutside={(e) => {
+          // don't dismiss dialog when clicking inside the toast
+          if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) {
+            e.preventDefault();
+          }
+          // if you are wrapping this component like shadcn, also call the caller's onPointerDownOutside method
+          // onPointerDownOutside?.(e);
+        }}
         data-slot='drawer-content'
         className={cn(
           'group/drawer-content bg-background fixed z-50 flex h-auto flex-col',
@@ -114,13 +122,13 @@ function DrawerDescription({
 
 export {
   Drawer,
-  DrawerPortal,
-  DrawerOverlay,
-  DrawerTrigger,
   DrawerClose,
   DrawerContent,
-  DrawerHeader,
-  DrawerFooter,
-  DrawerTitle,
   DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerPortal,
+  DrawerTitle,
+  DrawerTrigger,
 };

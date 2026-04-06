@@ -14,7 +14,8 @@ from src.schemas.api.project import (
     ProjectSettingsResponse,
     ProjectSettingsUpdate,
 )
-from src.services import project_svc
+from src.schemas.api.readiness import ReadinessResponse
+from src.services import project_svc, readiness_svc
 
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
@@ -61,6 +62,15 @@ async def delete_project(
 ):
     """프로젝트 삭제"""
     await project_svc.delete_project(db, project_id)
+
+
+@router.get("/{project_id}/readiness", response_model=ReadinessResponse)
+async def get_readiness(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """프로젝트 준비도 조회"""
+    return await readiness_svc.get_readiness(db, project_id)
 
 
 @router.get("/{project_id}/settings", response_model=ProjectSettingsResponse)

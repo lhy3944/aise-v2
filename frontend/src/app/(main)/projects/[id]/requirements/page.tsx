@@ -16,6 +16,7 @@ import { ReviewModal } from '@/components/requirements/ReviewModal';
 import { useOverlayStore } from '@/stores/overlay-store';
 import { useReview } from '@/hooks/useReview';
 import { ApiError } from '@/lib/api';
+import { showToast } from '@/lib/toast';
 import { Save, Sparkles, List, MessageSquare, ClipboardCheck, Loader2 } from 'lucide-react';
 import type {
   Requirement,
@@ -31,7 +32,7 @@ interface Props {
 
 export default function RequirementsPage({ params }: Props) {
   const { id: projectId } = use(params);
-  const { showAlert, showConfirm } = useOverlayStore();
+  const { showConfirm } = useOverlayStore();
 
   const [mode, setMode] = useState<'structured' | 'chat'>('structured');
   const [activeTab, setActiveTab] = useState<RequirementType>('fr');
@@ -63,32 +64,27 @@ export default function RequirementsPage({ params }: Props) {
       setSections(secData.sections);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 목록을 불러올 수 없습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [projectId, showAlert]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchRequirements();
   }, [fetchRequirements]);
 
   // Review hook
-  const review = useReview({
-    projectId,
-    showAlert,
-  });
+  const review = useReview({ projectId });
 
   // --- Review handler: Include된 요구사항만 전달 ---
   const handleRunReview = () => {
     const includedIds = requirements.filter((r) => r.is_selected).map((r) => r.requirement_id);
 
     if (includedIds.length === 0) {
-      showAlert({
-        type: 'warning',
-        description:
-          'Include된 요구사항이 없습니다. 요구사항을 추가하거나 Include 상태를 확인해주세요.',
-      });
+      showToast.warning(
+        'Include된 요구사항이 없습니다. 요구사항을 추가하거나 Include 상태를 확인해주세요.',
+      );
       return;
     }
 
@@ -106,7 +102,7 @@ export default function RequirementsPage({ params }: Props) {
       setRequirements((prev) => [...prev, created]);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 추가에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -120,7 +116,7 @@ export default function RequirementsPage({ params }: Props) {
       );
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 수정에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -135,7 +131,7 @@ export default function RequirementsPage({ params }: Props) {
           setRequirements((prev) => prev.filter((r) => r.requirement_id !== requirementId));
         } catch (err) {
           const msg = err instanceof ApiError ? err.message : '삭제에 실패했습니다.';
-          showAlert({ type: 'error', description: msg });
+          showToast.error(msg);
         }
       },
     });
@@ -181,13 +177,10 @@ export default function RequirementsPage({ params }: Props) {
     setSaving(true);
     try {
       const result = await requirementService.save(projectId);
-      showAlert({
-        type: 'success',
-        description: `버전 ${result.version}이 저장되었습니다. (${result.saved_count}건)`,
-      });
+      showToast.success(`버전 ${result.version}이 저장되었습니다. (${result.saved_count}건)`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '저장에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -223,7 +216,7 @@ export default function RequirementsPage({ params }: Props) {
       setSections((prev) => [...prev, created]);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '섹션 추가에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -233,7 +226,7 @@ export default function RequirementsPage({ params }: Props) {
       setSections((prev) => prev.map((s) => (s.section_id === sectionId ? updated : s)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '섹션 이름 변경에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
@@ -252,7 +245,7 @@ export default function RequirementsPage({ params }: Props) {
           );
         } catch (err) {
           const msg = err instanceof ApiError ? err.message : '섹션 삭제에 실패했습니다.';
-          showAlert({ type: 'error', description: msg });
+          showToast.error(msg);
         }
       },
     });
@@ -302,7 +295,7 @@ export default function RequirementsPage({ params }: Props) {
       setRefineResult(result);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'AI 정제에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setIsRefining(false);
     }
@@ -321,13 +314,13 @@ export default function RequirementsPage({ params }: Props) {
       setRefineResult(null);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '요구사항 추가에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 
   async function handleSuggest() {
     if (selectedIds.length === 0) {
-      showAlert({ type: 'warning', description: '먼저 요구사항을 선택하세요.' });
+      showToast.warning('먼저 요구사항을 선택하세요.');
       return;
     }
     setIsSuggesting(true);
@@ -339,7 +332,7 @@ export default function RequirementsPage({ params }: Props) {
       setSuggestions(result.suggestions);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'AI 제안에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     } finally {
       setIsSuggesting(false);
     }
@@ -355,7 +348,7 @@ export default function RequirementsPage({ params }: Props) {
       setSuggestions((prev) => prev.filter((s) => s !== suggestion));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '제안 수락에 실패했습니다.';
-      showAlert({ type: 'error', description: msg });
+      showToast.error(msg);
     }
   }
 

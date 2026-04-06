@@ -10,12 +10,14 @@ import { SettingsDialog } from '@/components/overlay/SettingsDialog';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
+import { ReadinessMiniView } from '@/components/layout/ReadinessMiniView';
 import { useChatStore } from '@/stores/chat-store';
 import { usePanelStore } from '@/stores/panel-store';
 
+
 export function LeftSidebar() {
   const router = useRouter();
-  const createThread = useChatStore((s) => s.createThread);
+  const setActiveThread = useChatStore((s) => s.setActiveThread);
   const leftSidebarOpen = usePanelStore((s) => s.leftSidebarOpen);
   const toggleLeftSidebar = usePanelStore((s) => s.toggleLeftSidebar);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -52,7 +54,7 @@ export function LeftSidebar() {
             <div className='flex h-full w-[220px] flex-col gap-2 py-1.5 pl-3'>
               <div className='flex items-center justify-between'>
                 <Button
-                  onClick={createThread}
+                  onClick={() => setActiveThread(null)}
                   className='text-fg-primary flex items-center gap-1.5'
                   variant='ghost'
                 >
@@ -72,6 +74,11 @@ export function LeftSidebar() {
               {/* Project Selector */}
               <div className='pr-3'>
                 <ProjectSelector />
+              </div>
+
+              {/* Readiness Mini View */}
+              <div className='pr-3'>
+                <ReadinessMiniView />
               </div>
 
               <ThreadList />
@@ -124,7 +131,7 @@ export function LeftSidebar() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={createThread}
+                      onClick={() => setActiveThread(null)}
                       variant='ghost'
                       size='icon'
                       className='text-icon-default hover:text-icon-active h-9 w-9'

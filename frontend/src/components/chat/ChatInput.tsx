@@ -1,6 +1,18 @@
 'use client';
 
-import { MicIcon, PaperclipIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { recordService } from '@/services/record-service';
+import { useArtifactStore } from '@/stores/artifact-store';
+import { LayoutMode, usePanelStore } from '@/stores/panel-store';
+import { useProjectStore } from '@/stores/project-store';
+import { useReadinessStore } from '@/stores/readiness-store';
+import { useRecordStore } from '@/stores/record-store';
+import { BookOpen, Database, FileText, Loader2, MicIcon, PaperclipIcon, RefreshCw, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -164,13 +176,110 @@ function VoiceButton() {
   );
 }
 
-export function ChatInput() {
+function ActionsButton({ onAction }: { onAction?: (text: string) => void }) {
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const readiness = useReadinessStore((s) => s.data);
+  const extracting = useRecordStore((s) => s.extracting);
+  const setExtracting = useRecordStore((s) => s.setExtracting);
+  const setCandidates = useRecordStore((s) => s.setCandidates);
+  const setExtractError = useRecordStore((s) => s.setExtractError);
+  const setActiveTab = useArtifactStore((s) => s.setActiveTab);
+  const setRightPanelPreset = usePanelStore((s) => s.setRightPanelPreset);
+
+  const isReady = readiness?.is_ready ?? false;
+
+  const handleExtractRecords = useCallback(async () => {
+    if (!currentProject || extracting) return;
+    setExtracting(true);
+    onAction?.('레코드 추출을 시작합니다...');
+    try {
+      const result = await recordService.extract(currentProject.project_id);
+      setCandidates(result.candidates);
+      setActiveTab('records');
+      setRightPanelPreset(LayoutMode.SPLIT);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '레코드 추출에 실패했습니다.';
+      setExtractError(msg);
+      onAction?.(`레코드 추출 실패: ${msg}`);
+    }
+  }, [currentProject, extracting, onAction, setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset]);
+
+  const actions = [
+    {
+      id: 'extract',
+      icon: extracting ? Loader2 : Database,
+      label: extracting ? '추출 중...' : '레코드 추출',
+      enabled: isReady && !extracting,
+      spinning: extracting,
+      onClick: handleExtractRecords,
+    },
+    {
+      id: 'srs',
+      icon: FileText,
+      label: 'SRS 문서 생성',
+      enabled: false,
+      onClick: () => onAction?.('SRS 문서 생성을 시작해주세요.'),
+    },
+    {
+      id: 'glossary-review',
+      icon: BookOpen,
+      label: '용어집 검토',
+      enabled: false,
+      onClick: () => onAction?.('미승인 용어를 검토해주세요.'),
+    },
+    {
+      id: 'srs-regenerate',
+      icon: RefreshCw,
+      label: 'SRS 재생성',
+      enabled: false,
+      onClick: () => onAction?.('SRS 문서를 재생성해주세요.'),
+    },
+  ];
+
+  if (!currentProject) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className='text-fg-muted hover:text-fg-primary hover:bg-canvas-surface flex size-8 items-center justify-center rounded-md transition-colors'>
+          <Zap size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start' className='w-48'>
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <DropdownMenuItem
+              key={action.id}
+              onClick={action.onClick}
+              disabled={!action.enabled}
+              className='gap-2 text-xs'
+            >
+              <Icon className={cn('size-4 shrink-0', action.spinning && 'animate-spin')} />
+              {action.label}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function ChatInput({
+  onSubmit,
+  onAction,
+  disabled,
+}: {
+  onSubmit?: (text: string) => void;
+  onAction?: (text: string) => void;
+  disabled?: boolean;
+}) {
   const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
 
   const handleSubmit = () => {
-    // Handle submit
-    console.log('handleSubmit');
+    if (!inputValue.trim() || disabled) return;
+    onSubmit?.(inputValue.trim());
   };
 
   return (
@@ -181,15 +290,16 @@ export function ChatInput() {
           autoFocus
           value={inputValue}
           onChange={(e) => setInputValue(e.currentTarget.value)}
+          disabled={disabled}
         />
       </PromptInputBody>
       <PromptInputFooter>
         <PromptInputTools>
           <AttachButton />
           <VoiceButton />
+          <ActionsButton onAction={onAction} />
         </PromptInputTools>
-        {/* 프롬프트가 비어있으면 기본 비활성화 */}
-        <PromptInputSubmit disabled={inputValue?.trim().length === 0} />
+        <PromptInputSubmit disabled={!inputValue?.trim() || disabled} />
       </PromptInputFooter>
     </PromptInput>
   );
