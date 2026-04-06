@@ -7,8 +7,11 @@ import { cn } from '@/lib/utils';
 function ScrollArea({
   className,
   children,
+  viewportRef,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  viewportRef?: React.Ref<HTMLDivElement>;
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot='scroll-area'
@@ -16,6 +19,7 @@ function ScrollArea({
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
         data-slot='scroll-area-viewport'
         className='focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1'
       >
@@ -38,7 +42,7 @@ function ScrollBar({
       orientation={orientation}
       className={cn(
         'flex touch-none p-px opacity-0 transition-opacity duration-300 select-none group-hover/scroll:opacity-100',
-        orientation === 'vertical' && 'h-full w-1.5 border-l border-l-transparent',
+        orientation === 'vertical' && 'h-full w-2 border-l border-l-transparent',
         orientation === 'horizontal' && 'h-1.5 flex-col border-t border-t-transparent',
         className,
       )}

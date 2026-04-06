@@ -77,7 +77,7 @@ async def _get_readiness(db: AsyncSession, project_id: uuid.UUID) -> ProjectRead
 
     return ProjectReadiness(
         knowledge=knowledge, glossary=glossary, sections=sections,
-        is_ready=knowledge >= 1 and glossary >= 1 and sections >= 1,
+        is_ready=knowledge >= 1 and sections >= 1,
     )
 
 

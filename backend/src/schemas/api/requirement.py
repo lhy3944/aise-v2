@@ -12,7 +12,6 @@ class SectionCreate(BaseModel):
     type: str = Field(description="섹션 유형 (자유 문자열)")
     description: str | None = Field(default=None, description="섹션 설명/목적")
     output_format_hint: str | None = Field(default=None, description="출력 형식 힌트")
-    is_required: bool = Field(default=False, description="필수 여부")
 
 
 class SectionUpdate(BaseModel):
@@ -34,7 +33,6 @@ class SectionResponse(BaseModel):
     type: str = Field(description="유형")
     description: str | None = Field(default=None)
     output_format_hint: str | None = Field(default=None)
-    is_required: bool = Field(default=False)
     is_default: bool = Field(default=False)
     is_active: bool = Field(default=True)
     order_index: int = Field(description="표시 순서")

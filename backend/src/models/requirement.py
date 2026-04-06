@@ -19,7 +19,6 @@ class RequirementSection(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     output_format_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_required: Mapped[bool] = mapped_column(Boolean, default=False)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -32,11 +31,11 @@ class RequirementSection(Base):
 
 # 프로젝트 생성 시 자동 생성되는 기본 섹션 정의
 DEFAULT_SECTIONS = [
-    {"type": "overview", "name": "Overview", "description": "시스템 개요 및 범위", "is_required": True, "is_default": True, "order_index": 0},
-    {"type": "fr", "name": "Functional Requirements", "description": "기능 요구사항", "is_required": True, "is_default": True, "order_index": 1},
-    {"type": "qa", "name": "Quality Attributes", "description": "품질 속성 (성능, 보안 등)", "is_required": True, "is_default": True, "order_index": 2},
-    {"type": "constraints", "name": "Constraints", "description": "제약 조건", "is_required": True, "is_default": True, "order_index": 3},
-    {"type": "interfaces", "name": "Interfaces", "description": "외부 인터페이스 정의", "is_required": True, "is_default": True, "order_index": 4},
+    {"type": "overview", "name": "Overview", "description": "시스템 개요 및 범위", "is_default": True, "order_index": 0},
+    {"type": "fr", "name": "Functional Requirements", "description": "기능 요구사항", "is_default": True, "order_index": 1},
+    {"type": "qa", "name": "Quality Attributes", "description": "품질 속성 (성능, 보안 등)", "is_default": True, "order_index": 2},
+    {"type": "constraints", "name": "Constraints", "description": "제약 조건", "is_default": True, "order_index": 3},
+    {"type": "interfaces", "name": "Interfaces", "description": "외부 인터페이스 정의", "is_default": True, "order_index": 4},
 ]
 
 

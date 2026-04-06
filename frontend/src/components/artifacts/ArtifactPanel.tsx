@@ -1,6 +1,7 @@
 'use client';
 
 import { Database, FileText, FlaskConical, Layers } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectStore } from '@/stores/project-store';
 import { useArtifactStore } from '@/stores/artifact-store';
@@ -43,19 +44,22 @@ export function ArtifactPanel() {
       className='flex h-full flex-col'
     >
       {/* Tab Bar */}
-      <div className='border-line-primary shrink-0 border-b px-2 pt-2'>
-        <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
-          {ARTIFACT_TABS.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className='data-[state=active]:text-accent-primary after:bg-accent-primary gap-1.5 px-3 text-xs md:flex-initial'
-            >
-              <tab.icon className='size-3.5' />
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className='shrink-0 px-2 pt-2'>
+        <ScrollArea className='w-full *:data-[slot=scroll-area-viewport]:overflow-y-hidden'>
+          <TabsList variant='line' className='border-line-subtle w-max min-w-full justify-start pb-0.5'>
+            {ARTIFACT_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary gap-1.5 px-3 text-xs md:flex-initial'
+              >
+                <tab.icon className='size-3.5' />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <ScrollBar orientation='horizontal' />
+        </ScrollArea>
       </div>
 
       {/* Content */}

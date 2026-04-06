@@ -59,7 +59,6 @@ export interface Section {
   type: string;
   description: string | null;
   output_format_hint: string | null;
-  is_required: boolean;
   is_default: boolean;
   is_active: boolean;
   order_index: number;
@@ -72,7 +71,6 @@ export interface SectionCreate {
   type: string;
   description?: string | null;
   output_format_hint?: string | null;
-  is_required?: boolean;
 }
 
 export interface SectionUpdate {

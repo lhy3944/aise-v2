@@ -1,9 +1,9 @@
 'use client';
 
-import { ActionCards } from '@/components/chat/ActionCards';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { recordService } from '@/services/record-service';
 import { streamAgentChat } from '@/services/agent-service';
@@ -221,10 +221,8 @@ export function ChatArea() {
                 </div>
               )}
 
-              {currentProject && <ActionCards onAction={sendMessage} />}
-
               <div className='mt-4'>
-                <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
+                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
               </div>
               <div className='flex flex-col items-center justify-center text-xs/5 tracking-normal'>
                 <div className='text-muted-foreground'>
@@ -243,8 +241,8 @@ export function ChatArea() {
             className='flex flex-1 flex-col overflow-hidden'
           >
             {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
-            <div ref={scrollRef} className='flex-1 overflow-y-auto px-4'>
-              <div className={cn('mx-auto pt-6', maxW)}>
+            <ScrollArea className='flex-1 overflow-hidden' viewportRef={scrollRef}>
+              <div className={cn('mx-auto px-4 pt-6', maxW)}>
                 <MessageRenderer
                   messages={messages}
                   isStreaming={isStreaming}
@@ -252,12 +250,12 @@ export function ChatArea() {
               </div>
               {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
               <div className='min-h-[40vh]' />
-            </div>
+            </ScrollArea>
 
             {/* 하단 고정 입력 */}
             <div className='shrink-0 px-4 pt-2 pb-4'>
               <div className={cn('mx-auto', maxW)}>
-                <ChatInput onSubmit={sendMessage} disabled={!currentProject} />
+                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
               </div>
             </div>
           </motion.div>

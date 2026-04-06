@@ -7,10 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { useOverlay } from '@/hooks/useOverlay';
 import { cn } from '@/lib/utils';
 import { sectionService } from '@/services/section-service';
+import { useReadinessStore } from '@/stores/readiness-store';
 import type { Section, SectionCreate } from '@/types/project';
 import { GripVertical, Loader2, Lock, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useReadinessStore } from '@/stores/readiness-store';
 
 interface ProjectSectionsTabProps {
   projectId: string;
@@ -43,10 +43,12 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
   const handleToggle = useCallback(
     async (section: Section) => {
       try {
-        const updated = await sectionService.toggle(projectId, section.section_id, !section.is_active);
-        setSections((prev) =>
-          prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
+        const updated = await sectionService.toggle(
+          projectId,
+          section.section_id,
+          !section.is_active,
         );
+        setSections((prev) => prev.map((s) => (s.section_id === updated.section_id ? updated : s)));
         invalidateReadiness();
       } catch {
         // 글로벌 핸들링
@@ -137,14 +139,14 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                 <div className='flex items-center gap-2'>
                   <p className='text-fg-primary text-sm font-medium'>{section.name}</p>
                   {section.is_default && (
-                    <Badge variant='secondary' className='gap-1 text-[10px]'>
+                    <Badge variant='secondary' className='gap-1 text-xs'>
                       <Lock className='size-2.5' />
                       기본
                     </Badge>
                   )}
-                  {section.is_required && (
-                    <Badge variant='outline' className='text-[10px]'>필수</Badge>
-                  )}
+                  <Badge variant='default' className='shrink-0 text-xs'>
+                    {section.type}
+                  </Badge>
                 </div>
                 {section.description && (
                   <p className='text-fg-muted mt-0.5 text-xs'>{section.description}</p>
@@ -155,10 +157,6 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                   </p>
                 )}
               </div>
-
-              <Badge variant='outline' className='shrink-0 text-[10px]'>
-                {section.type}
-              </Badge>
 
               <div onClick={(e) => e.stopPropagation()}>
                 <Switch

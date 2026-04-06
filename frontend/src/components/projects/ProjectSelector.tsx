@@ -18,8 +18,7 @@ import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
 import type { Project, ProjectCreate } from '@/types/project';
-import { Box, Check, ChevronsUpDown, ExternalLink, Plus } from 'lucide-react';
-import Link from 'next/link';
+import { Box, Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ProjectSelectorProps {
@@ -52,7 +51,7 @@ export function ProjectSelector({ collapsed = false }: ProjectSelectorProps) {
   }, [projects.length, fetchProjects]);
 
   function handleSelect(project: Project) {
-    setCurrentProject(currentProject?.project_id === project.project_id ? null : project);
+    setCurrentProject(project);
     setOpen(false);
   }
 
@@ -184,9 +183,9 @@ function ProjectDropdownItems({
   if (projects.length === 0) {
     return (
       <div className='px-3 py-4 text-center'>
-        <Button variant='secondary' className='w-full text-xs' onClick={onOpenCreate}>
+        <Button variant='ghost' size='sm' className='w-full gap-1.5 text-xs' onClick={onOpenCreate}>
           <Plus className='size-3' />
-          프로젝트 만들기
+          프로젝트 생성
         </Button>
       </div>
     );
@@ -201,10 +200,7 @@ function ProjectDropdownItems({
             <DropdownMenuItem
               key={project.project_id}
               onClick={() => onSelect(project)}
-              className={cn(
-                'gap-2 text-xs',
-                isSelected && 'bg-accent-primary/10 text-accent-primary',
-              )}
+              className={cn('gap-2 text-xs', isSelected && 'text-accent-primary')}
             >
               <Check className={cn('size-3 shrink-0', isSelected ? 'opacity-100' : 'opacity-0')} />
               <span className='truncate'>{project.name}</span>
@@ -213,17 +209,12 @@ function ProjectDropdownItems({
         })}
       </ScrollArea>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={onOpenCreate} className='gap-2 text-xs'>
-        <Button variant='outline' className='text-xs'>
-          프로젝트 만들기
+      <div className='flex items-center justify-center gap-1'>
+        <Button variant='ghost' size='sm' className='w-full gap-1.5 text-xs' onClick={onOpenCreate}>
+          <Plus className='size-3' />
+          프로젝트 생성
         </Button>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href='/projects' className='gap-2 text-xs'>
-          <ExternalLink className='size-3' />
-          프로젝트 관리
-        </Link>
-      </DropdownMenuItem>
+      </div>
     </>
   );
 }

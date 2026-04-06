@@ -3,18 +3,39 @@
 import { KnowledgePreviewModal } from '@/components/projects/KnowledgePreviewModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOverlay } from '@/hooks/useOverlay';
 import { cn } from '@/lib/utils';
 import { knowledgeService } from '@/services/knowledge-service';
+import { useProjectStore } from '@/stores/project-store';
+import { useReadinessStore } from '@/stores/readiness-store';
 import type {
   KnowledgeDocument,
   KnowledgeDocumentFileType,
   KnowledgeDocumentStatus,
 } from '@/types/project';
-import { Ban, Check, Clock, FileText, Loader2, RefreshCw, Trash2, Upload } from 'lucide-react';
+import {
+  Ban,
+  Check,
+  Clock,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Text,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useReadinessStore } from '@/stores/readiness-store';
+import { Textarea } from '../ui/textarea';
+
+type KnowledgeInputMode = 'file' | 'text';
+
+const INPUT_MODES: { value: KnowledgeInputMode; label: string; icon: typeof Upload }[] = [
+  { value: 'file', label: '첨부 파일', icon: Upload },
+  { value: 'text', label: '텍스트 입력', icon: Text },
+];
 
 interface ProjectKnowledgeTabProps {
   projectId: string;
@@ -58,6 +79,10 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(null);
+  const [inputMode, setInputMode] = useState<KnowledgeInputMode>('file');
+  const [textContent, setTextContent] = useState('');
+  const [textSubmitting, setTextSubmitting] = useState(false);
+  const projectName = useProjectStore((s) => s.currentProject?.name ?? 'project');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlay = useOverlay();
   const invalidateReadiness = useReadinessStore((s) => s.invalidate);
@@ -211,6 +236,28 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     [projectId, overlay, invalidateReadiness],
   );
 
+  // 텍스트 입력 제출
+  const handleTextSubmit = useCallback(async () => {
+    const trimmedContent = textContent.trim();
+    if (!trimmedContent) return;
+
+    const now = new Date();
+    const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    const title = `${projectName}_knowledge_${ts}`;
+
+    setTextSubmitting(true);
+    try {
+      await knowledgeService.uploadText(projectId, title, trimmedContent);
+      await fetchDocuments();
+      invalidateReadiness();
+      setTextContent('');
+    } catch {
+      // 글로벌 핸들링
+    } finally {
+      setTextSubmitting(false);
+    }
+  }, [projectId, projectName, textContent, fetchDocuments, invalidateReadiness]);
+
   // 카드 클릭 → 미리보기 모달
   const handleCardClick = useCallback((doc: KnowledgeDocument) => {
     if (doc.status === 'completed') {
@@ -236,39 +283,95 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
         </p>
       </div>
 
-      {/* Upload Area */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-6 py-10 transition-colors',
-          dragging
-            ? 'border-accent-primary bg-accent-primary/5'
-            : 'border-line-primary hover:border-fg-muted hover:bg-canvas-surface/50',
-          uploading && 'pointer-events-none opacity-50',
-        )}
-      >
-        <div className='bg-canvas-surface mb-3 flex size-12 items-center justify-center rounded-full'>
-          {uploading ? (
-            <Loader2 className='text-fg-muted size-5 animate-spin' />
-          ) : (
-            <Upload className='text-fg-muted size-5' />
-          )}
+      {/* Input Mode Tabs */}
+      <div className='flex flex-col gap-4'>
+        <div className='border-line-primary flex gap-1 border-b'>
+          {INPUT_MODES.map((mode) => {
+            const Icon = mode.icon;
+            return (
+              <button
+                key={mode.value}
+                onClick={() => setInputMode(mode.value)}
+                className={cn(
+                  'flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors',
+                  inputMode === mode.value
+                    ? 'text-accent-primary border-accent-primary border-b-2'
+                    : 'text-fg-muted hover:text-fg-secondary',
+                )}
+              >
+                <Icon className='size-4' />
+                {mode.label}
+              </button>
+            );
+          })}
         </div>
-        <p className='text-fg-primary text-sm font-medium'>
-          {uploading ? '업로드 중...' : '파일을 드래그하거나 클릭하여 업로드'}
-        </p>
-        <p className='text-fg-muted mt-1 text-xs'>TXT, PDF, MD</p>
-        <input
-          ref={fileInputRef}
-          type='file'
-          className='hidden'
-          multiple
-          accept='.pdf,.md,.txt'
-          onChange={handleFileSelect}
-        />
+
+        {/* File Upload Area */}
+        {inputMode === 'file' && (
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-6 py-10 transition-colors',
+              dragging
+                ? 'border-accent-primary bg-accent-primary/5'
+                : 'border-line-primary hover:border-fg-muted hover:bg-canvas-surface/50',
+              uploading && 'pointer-events-none opacity-50',
+            )}
+          >
+            <div className='bg-canvas-surface mb-3 flex size-12 items-center justify-center rounded-full'>
+              {uploading ? (
+                <Loader2 className='text-fg-muted size-5 animate-spin' />
+              ) : (
+                <Upload className='text-fg-muted size-5' />
+              )}
+            </div>
+            <p className='text-fg-primary text-sm font-medium'>
+              {uploading ? '업로드 중...' : '파일을 드래그하거나 클릭하여 업로드'}
+            </p>
+            <p className='text-fg-muted mt-1 text-xs'>TXT, PDF, MD</p>
+            <input
+              ref={fileInputRef}
+              type='file'
+              className='hidden'
+              multiple
+              accept='.pdf,.md,.txt'
+              onChange={handleFileSelect}
+            />
+          </div>
+        )}
+
+        {/* Text Input Area */}
+        {inputMode === 'text' && (
+          <div className='flex flex-col gap-3'>
+            <Textarea
+              placeholder='텍스트를 붙여넣거나 입력하세요...'
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              rows={8}
+              className='field-sizing-fixed min-h-20'
+            />
+            <div className='flex items-center justify-between'>
+              <p className='text-fg-muted text-xs'>
+                {textContent.length > 0 && `${textContent.length.toLocaleString()}자`}
+              </p>
+              <Button
+                onClick={handleTextSubmit}
+                disabled={!textContent.trim() || textSubmitting}
+                className='gap-1.5'
+              >
+                {textSubmitting ? (
+                  <Loader2 className='size-4 animate-spin' />
+                ) : (
+                  <Upload className='size-4' />
+                )}
+                {textSubmitting ? '저장 중...' : '문서로 저장'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Document List */}
@@ -307,22 +410,40 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                     <div className='text-fg-muted flex items-center gap-2 text-xs'>
                       <span>{formatFileSize(doc.size_bytes)}</span>
                       {doc.status === 'completed' && <span>· {doc.chunk_count}개 청크</span>}
-                      {doc.status === 'failed' && doc.error_message && (
-                        <span className='max-w-48 truncate text-red-500' title={doc.error_message}>
-                          · {doc.error_message}
-                        </span>
-                      )}
                     </div>
                   </div>
 
                   {/* Status badge */}
-                  <Badge
-                    variant='outline'
-                    className={cn('shrink-0 px-2 text-xs [&>svg]:size-4', statusConfig.color)}
-                  >
-                    <StatusIcon className={cn('', doc.status === 'processing' && 'animate-spin')} />
-                    {statusConfig.label}
-                  </Badge>
+                  {doc.status === 'failed' && doc.error_message ? (
+                    <HoverCard openDelay={200}>
+                      <HoverCardTrigger asChild>
+                        <Badge
+                          variant='outline'
+                          className={cn(
+                            'shrink-0 cursor-pointer px-2 text-xs [&>svg]:size-4',
+                            statusConfig.color,
+                          )}
+                        >
+                          <StatusIcon />
+                          {statusConfig.label}
+                        </Badge>
+                      </HoverCardTrigger>
+                      <HoverCardContent className='w-72 text-sm'>
+                        <p className='text-fg-muted mb-1 text-xs font-medium'>오류 메시지</p>
+                        <p className='text-xs wrap-break-word text-red-500'>{doc.error_message}</p>
+                      </HoverCardContent>
+                    </HoverCard>
+                  ) : (
+                    <Badge
+                      variant='outline'
+                      className={cn('shrink-0 px-2 text-xs [&>svg]:size-4', statusConfig.color)}
+                    >
+                      <StatusIcon
+                        className={cn('', doc.status === 'processing' && 'animate-spin')}
+                      />
+                      {statusConfig.label}
+                    </Badge>
+                  )}
 
                   {/* Active toggle */}
                   <div onClick={(e) => e.stopPropagation()}>
@@ -337,25 +458,33 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                   {/* Actions */}
                   <div className='flex shrink-0 items-center gap-1'>
                     {doc.status === 'failed' && (
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='text-fg-muted hover:text-fg-primary size-8'
-                        onClick={(e) => handleReprocess(e, doc)}
-                        aria-label='재시도'
-                      >
-                        <RefreshCw className='size-3.5' />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className='text-fg-muted hover:text-fg-primary size-8'
+                            onClick={(e) => handleReprocess(e, doc)}
+                          >
+                            <RefreshCw className='size-3.5' />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>재시도</TooltipContent>
+                      </Tooltip>
                     )}
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='text-fg-muted hover:text-destructive size-8'
-                      onClick={(e) => handleDelete(e, doc)}
-                      aria-label='삭제'
-                    >
-                      <Trash2 className='size-3.5' />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='text-fg-muted hover:text-destructive size-8'
+                          onClick={(e) => handleDelete(e, doc)}
+                        >
+                          <Trash2 className='size-3.5' />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>삭제</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               );

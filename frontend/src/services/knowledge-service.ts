@@ -14,6 +14,14 @@ export const knowledgeService = {
   get: (projectId: string, documentId: string) =>
     api.get<KnowledgeDocument>(`${BASE}/${projectId}/knowledge/documents/${documentId}`),
 
+  uploadText: async (projectId: string, title: string, content: string, overwrite = false) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const fileName = title.endsWith('.txt') ? title : `${title}.txt`;
+    const file = new File([blob], fileName, { type: 'text/plain' });
+
+    return knowledgeService.upload(projectId, file, overwrite);
+  },
+
   upload: async (projectId: string, file: File, overwrite = false) => {
     const formData = new FormData();
     formData.append('file', file);

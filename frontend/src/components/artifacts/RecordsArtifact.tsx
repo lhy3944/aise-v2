@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { recordService } from '@/services/record-service';
 import { useRecordStore } from '@/stores/record-store';
-import type { Record as RecordType, RecordCreate, RecordExtractedItem, RecordStatus } from '@/types/project';
+import type { RecordCreate, RecordStatus, Record as RecordType } from '@/types/project';
 import {
   CheckCircle2,
   Database,
@@ -35,14 +35,12 @@ function ConfidenceBadge({ score }: { score: number | null }) {
   if (score === null) return null;
   const pct = Math.round(score * 100);
   const color =
-    pct >= 80 ? 'text-green-600 bg-green-500/10' :
-    pct >= 50 ? 'text-amber-600 bg-amber-500/10' :
-    'text-red-600 bg-red-500/10';
-  return (
-    <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', color)}>
-      {pct}%
-    </span>
-  );
+    pct >= 80
+      ? 'text-green-600 bg-green-500/10'
+      : pct >= 50
+        ? 'text-amber-600 bg-amber-500/10'
+        : 'text-red-600 bg-red-500/10';
+  return <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', color)}>{pct}%</span>;
 }
 
 export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
@@ -93,9 +91,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
     async (record: RecordType, status: RecordStatus) => {
       try {
         const updated = await recordService.updateStatus(projectId, record.record_id, status);
-        setRecords((prev) =>
-          prev.map((r) => (r.record_id === updated.record_id ? updated : r)),
-        );
+        setRecords((prev) => prev.map((r) => (r.record_id === updated.record_id ? updated : r)));
       } catch {
         // 글로벌 핸들링
       }
@@ -208,12 +204,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
             </span>
           </div>
           <div className='flex items-center gap-2'>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='h-7 text-xs'
-              onClick={toggleAllCandidates}
-            >
+            <Button variant='ghost' size='sm' className='h-7 text-xs' onClick={toggleAllCandidates}>
               {selectedCandidates.size === candidates.length ? '전체 해제' : '전체 선택'}
             </Button>
             <Button
@@ -237,7 +228,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
         </div>
 
         {/* Candidate list */}
-        <ScrollArea className='flex-1'>
+        <ScrollArea className='flex-1 overflow-hidden'>
           <div className='p-3'>
             <div className='flex flex-col gap-1.5'>
               {candidates.map((candidate, idx) => (
@@ -247,7 +238,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
                   className={cn(
                     'border-line-primary flex items-start gap-2 rounded-md border px-3 py-2 text-left transition-colors',
                     selectedCandidates.has(idx)
-                      ? 'border-accent-primary/50 bg-accent-primary/5'
+                      ? 'border-accent-primary/50'
                       : 'hover:bg-canvas-surface/50',
                   )}
                 >
@@ -341,7 +332,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
         <div className='p-3'>
           {Object.entries(grouped).map(([sectionName, sectionRecords]) => (
             <div key={sectionName} className='mb-4'>
-              <h4 className='text-fg-muted mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider'>
+              <h4 className='text-fg-muted mb-1.5 px-1 text-[10px] font-semibold tracking-wider uppercase'>
                 {sectionName}
               </h4>
               <div className='flex flex-col gap-1.5'>
@@ -358,7 +349,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
                     >
                       {/* Top row: ID + confidence + status */}
                       <div className='mb-1 flex items-center gap-2'>
-                        <span className='text-fg-muted text-[10px] font-mono'>
+                        <span className='text-fg-muted font-mono text-[10px]'>
                           {record.display_id}
                         </span>
                         <ConfidenceBadge score={record.confidence_score} />

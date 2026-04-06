@@ -8,6 +8,7 @@ import type { Project } from '@/types/project';
 import { BookOpen, Box, Clock, FolderOpen, LayoutList, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 interface ProjectCardProps {
   project: Project;
@@ -69,27 +70,33 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           </div>
 
           {project.readiness && (
-            <div className='flex items-center gap-2'>
-              <span className='flex items-center gap-1'>
-                <FolderOpen className={cn('size-4', project.readiness.knowledge >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-xs font-semibold', project.readiness.knowledge >= 1 ? 'text-green-600' : 'text-amber-600')}>
-                  {project.readiness.knowledge}
-                </span>
-              </span>
-              <span className='flex items-center gap-1'>
-                <BookOpen className={cn('size-4', project.readiness.glossary >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-xs font-semibold', project.readiness.glossary >= 1 ? 'text-green-600' : 'text-amber-600')}>
-                  {project.readiness.glossary}
-                </span>
-              </span>
-              <span className='flex items-center gap-1'>
-                <LayoutList className={cn('size-4', project.readiness.sections >= 1 ? 'text-green-500' : 'text-amber-500')} />
-                <span className={cn('text-xs font-semibold', project.readiness.sections >= 1 ? 'text-green-600' : 'text-amber-600')}>
-                  {project.readiness.sections}
-                </span>
-              </span>
-              <span className={cn('size-2.5 rounded-full', project.readiness.is_ready ? 'bg-green-500' : 'bg-amber-500')} />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className='flex items-center gap-2'>
+                  <span className='flex items-center gap-1'>
+                    <FolderOpen className={'size-4'} />
+                    <span>{project.readiness.knowledge}</span>
+                  </span>
+                  <span className='flex items-center gap-1'>
+                    <BookOpen className={'size-4'} />
+                    <span>{project.readiness.glossary}</span>
+                  </span>
+                  <span className='flex items-center gap-1'>
+                    <LayoutList className={'size-4'} />
+                    <span>{project.readiness.sections}</span>
+                  </span>
+                  <span
+                    className={cn(
+                      'size-2.5 rounded-full',
+                      project.readiness.is_ready ? 'bg-green-500' : 'bg-amber-500',
+                    )}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {project.readiness.is_ready ? '프로젝트 설정 완료' : '프로젝트 설정 미완료'}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </Link>

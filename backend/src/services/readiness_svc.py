@@ -46,7 +46,7 @@ async def get_readiness(
     glossary = ReadinessItem(label="승인 용어", count=glossary_count, sufficient=glossary_count >= 1)
     sections = ReadinessItem(label="활성 섹션", count=section_count, sufficient=section_count >= 1)
 
-    is_ready = knowledge.sufficient and glossary.sufficient and sections.sufficient
+    is_ready = knowledge.sufficient and sections.sufficient
 
     return ReadinessResponse(
         knowledge=knowledge,

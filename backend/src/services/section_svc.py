@@ -29,7 +29,6 @@ def _to_response(section: RequirementSection) -> SectionResponse:
         type=section.type,
         description=section.description,
         output_format_hint=section.output_format_hint,
-        is_required=section.is_required,
         is_default=section.is_default,
         is_active=section.is_active,
         order_index=section.order_index,
@@ -104,7 +103,6 @@ async def create_section(
         name=data.name,
         description=data.description,
         output_format_hint=data.output_format_hint,
-        is_required=data.is_required,
         order_index=order_index,
     )
     db.add(section)
@@ -290,7 +288,6 @@ async def extract_sections(
             type=item.get("type", "other"),
             description=item.get("description"),
             output_format_hint=item.get("output_format_hint"),
-            is_required=False,
             is_default=False,
             is_active=True,
             order_index=100 + i,
