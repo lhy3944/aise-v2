@@ -39,6 +39,8 @@ services:
     restart: unless-stopped
     ports:
       - "8081:8081"
+    env_file:
+      - .env.prod
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aise}:${POSTGRES_PASSWORD:-aise1234}@postgres:5432/${POSTGRES_DB:-aise}
       ENVIRONMENT: ${ENVIRONMENT:-prod}
