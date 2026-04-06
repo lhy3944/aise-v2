@@ -350,33 +350,32 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
             <div
               key={section.section_id}
               className={cn(
-                'flex gap-3 px-4 py-3',
+                'flex items-center gap-3 px-4 py-3',
                 !section.is_active && 'opacity-50',
-                /* Desktop: single row / Mobile: wrap allowed */
-                'max-md:flex-wrap max-md:items-start',
-                'md:items-center',
               )}
             >
               {/* Drag handle — hidden on mobile */}
               <GripVertical className='text-fg-muted size-4 shrink-0 cursor-grab max-md:hidden' />
 
-              {/* Content area */}
+              {/* Content area: name + badges on line 1, type + description on line 2 */}
               <div className='min-w-0 flex-1'>
-                <div className='flex flex-wrap items-center gap-1.5'>
-                  <p className='text-fg-primary text-sm font-medium'>{section.name}</p>
+                <div className='flex items-center gap-1.5'>
+                  <p className='text-fg-primary truncate text-sm font-medium'>{section.name}</p>
                   {section.is_default && (
-                    <Badge variant='secondary' className='gap-1 text-xs'>
+                    <Badge variant='secondary' className='shrink-0 gap-1 text-xs'>
                       <Lock className='size-2.5' />
                       기본
                     </Badge>
                   )}
+                </div>
+                <div className='mt-0.5 flex flex-wrap items-center gap-1.5'>
                   <Badge variant='default' className='shrink-0 text-xs'>
                     {section.type}
                   </Badge>
+                  {section.description && (
+                    <span className='text-fg-muted text-xs'>{section.description}</span>
+                  )}
                 </div>
-                {section.description && (
-                  <p className='text-fg-muted mt-0.5 text-xs'>{section.description}</p>
-                )}
                 {section.output_format_hint && (
                   <p className='text-fg-muted mt-0.5 text-xs italic'>
                     출력 힌트: {section.output_format_hint}
@@ -384,8 +383,8 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                 )}
               </div>
 
-              {/* Actions: toggle + edit + delete */}
-              <div className='flex items-center gap-1 max-md:ml-auto max-md:mt-0'>
+              {/* Actions: toggle + edit + delete — always far right */}
+              <div className='flex shrink-0 items-center gap-1'>
                 <div onClick={(e) => e.stopPropagation()}>
                   <Switch
                     checked={section.is_active}
