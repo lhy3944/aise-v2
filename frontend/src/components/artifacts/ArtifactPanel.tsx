@@ -45,21 +45,26 @@ export function ArtifactPanel() {
     >
       {/* Tab Bar */}
       <div className='shrink-0 px-2 pt-2'>
-        <ScrollArea className='w-full *:data-[slot=scroll-area-viewport]:overflow-y-hidden'>
-          <TabsList variant='line' className='border-line-subtle w-max min-w-full justify-start pb-0.5'>
-            {ARTIFACT_TABS.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary gap-1.5 px-3 text-xs md:flex-initial'
-              >
-                <tab.icon className='size-3.5' />
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <ScrollBar orientation='horizontal' />
-        </ScrollArea>
+        <div className='relative'>
+          <ScrollArea className='w-full *:data-[slot=scroll-area-viewport]:overflow-y-hidden'>
+            <TabsList variant='line' className='border-line-subtle w-max min-w-full justify-start pb-0.5'>
+              {ARTIFACT_TABS.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className='data-[state=active]:text-accent-primary after:bg-accent-primary gap-1.5 px-3 text-xs md:flex-initial'
+                >
+                  <tab.icon className='size-3.5' />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <ScrollBar orientation='horizontal' />
+          </ScrollArea>
+          {/* Scroll fade indicators */}
+          <div className='from-background pointer-events-none absolute top-0 bottom-2.5 left-0 w-4 bg-linear-to-r to-transparent' />
+          <div className='from-background pointer-events-none absolute top-0 right-0 bottom-2.5 w-8 bg-linear-to-l to-transparent' />
+        </div>
       </div>
 
       {/* Content */}
