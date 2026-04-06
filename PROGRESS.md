@@ -17,11 +17,66 @@
 | 테스트 인프라 | Done | pytest 56개 (Project/Settings/Requirement/Glossary/Assist/Review) |
 | 요구사항 Review | Done | Review API + 프롬프트 + 테스트 6개 구현 완료 |
 | 요구사항 섹션(그룹핑) | Done | Section CRUD API + 프론트 UI (접기/펼치기, 드래그, 섹션 간 이동) |
-| Knowledge Repository | Done | Backend: pgvector + MinIO + RAG Chat API. Frontend: API 연동 미완 |
-| Frontend 구조 재설계 | Done | /chat→/agent, ArtifactPanel 우패널, RequirementsArtifact 추출 |
-| SRS 생성 | Not Started | Phase 2 다음 작업 |
+| Knowledge Repository | Done | Backend: pgvector + MinIO + RAG Chat API. Frontend: API 연동 완료 (업로드/토글/미리보기/재처리) |
+| Frontend 구조 재설계 | Done | /chat→/agent, ArtifactPanel 우패널, Records 탭으로 전환 |
+| Phase 2 프로젝트 기반 | Done | 지식 저장소 강화 + 용어 사전 확장 + 섹션 관리 재설계 + 프로젝트 준비도 |
+| Phase 3 Agent 코어 | Done | Record 모델/CRUD/추출 API + Agent 레이아웃 + 액션 카드 + Function Calling |
+| Phase 4 SRS 생성 | In Progress | SRS 모델/API/프롬프트 완료, 프론트 SRS 탭 UI 미구현 |
+| LLM Provider | Done | LLM_PROVIDER 환경변수로 OpenAI/Azure 자동 전환 |
+| 채팅 UI | Done | Message 컴포넌트 재설계, Tool Call UI, Function Calling 연동 |
 
 ## 작업 로그
+
+### 2026-04-05~06 (Phase 2~4 구현)
+- **Phase 2.1 지식 저장소 강화**:
+  - KnowledgeDocument: is_active 필드, 상태값 정리 (pending/processing/completed/failed)
+  - 새 API: 토글, 미리보기, 중복감지(409+overwrite), 재처리
+  - document_processor: 독립 DB 세션 (BackgroundTask 세션 닫힘 버그 수정)
+  - Frontend: ProjectKnowledgeTab API 연동, KnowledgePreviewModal (MD 렌더링/원문 Tabs)
+- **Phase 2.2 용어 사전 확장**:
+  - GlossaryItem: synonyms, abbreviations, section_tags, source_document_id, is_approved
+  - 새 API: POST /glossary/extract (지식 문서 기반), POST /glossary/approve
+- **Phase 2.3 섹션 관리 재설계**:
+  - RequirementSection: description, output_format_hint, is_required, is_default, is_active
+  - 프로젝트 생성 시 기본 5종 섹션 자동 생성 (lazy init 포함)
+  - 기본 섹션 삭제 보호, 토글, AI 추출 API
+  - 프로젝트 상세에 "섹션" 탭 추가
+- **Phase 2.4 프로젝트 준비도**:
+  - GET /projects/{id}/readiness 집계 API
+  - 프로젝트 목록 카드에 준비도 인디케이터 (아이콘+숫자+신호등)
+  - Zustand readiness-store + invalidate() 패턴 (실시간 반영)
+  - Agent 좌패널에 ReadinessMiniView
+- **Phase 3.1-3.2 Record 모델 + 추출**:
+  - Record 모델: content, display_id, section_id, source, confidence_score, status
+  - CRUD API + 추출 API (extract, extract-section, approve)
+  - 추출 프롬프트: 지식문서 + 섹션 + 용어 → 섹션별 레코드 + 신뢰도
+- **Phase 3.3 Agent 레이아웃**:
+  - 우패널: ArtifactPanel Requirements→Records 탭 전환, RecordsArtifact (섹션 그룹핑, 필터, 상태 전환)
+  - 좌패널: ReadinessMiniView
+  - RightPanel에 ArtifactPanel 연결 (빈 div 수정)
+- **Phase 3.4 액션 카드 + 채팅 연동**:
+  - ActionCards: 4종 워크플로우 카드 (준비도 기반 활성/비활성)
+  - 카드 클릭 → extract API 직접 호출 → Records 탭 후보 표시 → 승인
+- **Function Calling 전환**:
+  - agent_svc: tools 정의 (extract_records, generate_srs)
+  - SSE tool_call 이벤트 전송, 프론트에서 구조화된 처리
+  - tool-call.tsx: Collapsible Tool Call UI (상태 뱃지, Input/Output)
+  - ChatArea: onToolCall → executeToolCall 디스패처 → 상태 업데이트
+- **Phase 4.1 SRS 생성 (백엔드)**:
+  - SrsDocument/SrsSection DB 모델 + Alembic 마이그레이션
+  - API: generate, list, get, section edit, regenerate
+  - 프롬프트: IEEE 830 기반, 섹션별 레코드→문서 챕터, Traceability [FR-001]
+- **채팅 UI 재설계**:
+  - message.tsx: Message/MessageAvatar/MessageContent/MessageResponse/MessageBubble/MessageActions
+  - MessageRenderer 재설계 (마크다운 렌더링, Tool Call UI 통합)
+  - 채팅 레이아웃: 하단 40vh 여백 (새 메시지가 상단에 위치)
+  - Agent 프롬프트: tool call 전 안내 메시지 출력 규칙
+- **LLM Provider 전환**:
+  - llm_svc: LLM_PROVIDER 환경변수 (openai/azure), get_client() 자동 전환
+  - embedding_svc: provider별 모델 자동 선택
+- **레이아웃 수정**:
+  - Agent layout: h-[calc(100dvh-3.75rem)] 높이 고정
+  - 패널 토글 우측 정렬, 모바일 반응형 (탭 축약 라벨, 준비도 바텀시트)
 
 ### 2026-04-02 (Knowledge Repository + Frontend 구조 재설계)
 - **인프라**:
