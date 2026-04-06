@@ -110,7 +110,7 @@ export function MessageBubble({ children, className }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        'bg-accent-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed text-white whitespace-pre-wrap',
+        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
         className,
       )}
     >

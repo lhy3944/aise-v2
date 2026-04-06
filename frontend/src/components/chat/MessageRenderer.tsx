@@ -2,7 +2,6 @@
 
 import {
   Message,
-  MessageAvatar,
   MessageBubble,
   MessageContent,
   MessageResponse,
@@ -35,7 +34,6 @@ function MessageItem({
 
   return (
     <Message from={message.role}>
-      <MessageAvatar from={message.role} />
       <MessageContent from={message.role}>
         {isUser ? (
           <MessageBubble>{message.content}</MessageBubble>

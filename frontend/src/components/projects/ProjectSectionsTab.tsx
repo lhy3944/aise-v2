@@ -473,16 +473,16 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 transition-colors',
+                  'flex gap-3 px-4 py-3 transition-colors',
                   !section.is_active && 'opacity-50',
                   isDragSource && 'bg-canvas-secondary opacity-60',
                   isDropTarget && 'border-accent-primary border-t-2',
                 )}
               >
-                {/* Drag handle */}
+                {/* Drag handle — vertically centered */}
                 <div
                   data-grip
-                  className='text-fg-muted shrink-0 cursor-grab touch-none active:cursor-grabbing'
+                  className='text-fg-muted flex shrink-0 cursor-grab self-center touch-none active:cursor-grabbing'
                 >
                   <GripVertical className='size-4' />
                 </div>
@@ -513,8 +513,8 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                   )}
                 </div>
 
-                {/* Edit + Delete buttons */}
-                <div className='flex shrink-0 items-center gap-0.5'>
+                {/* Edit + Delete buttons — vertically centered */}
+                <div className='flex shrink-0 items-center gap-0.5 self-center'>
                   {!section.is_default ? (
                     <>
                       <Button
@@ -541,8 +541,8 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
                   )}
                 </div>
 
-                {/* Toggle — always far right end */}
-                <div className='shrink-0' onClick={(e) => e.stopPropagation()}>
+                {/* Toggle — always far right end, vertically centered */}
+                <div className='shrink-0 self-center' onClick={(e) => e.stopPropagation()}>
                   <Switch
                     checked={section.is_active}
                     onCheckedChange={() => handleToggle(section)}
