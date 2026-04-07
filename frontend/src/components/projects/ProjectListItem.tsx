@@ -41,8 +41,8 @@ export function ProjectListItem({ project, onDelete }: ProjectListItemProps) {
           )}
         </div>
 
-        {/* 모바일: 설명 대신 모듈 뱃지 + 메타 정보 한 줄 표시 */}
-        <div className='mt-1 flex items-center gap-2 sm:hidden'>
+        {/* 모바일: 설명 대신 모듈 뱃지 + 메타 정보 표시 */}
+        <div className='mt-1 flex flex-col gap-0.5 sm:hidden'>
           <div className='flex items-center gap-1'>
             {project.modules.map((mod) => (
               <Badge key={mod} variant='ghost' className={cn(MODULE_COLORS[mod], 'px-1.5 py-0 text-[10px]')}>
