@@ -49,7 +49,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(
+  const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
     // sessionId가 있고 캐시가 없으면 로딩 상태로 시작 (빈 화면 깜빡임 방지)
     () => !!sessionId && !useChatStore.getState().sessionMessages[sessionId],
   );
