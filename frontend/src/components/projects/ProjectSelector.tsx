@@ -1,7 +1,7 @@
 'use client';
 
 import { Modal } from '@/components/overlay/Modal';
-import { ProjectCreateForm } from '@/components/projects/ProjectCreateForm';
+import { ProjectCreateForm, ProjectCreateFormActions } from '@/components/projects/ProjectCreateForm';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -236,12 +236,9 @@ function CreateProjectDialog({
       title='프로젝트 생성'
       description='프로젝트 정보를 입력하고 사용할 모듈을 선택하세요.'
       size='lg'
+      footer={<ProjectCreateFormActions onCancel={() => onOpenChange(false)} isLoading={isLoading} />}
     >
-      <ProjectCreateForm
-        onSubmit={onSubmit}
-        onCancel={() => onOpenChange(false)}
-        isLoading={isLoading}
-      />
+      <ProjectCreateForm onSubmit={onSubmit} />
     </Modal>
   );
 }

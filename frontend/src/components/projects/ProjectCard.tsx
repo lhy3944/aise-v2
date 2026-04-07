@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { MODULE_COLORS, MODULE_LABELS } from '@/constants/project';
-import { formatDate } from '@/lib/format';
+import { formatRelativeTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Project } from '@/types/project';
 import { BookOpen, Box, Clock, FolderOpen, LayoutList, Trash2, Users } from 'lucide-react';
@@ -61,7 +61,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           <div className='flex items-center gap-4'>
             <span className='flex items-center gap-1'>
               <Clock className='size-4' />
-              {formatDate(project.created_at)}
+              {formatRelativeTime(project.updated_at)}
             </span>
             <span className='flex items-center gap-1'>
               <Users className='size-4' />

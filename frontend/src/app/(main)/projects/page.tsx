@@ -23,15 +23,14 @@ import type { ProjectCreate } from '@/types/project';
 import { Grid2X2, Plus, Search, TextAlignJustify } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type ViewMode = 'card' | 'list';
-
 export default function ProjectsPage() {
   const { projects, setProjects, addProject, removeProject, isLoading, setLoading, setError } =
     useProjectStore();
+  const viewMode = useProjectStore((s) => s.viewMode);
+  const setViewMode = useProjectStore((s) => s.setViewMode);
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);

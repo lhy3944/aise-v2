@@ -60,7 +60,7 @@ export default function ProjectDetailLayout({ params }: Props) {
         <div
           className={cn('mx-auto transition-[max-width] duration-300 ease-in-out sm:px-6', maxW)}
         >
-          <div className='flex items-center gap-2.5 pt-6 pb-1'>
+          <div className='flex items-center gap-2.5 pt-6 pb-1 max-sm:pl-4'>
             <Button variant='outline' size='icon-sm' className='-ml-1 size-7' asChild>
               <Link href='/projects' aria-label='프로젝트 목록으로'>
                 <ArrowLeft className='size-4' />
