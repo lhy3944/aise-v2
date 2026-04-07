@@ -109,8 +109,15 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     setGenerating(true);
     setGenerated([]);
     try {
-      const result = await glossaryService.generate(projectId);
-      setGenerated(result.generated_glossary);
+      const result = await glossaryService.extract(projectId);
+      setGenerated(
+        result.candidates.map((c) => ({
+          term: c.term,
+          definition: c.definition,
+          synonyms: c.synonyms,
+          abbreviations: c.abbreviations,
+        })),
+      );
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '자동 생성에 실패했습니다.';
       showToast.error(msg);
