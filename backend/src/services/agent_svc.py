@@ -8,6 +8,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.database import async_session
 from src.models.glossary import GlossaryItem
 from src.models.knowledge import KnowledgeChunk, KnowledgeDocument
 from src.models.project import Project
@@ -55,11 +56,11 @@ TOOLS = [
 async def stream_chat(
     session_id: uuid.UUID,
     message: str,
-    db: AsyncSession,
 ) -> AsyncGenerator[str, None]:
     """Agent Chat SSE 스트리밍 응답 생성 (Function Calling 지원)
 
-    session_id 기반: DB에서 history 로드 + 메시지 자동 저장
+    자체 DB 세션을 생성하여 StreamingResponse 수명 동안 유지.
+    (FastAPI Depends의 DB 세션은 라우터 함수 반환 시 닫히므로 사용 불가)
 
     Yields SSE events:
     - data: {"type": "token", "content": "..."} -- 텍스트 토큰
@@ -67,126 +68,127 @@ async def stream_chat(
     - data: {"type": "done"} -- 스트리밍 완료
     - data: {"type": "error", "content": "..."} -- 에러
     """
-    try:
-        # 1. 세션 조회
-        session = await db.get(Session, session_id)
-        if not session:
-            yield _sse_event({"type": "error", "content": "세션을 찾을 수 없습니다."})
-            return
+    async with async_session() as db:
+        try:
+            # 1. 세션 조회
+            session = await db.get(Session, session_id)
+            if not session:
+                yield _sse_event({"type": "error", "content": "세션을 찾을 수 없습니다."})
+                return
 
-        project_id = session.project_id
+            project_id = session.project_id
 
-        # 2. user 메시지 저장
-        await session_svc.add_message(db, session_id, "user", message)
-        await session_svc.update_session_title_if_first(db, session_id, message)
-        await db.commit()
+            # 2. user 메시지 저장
+            await session_svc.add_message(db, session_id, "user", message)
+            await session_svc.update_session_title_if_first(db, session_id, message)
+            await db.commit()
 
-        # 3. DB에서 history 로드
-        history = await session_svc.get_history(db, session_id, limit=50)
+            # 3. DB에서 history 로드
+            history = await session_svc.get_history(db, session_id, limit=50)
 
-        # 4. 프로젝트 조회
-        result = await db.execute(select(Project).where(Project.id == project_id))
-        project = result.scalar_one_or_none()
-        if not project:
-            yield _sse_event({"type": "error", "content": "프로젝트를 찾을 수 없습니다."})
-            return
+            # 4. 프로젝트 조회
+            result = await db.execute(select(Project).where(Project.id == project_id))
+            project = result.scalar_one_or_none()
+            if not project:
+                yield _sse_event({"type": "error", "content": "프로젝트를 찾을 수 없습니다."})
+                return
 
-        # 5. Knowledge 검색 (RAG)
-        knowledge_chunks = await _fetch_knowledge_chunks(project_id, message, db)
+            # 5. Knowledge 검색 (RAG)
+            knowledge_chunks = await _fetch_knowledge_chunks(project_id, message, db)
 
-        # 6. Glossary 조회
-        glossary = await _fetch_glossary(project_id, db)
+            # 6. Glossary 조회
+            glossary = await _fetch_glossary(project_id, db)
 
-        # 7. 기존 요구사항 조회
-        requirements = await _fetch_requirements(project_id, db)
+            # 7. 기존 요구사항 조회
+            requirements = await _fetch_requirements(project_id, db)
 
-        # 8. 시스템 프롬프트 빌드
-        system_prompt = build_agent_chat_prompt(
-            project_name=project.name,
-            project_description=project.description,
-            project_domain=project.domain,
-            knowledge_context=knowledge_chunks,
-            glossary=glossary,
-            requirements=requirements,
-        )
+            # 8. 시스템 프롬프트 빌드
+            system_prompt = build_agent_chat_prompt(
+                project_name=project.name,
+                project_description=project.description,
+                project_domain=project.domain,
+                knowledge_context=knowledge_chunks,
+                glossary=glossary,
+                requirements=requirements,
+            )
 
-        # 9. 메시지 구성 (DB에서 로드한 history 사용 — 마지막 user 메시지 포함)
-        messages = [{"role": "system", "content": system_prompt}]
-        for h in history:
-            messages.append({"role": h["role"], "content": h["content"]})
+            # 9. 메시지 구성 (DB에서 로드한 history 사용 — 마지막 user 메시지 포함)
+            messages = [{"role": "system", "content": system_prompt}]
+            for h in history:
+                messages.append({"role": h["role"], "content": h["content"]})
 
-        logger.info(
-            f"Agent Chat 스트리밍 시작: session_id={session_id}, project_id={project_id}, "
-            f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
-        )
+            logger.info(
+                f"Agent Chat 스트리밍 시작: session_id={session_id}, project_id={project_id}, "
+                f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
+            )
 
-        # 10. LLM 스트리밍 호출 (Function Calling 포함)
-        client = get_client()
-        stream = await client.chat.completions.create(
-            model=_get_default_model(),
-            messages=messages,
-            tools=TOOLS,
-            temperature=0.3,
-            max_completion_tokens=4096,
-            stream=True,
-        )
+            # 10. LLM 스트리밍 호출 (Function Calling 포함)
+            client = get_client()
+            stream = await client.chat.completions.create(
+                model=_get_default_model(),
+                messages=messages,
+                tools=TOOLS,
+                temperature=0.3,
+                max_completion_tokens=4096,
+                stream=True,
+            )
 
-        # 스트리밍 청크 처리 — tool_call과 텍스트를 분리
-        tool_call_chunks: dict[int, dict] = {}  # index → {name, arguments}
-        full_content = ""
+            # 스트리밍 청크 처리 — tool_call과 텍스트를 분리
+            tool_call_chunks: dict[int, dict] = {}  # index → {name, arguments}
+            full_content = ""
 
-        async for chunk in stream:
-            if not chunk.choices:
-                continue
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
 
-            delta = chunk.choices[0].delta
+                delta = chunk.choices[0].delta
 
-            # 텍스트 토큰
-            if delta.content:
-                full_content += delta.content
-                yield _sse_event({"type": "token", "content": delta.content})
+                # 텍스트 토큰
+                if delta.content:
+                    full_content += delta.content
+                    yield _sse_event({"type": "token", "content": delta.content})
 
-            # Tool call 청크 누적
-            if delta.tool_calls:
-                for tc in delta.tool_calls:
-                    idx = tc.index
-                    if idx not in tool_call_chunks:
-                        tool_call_chunks[idx] = {"name": "", "arguments": ""}
-                    if tc.function and tc.function.name:
-                        tool_call_chunks[idx]["name"] = tc.function.name
-                    if tc.function and tc.function.arguments:
-                        tool_call_chunks[idx]["arguments"] += tc.function.arguments
+                # Tool call 청크 누적
+                if delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        idx = tc.index
+                        if idx not in tool_call_chunks:
+                            tool_call_chunks[idx] = {"name": "", "arguments": ""}
+                        if tc.function and tc.function.name:
+                            tool_call_chunks[idx]["name"] = tc.function.name
+                        if tc.function and tc.function.arguments:
+                            tool_call_chunks[idx]["arguments"] += tc.function.arguments
 
-        # 스트리밍 완료 후 tool_call 이벤트 전송
-        tool_calls_data = []
-        for idx in sorted(tool_call_chunks.keys()):
-            tc = tool_call_chunks[idx]
-            try:
-                args = json.loads(tc["arguments"]) if tc["arguments"] else {}
-            except json.JSONDecodeError:
-                args = {}
+            # 스트리밍 완료 후 tool_call 이벤트 전송
+            tool_calls_data = []
+            for idx in sorted(tool_call_chunks.keys()):
+                tc = tool_call_chunks[idx]
+                try:
+                    args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+                except json.JSONDecodeError:
+                    args = {}
 
-            logger.info(f"Tool call 감지: name={tc['name']}, args={args}")
-            tool_calls_data.append({"name": tc["name"], "arguments": args})
-            yield _sse_event({
-                "type": "tool_call",
-                "name": tc["name"],
-                "arguments": args,
-            })
+                logger.info(f"Tool call 감지: name={tc['name']}, args={args}")
+                tool_calls_data.append({"name": tc["name"], "arguments": args})
+                yield _sse_event({
+                    "type": "tool_call",
+                    "name": tc["name"],
+                    "arguments": args,
+                })
 
-        # 11. assistant 메시지 저장
-        await session_svc.add_message(
-            db, session_id, "assistant", full_content,
-            tool_calls=tool_calls_data if tool_calls_data else None,
-        )
-        await db.commit()
+            # 11. assistant 메시지 저장
+            await session_svc.add_message(
+                db, session_id, "assistant", full_content,
+                tool_calls=tool_calls_data if tool_calls_data else None,
+            )
+            await db.commit()
 
-        yield _sse_event({"type": "done"})
-        logger.info(f"Agent Chat 스트리밍 완료: session_id={session_id}")
+            yield _sse_event({"type": "done"})
+            logger.info(f"Agent Chat 스트리밍 완료: session_id={session_id}")
 
-    except Exception as e:
-        logger.error(f"Agent Chat 스트리밍 실패: {e}")
-        yield _sse_event({"type": "error", "content": f"AI 응답 생성에 실패했습니다: {str(e)}"})
+        except Exception as e:
+            logger.error(f"Agent Chat 스트리밍 실패: {e}")
+            yield _sse_event({"type": "error", "content": f"AI 응답 생성에 실패했습니다: {str(e)}"})
 
 
 async def _fetch_knowledge_chunks(
