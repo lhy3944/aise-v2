@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = 'a2b3c4d5e6f7'
-down_revision: Union[str, Sequence[str], None] = 'f1df240269cf'
+down_revision: Union[str, Sequence[str], None] = 'b6c0e46306ed'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
