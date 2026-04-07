@@ -5,6 +5,7 @@ from src.models.review import RequirementReview
 from src.models.knowledge import KnowledgeDocument, KnowledgeChunk
 from src.models.record import Record
 from src.models.srs import SrsDocument, SrsSection
+from src.models.session import Session, SessionMessage
 
 __all__ = [
     "Project",
@@ -19,4 +20,6 @@ __all__ = [
     "Record",
     "SrsDocument",
     "SrsSection",
+    "Session",
+    "SessionMessage",
 ]

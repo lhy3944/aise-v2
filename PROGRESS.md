@@ -24,8 +24,32 @@
 | Phase 4 SRS 생성 | In Progress | SRS 모델/API/프롬프트 완료, 프론트 SRS 탭 UI 미구현 |
 | LLM Provider | Done | LLM_PROVIDER 환경변수로 OpenAI/Azure 자동 전환 |
 | 채팅 UI | Done | Message 컴포넌트 재설계, Tool Call UI, Function Calling 연동 |
+| 다중 세션 + URL 라우팅 | Done | Session/Message DB 모델, CRUD API, /agent/[sessionId] 라우팅, 세션별 독립 스트리밍 |
 
 ## 작업 로그
+
+### 2026-04-07 (다중 세션 + URL 라우팅)
+- **Backend 세션 모델**:
+  - Session, SessionMessage DB 모델 (UUID PK, project FK, JSONB tool_calls/tool_data)
+  - Alembic 마이그레이션 (sessions, session_messages 테이블 + 인덱스)
+  - Session CRUD 서비스 + 라우터 (POST/GET/PATCH/DELETE /api/v1/sessions)
+- **Agent Chat session_id 기반 전환**:
+  - 요청에서 history[] 제거 → session_id만 전달
+  - 백엔드가 DB에서 최근 50개 메시지 로드하여 history로 사용
+  - user 메시지: 스트리밍 전 저장, assistant 메시지: 스트리밍 완료 후 저장
+  - 첫 메시지 시 세션 제목 자동 설정 (첫 40자)
+- **Frontend URL 라우팅**:
+  - `/agent` (새 대화 empty state), `/agent/[sessionId]` (특정 세션)
+  - 첫 메시지 전송 → POST /sessions → UUID 발급 → router.replace로 URL 변경
+  - session-service.ts: 세션 CRUD API 클라이언트
+- **Chat Store 리팩터링**:
+  - Thread 기반 → Session 기반 (sessionMessages Record, streamingSessionIds Set)
+  - localStorage persist 제거 (서버가 source of truth)
+  - 세션별 독립 스트리밍 상태 (다중 세션 동시 지원)
+- **컴포넌트 업데이트**:
+  - ChatArea: sessionId props, 서버 메시지 로드, 세션 생성 + URL 변경
+  - SessionList/SessionItem: 서버 기반 세션 목록 (ThreadList/ThreadItem 대체)
+  - LeftSidebar, MobileBottomDrawer: SessionList 사용
 
 ### 2026-04-05~06 (Phase 2~4 구현)
 - **Phase 2.1 지식 저장소 강화**:

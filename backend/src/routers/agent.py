@@ -20,18 +20,18 @@ async def agent_chat(
 ):
     """Agent Chat SSE 스트리밍 엔드포인트
 
+    session_id 기반: 백엔드가 DB에서 history 로드 + 메시지 자동 저장
+
     SSE 이벤트 형식:
     - data: {"type": "token", "content": "..."} -- 텍스트 토큰
+    - data: {"type": "tool_call", "name": "...", "arguments": {...}} -- 도구 호출
     - data: {"type": "done"} -- 스트리밍 완료
     - data: {"type": "error", "content": "..."} -- 에러
     """
-    project_id = uuid.UUID(body.project_id)
-
-    # Convert history to dict format
-    history = [{"role": m.role, "content": m.content} for m in body.history]
+    session_id = uuid.UUID(body.session_id)
 
     return StreamingResponse(
-        agent_svc.stream_chat(project_id, body.message, history, db),
+        agent_svc.stream_chat(session_id, body.message, db),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

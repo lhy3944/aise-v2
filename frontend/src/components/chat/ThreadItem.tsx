@@ -10,10 +10,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { Thread } from '@/stores/chat-store';
-
 interface ThreadItemProps {
-  thread: Thread;
+  thread: { id: string; title: string };
   isActive: boolean;
   onClick: () => void;
   onDelete?: () => void;

@@ -289,6 +289,35 @@
 
 - [x] MessageResponse에 `overflow-hidden` 추가 → 코드블록 영역 내부 스크롤
 
+### 3.6 다중 세션 + URL 라우팅
+
+> 세션별 URL 라우팅 + 백엔드 DB 저장 + 다중 세션 동시 스트리밍
+
+#### 3.6.1 Backend — 세션 모델 + API
+
+- [x] `Session`, `SessionMessage` DB 모델 (PostgreSQL)
+- [x] Alembic 마이그레이션 (sessions, session_messages 테이블)
+- [x] Session CRUD API (`/api/v1/sessions`)
+- [x] Agent Chat session_id 기반으로 변경 (history[] 제거, DB에서 로드)
+- [x] 메시지 자동 저장 (user 메시지 → 스트리밍 전, assistant 메시지 → 스트리밍 완료 후)
+- [x] 첫 메시지 시 세션 제목 자동 설정
+
+#### 3.6.2 Frontend — URL 라우팅 + 스토어
+
+- [x] `/agent` (새 대화), `/agent/[sessionId]` (특정 세션) 라우팅
+- [x] 세션 API 서비스 (`session-service.ts`)
+- [x] Chat Store 리팩터링: Thread 기반 → Session 기반
+  - `sessionMessages: Record<string, ChatMessage[]>` (서버 캐시)
+  - `streamingSessionIds: Set<string>` (세션별 독립 스트리밍)
+  - localStorage persist 제거 (서버가 source of truth)
+
+#### 3.6.3 Frontend — 컴포넌트
+
+- [x] ChatArea: sessionId props, 서버 메시지 로드, 첫 메시지 시 세션 생성 + URL 변경
+- [x] SessionList: 서버 기반 세션 목록 (ThreadList 대체)
+- [x] LeftSidebar: SessionList 사용, "새 대화" → `/agent` 네비게이션
+- [x] MobileBottomDrawer: SessionList 사용
+
 ---
 
 ## Phase 4: SRS 생성 + 내보내기

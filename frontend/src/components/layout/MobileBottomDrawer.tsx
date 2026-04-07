@@ -1,6 +1,6 @@
 'use client';
 
-import { ThreadList } from '@/components/chat/ThreadList';
+import { SessionList } from '@/components/chat/SessionList';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,13 +11,13 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { SIDEBAR_ACTIONS } from '@/config/navigation';
-import { useChatStore } from '@/stores/chat-store';
 import { Ellipsis, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { SettingsDialog } from '../overlay/SettingsDialog';
+import { useRouter } from 'next/navigation';
+import { SettingsDialog } from '@/components/overlay/SettingsDialog';
 
 export function MobileBottomDrawer() {
-  const setActiveThread = useChatStore((s) => s.setActiveThread);
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -30,15 +30,15 @@ export function MobileBottomDrawer() {
     onClick: actionHandlers[action.id] ?? (() => {}),
   }));
 
-  const handleCreateThread = () => {
-    setActiveThread(null);
+  const handleNewChat = () => {
+    router.push('/agent');
     setOpen(false);
   };
 
   return (
     <div className='flex items-center gap-1 py-1.5'>
       <Button
-        onClick={handleCreateThread}
+        onClick={handleNewChat}
         variant='ghost'
         size='icon'
         className='text-icon-default hover:text-icon-active h-9 w-9'
@@ -60,11 +60,11 @@ export function MobileBottomDrawer() {
           <DrawerHeader className='border-line-primary flex flex-col gap-3 border-b pb-3'>
             <ProjectSelector />
             <div className='flex items-center justify-between'>
-              <DrawerTitle className='text-fg-primary text-base font-semibold'>                
+              <DrawerTitle className='text-fg-primary text-base font-semibold'>
               </DrawerTitle>
               <DrawerDescription />
               <Button
-                onClick={handleCreateThread}
+                onClick={handleNewChat}
                 variant='ghost'
                 size='sm'
                 className='text-fg-secondary h-8 gap-1.5'
@@ -76,7 +76,7 @@ export function MobileBottomDrawer() {
           </DrawerHeader>
 
           <div className='flex h-[50vh] overflow-hidden px-2 py-3'>
-            <ThreadList />
+            <SessionList />
           </div>
 
           <div className='border-line-primary flex items-center justify-center gap-6 border-t px-4 py-3'>

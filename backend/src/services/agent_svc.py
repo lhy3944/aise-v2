@@ -12,8 +12,9 @@ from src.models.glossary import GlossaryItem
 from src.models.knowledge import KnowledgeChunk, KnowledgeDocument
 from src.models.project import Project
 from src.models.requirement import Requirement
+from src.models.session import Session
 from src.prompts.agent.chat import build_agent_chat_prompt
-from src.services import embedding_svc
+from src.services import embedding_svc, session_svc
 from src.services.llm_svc import get_client, _get_default_model
 from src.services.rag_svc import search_similar_chunks
 
@@ -52,12 +53,13 @@ TOOLS = [
 
 
 async def stream_chat(
-    project_id: uuid.UUID,
+    session_id: uuid.UUID,
     message: str,
-    history: list[dict],
     db: AsyncSession,
 ) -> AsyncGenerator[str, None]:
     """Agent Chat SSE 스트리밍 응답 생성 (Function Calling 지원)
+
+    session_id 기반: DB에서 history 로드 + 메시지 자동 저장
 
     Yields SSE events:
     - data: {"type": "token", "content": "..."} -- 텍스트 토큰
@@ -66,23 +68,39 @@ async def stream_chat(
     - data: {"type": "error", "content": "..."} -- 에러
     """
     try:
-        # 1. 프로젝트 조회
+        # 1. 세션 조회
+        session = await db.get(Session, session_id)
+        if not session:
+            yield _sse_event({"type": "error", "content": "세션을 찾을 수 없습니다."})
+            return
+
+        project_id = session.project_id
+
+        # 2. user 메시지 저장
+        await session_svc.add_message(db, session_id, "user", message)
+        await session_svc.update_session_title_if_first(db, session_id, message)
+        await db.commit()
+
+        # 3. DB에서 history 로드
+        history = await session_svc.get_history(db, session_id, limit=50)
+
+        # 4. 프로젝트 조회
         result = await db.execute(select(Project).where(Project.id == project_id))
         project = result.scalar_one_or_none()
         if not project:
             yield _sse_event({"type": "error", "content": "프로젝트를 찾을 수 없습니다."})
             return
 
-        # 2. Knowledge 검색 (RAG)
+        # 5. Knowledge 검색 (RAG)
         knowledge_chunks = await _fetch_knowledge_chunks(project_id, message, db)
 
-        # 3. Glossary 조회
+        # 6. Glossary 조회
         glossary = await _fetch_glossary(project_id, db)
 
-        # 4. 기존 요구사항 조회
+        # 7. 기존 요구사항 조회
         requirements = await _fetch_requirements(project_id, db)
 
-        # 5. 시스템 프롬프트 빌드
+        # 8. 시스템 프롬프트 빌드
         system_prompt = build_agent_chat_prompt(
             project_name=project.name,
             project_description=project.description,
@@ -92,18 +110,17 @@ async def stream_chat(
             requirements=requirements,
         )
 
-        # 6. 메시지 구성
+        # 9. 메시지 구성 (DB에서 로드한 history 사용 — 마지막 user 메시지 포함)
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
-            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
-        messages.append({"role": "user", "content": message})
+            messages.append({"role": h["role"], "content": h["content"]})
 
         logger.info(
-            f"Agent Chat 스트리밍 시작: project_id={project_id}, "
+            f"Agent Chat 스트리밍 시작: session_id={session_id}, project_id={project_id}, "
             f"messages={len(messages)}개, knowledge={len(knowledge_chunks)}개"
         )
 
-        # 7. LLM 스트리밍 호출 (Function Calling 포함)
+        # 10. LLM 스트리밍 호출 (Function Calling 포함)
         client = get_client()
         stream = await client.chat.completions.create(
             model=_get_default_model(),
@@ -116,6 +133,7 @@ async def stream_chat(
 
         # 스트리밍 청크 처리 — tool_call과 텍스트를 분리
         tool_call_chunks: dict[int, dict] = {}  # index → {name, arguments}
+        full_content = ""
 
         async for chunk in stream:
             if not chunk.choices:
@@ -125,6 +143,7 @@ async def stream_chat(
 
             # 텍스트 토큰
             if delta.content:
+                full_content += delta.content
                 yield _sse_event({"type": "token", "content": delta.content})
 
             # Tool call 청크 누적
@@ -139,6 +158,7 @@ async def stream_chat(
                         tool_call_chunks[idx]["arguments"] += tc.function.arguments
 
         # 스트리밍 완료 후 tool_call 이벤트 전송
+        tool_calls_data = []
         for idx in sorted(tool_call_chunks.keys()):
             tc = tool_call_chunks[idx]
             try:
@@ -147,14 +167,22 @@ async def stream_chat(
                 args = {}
 
             logger.info(f"Tool call 감지: name={tc['name']}, args={args}")
+            tool_calls_data.append({"name": tc["name"], "arguments": args})
             yield _sse_event({
                 "type": "tool_call",
                 "name": tc["name"],
                 "arguments": args,
             })
 
+        # 11. assistant 메시지 저장
+        await session_svc.add_message(
+            db, session_id, "assistant", full_content,
+            tool_calls=tool_calls_data if tool_calls_data else None,
+        )
+        await db.commit()
+
         yield _sse_event({"type": "done"})
-        logger.info(f"Agent Chat 스트리밍 완료: project_id={project_id}")
+        logger.info(f"Agent Chat 스트리밍 완료: session_id={session_id}")
 
     except Exception as e:
         logger.error(f"Agent Chat 스트리밍 실패: {e}")

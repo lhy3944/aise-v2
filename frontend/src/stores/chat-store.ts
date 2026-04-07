@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface ToolCallData {
   name: string;
@@ -23,125 +22,85 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export interface Thread {
-  id: string;
-  title: string;
-  projectId: string;
-  messages: ChatMessage[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface ChatState {
-  threads: Thread[];
-  activeThreadId: string | null;
+  /** 세션별 메시지 캐시 (서버에서 로드 + 실시간 스트리밍) */
+  sessionMessages: Record<string, ChatMessage[]>;
+  /** 스트리밍 중인 세션 ID 집합 */
+  streamingSessionIds: Set<string>;
+
   inputValue: string;
-  isStreaming: boolean;
 
-  setActiveThread: (id: string | null) => void;
-  createThread: (projectId: string, firstMessage?: string) => string;
-  deleteThread: (id: string) => void;
+  // 메시지 관리
+  setMessages: (sessionId: string, messages: ChatMessage[]) => void;
+  addMessage: (sessionId: string, message: ChatMessage) => void;
+  appendToLastAssistant: (sessionId: string, token: string) => void;
+  updateLastAssistantMessage: (sessionId: string, updater: (msg: ChatMessage) => ChatMessage) => void;
+  clearSession: (sessionId: string) => void;
+  getMessages: (sessionId: string) => ChatMessage[];
+
+  // 스트리밍 상태
+  isSessionStreaming: (sessionId: string) => boolean;
+  setSessionStreaming: (sessionId: string, streaming: boolean) => void;
+
+  // 입력값
   setInputValue: (val: string) => void;
-  setStreaming: (v: boolean) => void;
-
-  addMessage: (threadId: string, message: ChatMessage) => void;
-  appendToLastAssistant: (threadId: string, token: string) => void;
-  updateLastAssistantMessage: (threadId: string, updater: (msg: ChatMessage) => ChatMessage) => void;
-
-  getActiveThread: () => Thread | null;
-  getThreadsForProject: (projectId: string) => Thread[];
 }
 
-export const useChatStore = create<ChatState>()(
-  persist(
-    (set, get) => ({
-      threads: [],
-      activeThreadId: null,
-      inputValue: '',
-      isStreaming: false,
+export const useChatStore = create<ChatState>()((set, get) => ({
+  sessionMessages: {},
+  streamingSessionIds: new Set(),
+  inputValue: '',
 
-      setActiveThread: (id) => set({ activeThreadId: id }),
+  setMessages: (sessionId, messages) =>
+    set((s) => ({
+      sessionMessages: { ...s.sessionMessages, [sessionId]: messages },
+    })),
 
-      createThread: (projectId, firstMessage) => {
-        const id = `thread-${Date.now()}`;
-        const thread: Thread = {
-          id,
-          title: firstMessage?.slice(0, 40) || '새 대화',
-          projectId,
-          messages: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        set((s) => ({
-          threads: [thread, ...s.threads],
-          activeThreadId: id,
-        }));
-        return id;
+  addMessage: (sessionId, message) =>
+    set((s) => ({
+      sessionMessages: {
+        ...s.sessionMessages,
+        [sessionId]: [...(s.sessionMessages[sessionId] ?? []), message],
       },
+    })),
 
-      deleteThread: (id) =>
-        set((s) => ({
-          threads: s.threads.filter((t) => t.id !== id),
-          activeThreadId: s.activeThreadId === id ? null : s.activeThreadId,
-        })),
-
-      setInputValue: (val) => set({ inputValue: val }),
-      setStreaming: (v) => set({ isStreaming: v }),
-
-      addMessage: (threadId, message) =>
-        set((s) => ({
-          threads: s.threads.map((t) =>
-            t.id === threadId
-              ? { ...t, messages: [...t.messages, message], updatedAt: new Date().toISOString() }
-              : t,
-          ),
-        })),
-
-      appendToLastAssistant: (threadId, token) =>
-        set((s) => ({
-          threads: s.threads.map((t) => {
-            if (t.id !== threadId) return t;
-            const msgs = [...t.messages];
-            const last = msgs[msgs.length - 1];
-            if (last?.role === 'assistant') {
-              msgs[msgs.length - 1] = { ...last, content: last.content + token };
-            }
-            return { ...t, messages: msgs };
-          }),
-        })),
-
-      updateLastAssistantMessage: (threadId, updater) =>
-        set((s) => ({
-          threads: s.threads.map((t) => {
-            if (t.id !== threadId) return t;
-            const msgs = [...t.messages];
-            const last = msgs[msgs.length - 1];
-            if (last?.role === 'assistant') {
-              msgs[msgs.length - 1] = updater(last);
-            }
-            return { ...t, messages: msgs };
-          }),
-        })),
-
-      getActiveThread: () => {
-        const { threads, activeThreadId } = get();
-        return threads.find((t) => t.id === activeThreadId) ?? null;
-      },
-
-      getThreadsForProject: (projectId) => {
-        return get().threads.filter((t) => t.projectId === projectId);
-      },
+  appendToLastAssistant: (sessionId, token) =>
+    set((s) => {
+      const msgs = [...(s.sessionMessages[sessionId] ?? [])];
+      const last = msgs[msgs.length - 1];
+      if (last?.role === 'assistant') {
+        msgs[msgs.length - 1] = { ...last, content: last.content + token };
+      }
+      return { sessionMessages: { ...s.sessionMessages, [sessionId]: msgs } };
     }),
-    {
-      name: 'aise-chat',
-      partialize: (s) => ({
-        threads: s.threads.map((t) => ({
-          ...t,
-          // 최근 50개 메시지만 persist
-          messages: t.messages.slice(-50),
-        })),
-        activeThreadId: s.activeThreadId,
-      }),
-    },
-  ),
-);
+
+  updateLastAssistantMessage: (sessionId, updater) =>
+    set((s) => {
+      const msgs = [...(s.sessionMessages[sessionId] ?? [])];
+      const last = msgs[msgs.length - 1];
+      if (last?.role === 'assistant') {
+        msgs[msgs.length - 1] = updater(last);
+      }
+      return { sessionMessages: { ...s.sessionMessages, [sessionId]: msgs } };
+    }),
+
+  clearSession: (sessionId) =>
+    set((s) => {
+      const { [sessionId]: _, ...rest } = s.sessionMessages;
+      return { sessionMessages: rest };
+    }),
+
+  getMessages: (sessionId) => get().sessionMessages[sessionId] ?? [],
+
+  isSessionStreaming: (sessionId) => get().streamingSessionIds.has(sessionId),
+
+  setSessionStreaming: (sessionId, streaming) =>
+    set((s) => {
+      const next = new Set(s.streamingSessionIds);
+      if (streaming) next.add(sessionId);
+      else next.delete(sessionId);
+      return { streamingSessionIds: next };
+    }),
+
+  setInputValue: (val) => set({ inputValue: val }),
+}));

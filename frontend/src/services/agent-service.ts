@@ -5,9 +5,8 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export interface AgentChatRequest {
-  project_id: string;
+  session_id: string;
   message: string;
-  history: { role: string; content: string }[];
 }
 
 export interface ToolCallEvent {

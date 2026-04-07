@@ -11,7 +11,6 @@ class AgentChatMessage(BaseModel):
 
 
 class AgentChatRequest(BaseModel):
-    project_id: str
+    session_id: str
     message: str
-    history: list[AgentChatMessage] = []
     attachments: list[dict] = []  # [{filename, content_type, ...}]
