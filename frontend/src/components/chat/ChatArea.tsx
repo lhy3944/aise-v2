@@ -259,6 +259,14 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     ],
   );
 
+  // 스트리밍 중지
+  const stopStreaming = useCallback(() => {
+    if (!sessionId) return;
+    abortControllersRef.current.get(sessionId)?.();
+    abortControllersRef.current.delete(sessionId);
+    setSessionStreaming(sessionId, false);
+  }, [sessionId, setSessionStreaming]);
+
   // Cleanup on unmount — abort only the current session's stream
   useEffect(() => {
     return () => {
@@ -313,6 +321,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                 <ChatInput
                   onSubmit={sendMessage}
                   onAction={sendMessage}
+                  onStop={stopStreaming}
+                  isStreaming={isStreaming}
                   disabled={!currentProject}
                 />
               </div>
@@ -366,6 +376,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                 <ChatInput
                   onSubmit={sendMessage}
                   onAction={sendMessage}
+                  onStop={stopStreaming}
+                  isStreaming={isStreaming}
                   disabled={!currentProject}
                 />
               </div>

@@ -268,11 +268,15 @@ function ActionsButton({ onAction }: { onAction?: (text: string) => void }) {
 export function ChatInput({
   onSubmit,
   onAction,
+  onStop,
   disabled,
+  isStreaming,
 }: {
   onSubmit?: (text: string) => void;
   onAction?: (text: string) => void;
+  onStop?: () => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }) {
   const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
@@ -299,7 +303,11 @@ export function ChatInput({
           <VoiceButton />
           <ActionsButton onAction={onAction} />
         </PromptInputTools>
-        <PromptInputSubmit disabled={!inputValue?.trim() || disabled} />
+        <PromptInputSubmit
+          disabled={!inputValue?.trim() && !isStreaming}
+          status={isStreaming ? 'streaming' : undefined}
+          onStop={onStop}
+        />
       </PromptInputFooter>
     </PromptInput>
   );
