@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { HelpCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Forward, HelpCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface ClarifyQuestionProps {
   data: {
@@ -28,15 +28,17 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
 
   if (answered) {
     return (
-      <div className='bg-canvas-surface border-line-primary rounded-xl border p-4'>
+      <div className='w-full rounded-xl border p-4'>
         <p className='text-fg-muted text-xs'>답변 완료</p>
-        <p className='text-fg-primary mt-1 text-sm'>{selected === '__custom__' ? customInput : selected}</p>
+        <p className='text-fg-primary mt-1 text-sm'>
+          {selected === '__custom__' ? customInput : selected}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className='bg-canvas-surface border-accent-primary/20 w-full rounded-xl border p-4'>
+    <div className='w-full rounded-xl border p-4'>
       {/* Question */}
       <div className='mb-3 flex items-start gap-2'>
         <HelpCircle className='text-accent-primary mt-0.5 size-4 shrink-0' />
@@ -53,7 +55,7 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
               className={cn(
                 'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
                 selected === option
-                  ? 'border-accent-primary bg-accent-primary/10 text-accent-primary'
+                  ? 'border-accent-primary text-primary'
                   : 'border-line-primary text-fg-secondary hover:bg-canvas-secondary',
               )}
             >
@@ -71,7 +73,7 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
             className={cn(
               'mb-2 w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors',
               selected === '__custom__'
-                ? 'border-accent-primary bg-accent-primary/10 text-accent-primary'
+                ? 'border-accent-primary text-accent-primary'
                 : 'border-line-primary text-fg-muted hover:bg-canvas-secondary',
             )}
           >
@@ -91,15 +93,17 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
       )}
 
       {/* Submit */}
-      <Button
-        size='sm'
-        onClick={handleSubmit}
-        disabled={!selected || (selected === '__custom__' && !customInput.trim())}
-        className='gap-1.5'
-      >
-        <Send className='size-3.5' />
-        답변하기
-      </Button>
+      <div className='flex justify-end'>
+        <Button
+          size='sm'
+          onClick={handleSubmit}
+          disabled={!selected || (selected === '__custom__' && !customInput.trim())}
+          className='gap-1.5'
+        >
+          <Forward className='size-3.5' />
+          답변하기
+        </Button>
+      </div>
     </div>
   );
 }

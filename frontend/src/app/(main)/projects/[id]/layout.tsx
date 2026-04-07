@@ -4,12 +4,17 @@ import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
 import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
 import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
 import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { layoutMaxW } from '@/config/layout';
 import { cn } from '@/lib/utils';
+import { projectService } from '@/services/project-service';
 import { usePanelStore } from '@/stores/panel-store';
-import { BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
-import { use } from 'react';
+import { useProjectStore } from '@/stores/project-store';
+import { ArrowLeft, BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
+import Link from 'next/link';
+import { use, useEffect } from 'react';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -25,7 +30,27 @@ const TABS = [
 export default function ProjectDetailLayout({ params }: Props) {
   const { id } = use(params);
   const fullWidthMode = usePanelStore((s) => s.fullWidthMode);
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const projects = useProjectStore((s) => s.projects);
+  const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
 
+  // currentProject가 없거나 id가 다르면 projects 배열에서 찾거나 API fetch
+  useEffect(() => {
+    if (currentProject?.project_id === id) return;
+
+    const found = projects.find((p) => p.project_id === id);
+    if (found) {
+      setCurrentProject(found);
+      return;
+    }
+
+    projectService
+      .get(id)
+      .then(setCurrentProject)
+      .catch(() => {});
+  }, [id, currentProject?.project_id, projects, setCurrentProject]);
+
+  const projectName = currentProject?.project_id === id ? currentProject.name : null;
   const maxW = layoutMaxW(fullWidthMode);
 
   return (
@@ -33,15 +58,24 @@ export default function ProjectDetailLayout({ params }: Props) {
       {/* Tab Navigation */}
       <div className='bg-canvas-primary'>
         <div
-          className={cn(
-            'mx-auto pt-11 transition-[max-width] duration-300 ease-in-out sm:px-6',
-            maxW,
-          )}
+          className={cn('mx-auto transition-[max-width] duration-300 ease-in-out sm:px-6', maxW)}
         >
-          <TabsList
-            variant='line'
-            className='border-line-subtle w-full justify-start border-b'
-          >
+          <div className='flex items-center gap-2.5 pt-6 pb-1'>
+            <Button variant='outline' size='icon-sm' className='-ml-1 size-7' asChild>
+              <Link href='/projects' aria-label='프로젝트 목록으로'>
+                <ArrowLeft className='size-4' />
+              </Link>
+            </Button>
+
+            <Badge variant='ghost'>
+              {projectName && (
+                <span className='text-fg-secondary truncate text-xs font-medium'>
+                  {projectName}
+                </span>
+              )}
+            </Badge>
+          </div>
+          <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
             {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
               <TabsTrigger
                 key={value}

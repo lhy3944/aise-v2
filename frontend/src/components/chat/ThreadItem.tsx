@@ -25,7 +25,7 @@ export function ThreadItem({ thread, isActive, onClick, onDelete }: ThreadItemPr
   return (
     <div
       className={cn(
-        'group relative flex w-full items-center rounded-sm pr-2 transition-colors',
+        'group relative flex w-full min-w-0 items-center rounded-sm pr-2 transition-colors',
         isActive
           ? 'bg-canvas-surface text-fg-primary'
           : 'text-fg-secondary hover:bg-canvas-surface/50',

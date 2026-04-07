@@ -13,12 +13,14 @@
 <summary>Phase 1 상세 (접기)</summary>
 
 ### 1.1 인프라 / 기반
+
 - [x] PostgreSQL DB 연결 설정 (SQLAlchemy + asyncpg)
 - [x] DB 마이그레이션 설정 (Alembic)
 - [x] Azure OpenAI 연동 서비스 (`services/llm_svc.py`) — Responses API 기반
 - [x] Frontend API 클라이언트 설정 (Backend 연동)
 
 ### 1.2 프로젝트 관리 (FR-PF-02)
+
 - [x] DB 모델: Project
 - [x] API: Project CRUD (`/api/v1/projects`)
 - [x] API: 프로젝트 설정 (`/api/v1/projects/{id}/settings`)
@@ -26,21 +28,26 @@
 - [x] Frontend: 프로젝트 목록/생성/수정/삭제
 
 ### 1.3 요구사항 관리 (FR-RQ-01) → Phase 2에서 Record로 대체
+
 - [x] Requirement CRUD + 넘버링 + 순서 변경 + 테이블 뷰
 - [x] 섹션(그룹핑) CRUD + 드래그 앤 드롭
 
 ### 1.4~1.5 AI 어시스트 → Phase 3에서 Agent Chat으로 대체
+
 - [x] 구조화 모드 (Refine, Suggest)
 - [x] 대화 모드 (Chat + 요구사항 추출)
 
 ### 1.6 Glossary → Phase 2에서 확장
+
 - [x] Glossary CRUD + AI 자동 생성
 
 ### 1.7 Knowledge Repository → Phase 2에서 확장
+
 - [x] Backend: pgvector + MinIO + RAG Chat API
 - [x] Frontend: API 연동 (Phase 2.1에서 처리)
 
 ### 1.8 Frontend 구조 재설계
+
 - [x] /agent 라우트 + ArtifactPanel + RequirementsArtifact
 
 </details>
@@ -55,11 +62,13 @@
 ### 2.1 지식 저장소 강화 (3-1)
 
 #### 2.1.1 Backend — DB 모델 확장
+
 - [x] KnowledgeDocument에 `is_active` (Boolean, default=true) 필드 추가
 - [x] KnowledgeDocument 상태값 정리: uploading→pending, processing, ready→completed, error→failed
 - [x] Alembic 마이그레이션 생성 + 양쪽 DB 적용
 
 #### 2.1.2 Backend — API 확장
+
 - [x] `PATCH /documents/{id}/toggle` — 활성화/비활성화 토글
 - [x] 문서 목록 조회 시 `is_active` 필드 포함
 - [x] 업로드 시 중복 파일 감지 (동일 project + 동일 파일명) → 409 응답 + 클라이언트에서 덮어쓰기 확인
@@ -67,6 +76,7 @@
 - [x] 지원 포맷 제한: txt, md, pdf (기존 docx/pptx/xlsx는 추후 확장)
 
 #### 2.1.3 Frontend — ProjectKnowledgeTab API 연동
+
 - [x] Mock 데이터 → 실제 API 호출로 교체 (목록, 업로드, 삭제)
 - [x] 문서별 상태 표시: pending / processing / completed / failed (아이콘 + 텍스트)
 - [x] 활성화/비활성화 토글 스위치 UI
@@ -77,6 +87,7 @@
 ### 2.2 용어 사전 확장 (3-2)
 
 #### 2.2.1 Backend — DB 모델 확장
+
 - [x] GlossaryItem에 필드 추가:
   - `source_document_id` (UUID FK → KnowledgeDocument, nullable, SET NULL)
   - `synonyms` (ARRAY(String), default=[])
@@ -88,6 +99,7 @@
 - [x] Alembic 마이그레이션
 
 #### 2.2.2 Backend — API 확장
+
 - [x] `POST /glossary/extract` — **지식 문서 기반** 용어 후보 추출 (기존 generate는 요구사항 기반)
   - 활성 지식 문서의 chunk를 컨텍스트로 사용
   - 추출 결과: term, definition, source_document_id, synonyms, abbreviations
@@ -98,6 +110,7 @@
 - [x] 재추출 시 기존 수동 편집 항목(`is_auto_extracted=false`) 보존 로직
 
 #### 2.2.3 Frontend — 용어 사전 UI 개선
+
 - [x] 용어 목록에 출처 문서, 동의어, 약어, 섹션 태그 컬럼 표시
 - [x] AI 추출 버튼 → 후보 목록 표시 → 체크박스 선택 → 승인 저장
 - [x] 수동 추가 시 동의어/약어/섹션 태그 입력 필드
@@ -106,6 +119,7 @@
 ### 2.3 섹션 관리 재설계 (3-3)
 
 #### 2.3.1 Backend — DB 모델 재설계
+
 - [x] RequirementSection 확장 (또는 새 Section 모델):
   - `description` (Text, nullable) — 섹션 설명/목적
   - `output_format_hint` (Text, nullable) — 출력 형식 힌트
@@ -122,6 +136,7 @@
   - Interfaces (필수, 삭제불가)
 
 #### 2.3.2 Backend — API 수정
+
 - [x] 섹션 삭제 시 `is_default=true`이면 400 에러 (비활성화만 허용)
 - [x] `PATCH /sections/{id}/toggle` — 활성화/비활성화 토글
 - [x] `POST /sections/extract` — 지식 문서 기반 섹션 후보 AI 추출
@@ -131,6 +146,7 @@
 - [x] 프롬프트: 지식 문서 기반 섹션 추출 프롬프트 작성
 
 #### 2.3.3 Frontend — 섹션 관리 UI
+
 - [x] 프로젝트 상세 내 섹션 관리 탭/페이지
 - [x] 기본 섹션 5종: 삭제 버튼 비활성, 비활성화 토글만 표시
 - [x] 커스텀 섹션 추가: 이름, 설명, 출력 형식 힌트, 필수 여부 입력
@@ -141,6 +157,7 @@
 ### 2.4 프로젝트 준비도 (3-4)
 
 #### 2.4.1 Backend — API
+
 - [x] `GET /projects/{id}/readiness` — 준비도 조회
   - `knowledge_count`: 활성 지식 문서 수 (completed 상태)
   - `glossary_approved_count`: 승인된 용어 수
@@ -149,6 +166,7 @@
   - 각 항목별 상태 (sufficient / insufficient)
 
 #### 2.4.2 Frontend — 준비도 UI
+
 - [x] 프로젝트 상세 페이지에 준비도 카드 표시
 - [x] 각 항목 클릭 시 해당 탭(지식/용어/섹션)으로 이동
 - [x] 미비 항목 시각적 강조 (경고 아이콘 + 색상)
@@ -164,6 +182,7 @@
 ### 3.1 Record 데이터 모델 (4-3 기반)
 
 #### 3.1.1 Backend — DB 모델
+
 - [x] `Record` 모델 신규 생성:
   - `id` (UUID PK)
   - `project_id` (FK → Project)
@@ -180,6 +199,7 @@
 - [x] Alembic 마이그레이션
 
 #### 3.1.2 Backend — Record CRUD API
+
 - [x] `GET /projects/{id}/records` — 레코드 목록 (섹션별 그룹핑, 섹션 필터 지원)
 - [x] `POST /projects/{id}/records` — 레코드 수동 추가 (사용자 직접 작성)
 - [x] `PUT /projects/{id}/records/{record_id}` — 레코드 수정
@@ -190,6 +210,7 @@
 ### 3.2 레코드 추출 Agent (4-3)
 
 #### 3.2.1 Backend — 추출 API
+
 - [x] `POST /projects/{id}/records/extract` — 전체 레코드 추출 시작
   - 활성 지식 문서 + 활성 섹션 + 승인된 용어 사전을 컨텍스트로 사용
   - 섹션별로 지식 문서 내용을 분석하여 레코드 추출
@@ -200,6 +221,7 @@
 - [x] `POST /projects/{id}/records/approve` — 선택한 추출 후보 일괄 승인 저장
 
 #### 3.2.2 프롬프트
+
 - [x] 레코드 추출 프롬프트 작성:
   - 입력: 지식 문서 텍스트 + 섹션 목록(이름/설명/출력 형식) + 용어 사전
   - 출력: 섹션별 레코드 목록 + 원문 출처 + 신뢰도
@@ -209,11 +231,13 @@
 ### 3.3 Agent 레이아웃 재설계 (4-1)
 
 #### 3.3.1 Frontend — 좌패널 재구성
+
 - [x] 프로젝트 선택 드롭다운 (현재 프로젝트 표시 + 전환)
 - [x] 준비도 미니뷰 (문서/용어/섹션 각각 아이콘+숫자, 클릭 시 프로젝트 상세로 이동)
 - [x] 대화 스레드 리스트 (기존 유지)
 
 #### 3.3.2 Frontend — 우패널 재구성
+
 - [x] ArtifactPanel 탭 변경: Requirements → **Records** 탭, SRS 탭 유지
   - Design, TestCase 탭은 추후 Phase용으로 placeholder 유지
 - [x] Records 탭: 섹션별 그룹핑 레코드 목록
@@ -224,12 +248,14 @@
 - [x] 원문 출처 클릭 → 지식 문서 미리보기 모달 (해당 위치 하이라이트)
 
 #### 3.3.3 Frontend — 패널 비율 조정
+
 - [x] 기본 비율: 좌 2 / 중앙 4 / 우 4 로 변경
 - [x] 현재 프로젝트 컨텍스트를 상단에 항상 표시
 
 ### 3.4 액션 카드 + 채팅 연동 (4-2, 4-5)
 
 #### 3.4.1 Frontend — 액션 카드
+
 - [x] 초기 화면에 워크플로우 진입 액션 카드 표시:
   - "레코드 추출 시작" — 항상 표시, 준비도 미충족 시 비활성
   - "SRS 문서 생성" — 추출된 레코드 있을 때 활성
@@ -239,10 +265,29 @@
 - [x] 카드 클릭 시 해당 워크플로우 시작 (채팅에 시스템 메시지 + API 호출)
 
 #### 3.4.2 채팅 ↔ 우패널 연동
+
 - [x] 에이전트 작업 완료 시 채팅에 결과 요약 메시지 + 해당 탭 이동 버튼
 - [x] 우패널에서 레코드 수정 시 채팅에 변경 로그 자동 기록
 - [x] 우패널 탭은 에이전트 작업 완료 시 자동 전환
 - [x] 채팅에서 "FR 섹션 다시 추출해줘" → 부분 재추출 트리거
+
+### 3.5 채팅 UI 개선
+
+#### 3.5.1 구조화 블록 파싱 + 렌더링
+
+- [x] `[CLARIFY]` 블록 파싱 → ClarifyQuestion 카드 렌더링
+- [ ] `[REQUIREMENTS]` 블록 파싱 → ExtractedRequirements 카드 렌더링
+- [ ] `[GENERATE_SRS]` 블록 파싱 → GenerateSrsProposal 카드 렌더링
+
+#### 3.5.2 CLARIFY 답변 전송
+
+- [ ] ClarifyQuestion에서 답변 선택 후 → 사용자 메시지로 자동 전송
+  - `onAnswer(answer)` → `useChatStore.addMessage()` + `streamAgentChat()` 호출
+  - 답변 전송 후 에이전트가 다음 단계 진행
+
+#### 3.5.3 코드블록 overflow 수정
+
+- [x] MessageResponse에 `overflow-hidden` 추가 → 코드블록 영역 내부 스크롤
 
 ---
 
@@ -254,6 +299,7 @@
 ### 4.1 SRS 생성 (4-4)
 
 #### 4.1.1 Backend — DB 모델
+
 - [ ] `SrsDocument` 모델:
   - `id` (UUID PK)
   - `project_id` (FK → Project)
@@ -268,6 +314,7 @@
 - [ ] Alembic 마이그레이션
 
 #### 4.1.2 Backend — API
+
 - [ ] `POST /projects/{id}/srs/generate` — SRS 생성 시작
   - 승인된(approved) 레코드 + 용어 사전 기반
   - 섹션 순서대로 문서 구성
@@ -277,16 +324,19 @@
 - [ ] `POST /projects/{id}/srs/{srs_id}/regenerate` — SRS 재생성
 
 #### 4.1.3 프롬프트
+
 - [ ] SRS 생성 프롬프트 (IEEE 830 기반, 섹션별 레코드 → 문서 챕터)
 - [ ] SRS 내 원본 레코드 참조 마킹 (Traceability)
 
 #### 4.1.4 Frontend — SRS 탭
+
 - [ ] SRS 렌더링 (Markdown → HTML, 섹션별 구분)
 - [ ] 각 항목에서 원본 레코드 및 출처 문서 링크 (클릭 시 이동)
 - [ ] 인라인 편집 지원 (섹션별 편집 모드)
 - [ ] 생성 이력: 버전 목록 + 기반 문서 정보
 
 ### 4.2 내보내기
+
 - [ ] API: `POST /projects/{id}/srs/{srs_id}/export` — md, pdf 지원
 - [ ] Frontend: Export 버튼 + 형식 선택 UI
 
@@ -324,15 +374,15 @@
 
 ## Phase 우선순위 요약
 
-| Phase | 내용 | 핵심 가치 |
-|-------|------|-----------|
+| Phase    | 내용                                         | 핵심 가치                 |
+| -------- | -------------------------------------------- | ------------------------- |
 | **1** ✅ | 프로젝트 + 요구사항 + AI 어시스트 + Glossary | 기본 루프 완성 (레퍼런스) |
 | **2** 🔜 | 지식 저장소 + 용어 사전 + 섹션 관리 + 준비도 | 프로젝트 기반 데이터 준비 |
-| **3** | Agent 레이아웃 + 레코드 추출 + 액션 카드 | 핵심 워크플로우 완성 |
-| **4** | SRS 생성 + 내보내기 | SRS 파이프라인 완성 |
-| **5** | TestCase 생성 | TC 파이프라인 완성 |
-| **6** | 버전관리 + 추적성 | 산출물 관리 완성 |
-| **7** | 멤버 관리 + SSO + 플랫폼 | 팀 협업 완성 |
+| **3**    | Agent 레이아웃 + 레코드 추출 + 액션 카드     | 핵심 워크플로우 완성      |
+| **4**    | SRS 생성 + 내보내기                          | SRS 파이프라인 완성       |
+| **5**    | TestCase 생성                                | TC 파이프라인 완성        |
+| **6**    | 버전관리 + 추적성                            | 산출물 관리 완성          |
+| **7**    | 멤버 관리 + SSO + 플랫폼                     | 팀 협업 완성              |
 
 ---
 

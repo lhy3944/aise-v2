@@ -3,7 +3,10 @@
 import { ConfirmDialog } from '@/components/overlay/ConfirmDialog';
 import { Modal } from '@/components/overlay/Modal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
-import { ProjectCreateForm } from '@/components/projects/ProjectCreateForm';
+import {
+  ProjectCreateForm,
+  ProjectCreateFormActions,
+} from '@/components/projects/ProjectCreateForm';
 import { ProjectListItem } from '@/components/projects/ProjectListItem';
 import { ProjectListSkeleton } from '@/components/projects/ProjectListSkeleton';
 import { Button } from '@/components/ui/button';
@@ -234,12 +237,11 @@ export default function ProjectsPage() {
         title='프로젝트 생성'
         description='프로젝트 정보를 입력하고 사용할 모듈을 선택하세요.'
         size='lg'
+        footer={
+          <ProjectCreateFormActions onCancel={() => setCreateOpen(false)} isLoading={creating} />
+        }
       >
-        <ProjectCreateForm
-          onSubmit={handleCreate}
-          onCancel={() => setCreateOpen(false)}
-          isLoading={creating}
-        />
+        <ProjectCreateForm onSubmit={handleCreate} />
       </Modal>
     </div>
   );

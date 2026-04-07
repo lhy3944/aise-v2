@@ -90,7 +90,13 @@ export function ChatArea() {
         updateLast(threadId, (msg) => ({
           ...msg,
           toolCalls: msg.toolCalls?.map((tc) =>
-            tc.name === 'extract_records' ? { ...tc, state: 'completed' as const, result: `${result.candidates.length}개 후보 추출` } : tc,
+            tc.name === 'extract_records'
+              ? {
+                  ...tc,
+                  state: 'completed' as const,
+                  result: `${result.candidates.length}개 후보 추출`,
+                }
+              : tc,
           ),
         }));
       } catch (err) {
@@ -99,7 +105,9 @@ export function ChatArea() {
         updateLast(threadId, (msg) => ({
           ...msg,
           toolCalls: msg.toolCalls?.map((tc) =>
-            tc.name === 'extract_records' ? { ...tc, state: 'error' as const, error: errorMsg } : tc,
+            tc.name === 'extract_records'
+              ? { ...tc, state: 'error' as const, error: errorMsg }
+              : tc,
           ),
         }));
       }
@@ -193,9 +201,16 @@ export function ChatArea() {
       abortRef.current = abort;
     },
     [
-      currentProject, isStreaming, activeThreadId, createThread,
-      addMessage, setInputValue, appendToLastAssistant, setStreaming,
-      setRightPanelPreset, executeToolCall,
+      currentProject,
+      isStreaming,
+      activeThreadId,
+      createThread,
+      addMessage,
+      setInputValue,
+      appendToLastAssistant,
+      setStreaming,
+      setRightPanelPreset,
+      executeToolCall,
     ],
   );
 
@@ -245,7 +260,11 @@ export function ChatArea() {
               )}
 
               <div className='mt-4'>
-                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
+                <ChatInput
+                  onSubmit={sendMessage}
+                  onAction={sendMessage}
+                  disabled={!currentProject}
+                />
               </div>
               <div className='flex flex-col items-center justify-center text-xs/5 tracking-normal'>
                 <div className='text-muted-foreground'>
@@ -266,11 +285,8 @@ export function ChatArea() {
             {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
             <div className='relative flex-1 overflow-hidden'>
               <ScrollArea className='h-full' viewportRef={scrollRef}>
-                <div className={cn('mx-auto px-4 pt-6 transition-[max-width] duration-300', maxW)}>
-                  <MessageRenderer
-                    messages={messages}
-                    isStreaming={isStreaming}
-                  />
+                <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
+                  <MessageRenderer messages={messages} isStreaming={isStreaming} />
                 </div>
                 {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
                 <div className='min-h-[40vh]' />
@@ -297,7 +313,11 @@ export function ChatArea() {
             {/* 하단 고정 입력 */}
             <div className='shrink-0 px-4 pt-2 pb-4'>
               <div className={cn('mx-auto transition-[max-width] duration-300', maxW)}>
-                <ChatInput onSubmit={sendMessage} onAction={sendMessage} disabled={!currentProject} />
+                <ChatInput
+                  onSubmit={sendMessage}
+                  onAction={sendMessage}
+                  disabled={!currentProject}
+                />
               </div>
             </div>
           </motion.div>

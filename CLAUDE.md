@@ -114,24 +114,14 @@ aise2.0/
 3. **입력 품질 = 출력 품질** — 생성 전 Review를 통해 부실한 입력 방지
 4. **확장 가능한 구조** — 모듈 선택 방식으로 SRS/Design/TC 독립 운영 가능
 
-## Frontend UI 가이드라인
+## Frontend 가이드라인
 
-### 컴포넌트 우선순위
+> **상세 규칙은 `frontend/CLAUDE.md` 참조** — 컴포넌트 패턴, 스타일링, 스토어, 오버레이, 폼 검증, Modal+Form, 애니메이션, 금지사항 등 모든 프론트엔드 구현 규칙이 정의되어 있다.
 
-1. **AI 인터랙션 UI** — `components/ui/ai-elements/` 컴포넌트 우선 사용
-   - 에이전트 사고(Thinking), 도구 호출(Tool Call), 스트리밍 응답, 프롬프트 입력, 파일 첨부 등 AI 관련 UI
-   - 새 AI 컴포넌트 필요 시: [ai-elements 공식 문서](https://ai-elements.dev)에서 적합한 컴포넌트를 조사하고, 있으면 설치하여 사용. 없으면 기존 ai-elements 패턴에 맞춰 직접 구현
-   - 현재 설치됨: `prompt-input.tsx` (프롬프트 입력/첨부/제출), `attachments.tsx` (파일 미리보기/관리)
-2. **기본 UI** — shadcn/ui (`components/ui/`) 사용. 새 컴포넌트 필요 시 `npx shadcn@latest add` 로 추가
-3. **공통 컴포넌트** — `components/shared/`에 앱 전역에서 재사용되는 컴포넌트 배치
-
-### 디자인 일관성 규칙
-
-- **중복 금지**: 동일한 UI 패턴은 하나의 컴포넌트로 관리. 비슷한 컴포넌트가 이미 있으면 확장하여 재사용
-- **스타일링**: Tailwind CSS 유틸리티 클래스 사용. 인라인 스타일 금지
-- **타입**: Vercel AI SDK (`ai` 패키지)의 타입 활용 — `FileUIPart`, `SourceDocumentUIPart`, `ChatStatus` 등
-- **애니메이션**: `motion/react` (Framer Motion) 사용. CSS 애니메이션 직접 작성 지양
-- **상태관리**: Zustand store 패턴 따름. 새 store 생성 시 `stores/` 디렉토리에 기존 패턴과 동일하게 작성
+- **AI 인터랙션 UI** — `components/ui/ai-elements/` 컴포넌트 우선 사용. 새 AI 컴포넌트 필요 시 [ai-elements 공식 문서](https://ai-elements.dev) 조사 후 설치 또는 패턴에 맞춰 구현
+- **기본 UI** — shadcn/ui. 새 컴포넌트는 `npx shadcn@latest add`
+- **폼 검증** — react-hook-form + zod (HTML5 네이티브 검증 금지)
+- **Modal + Form** — 액션 버튼은 Modal `footer` prop으로 분리, `form` 속성으로 연결
 
 ## Git 워크플로우
 

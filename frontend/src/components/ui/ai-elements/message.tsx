@@ -1,10 +1,11 @@
 'use client';
 
+import '@/components/ui/ai-elements/css/markdown.css';
 import { cn } from '@/lib/utils';
 import { cjk } from '@streamdown/cjk';
 import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
-import { mermaid } from '@streamdown/mermaid';
+import { createMermaidPlugin } from '@streamdown/mermaid';
 import { Bot, Copy, User } from 'lucide-react';
 import { type ReactNode, memo, useCallback } from 'react';
 import { Streamdown } from 'streamdown';
@@ -80,6 +81,7 @@ export function MessageContent({ from, children, className }: MessageContentProp
 
 // ── Markdown Response (assistant) ──
 
+const mermaid = createMermaidPlugin({ config: { theme: 'dark' } });
 const streamdownPlugins = { cjk, code, math, mermaid };
 
 interface MessageResponseProps {
@@ -93,10 +95,10 @@ export const MessageResponse = memo(
     if (!content && !streaming) return null;
 
     return (
-      <div className={cn('text-fg-primary text-base leading-relaxed', className)}>
+      <div className={cn('markdown-body text-fg-primary overflow-hidden text-sm', className)}>
         {content ? (
           <Streamdown
-            className='w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+            className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
             plugins={streamdownPlugins}
             isAnimating={streaming}
           >
@@ -123,7 +125,7 @@ export function MessageBubble({ children, className }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-base leading-relaxed whitespace-pre-wrap',
+        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
         className,
       )}
     >

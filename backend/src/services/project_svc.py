@@ -90,9 +90,7 @@ async def list_projects(db: AsyncSession) -> ProjectListResponse:
 
     responses = []
     for p in projects:
-        resp = _to_project_response(p)
-        resp.readiness = await _get_readiness(db, p.id)
-        responses.append(resp)
+        responses.append(await _to_project_response_with_readiness(db, p))
 
     logger.debug(f"프로젝트 목록 조회: {len(projects)}건")
     return ProjectListResponse(projects=responses)
@@ -106,10 +104,19 @@ async def _get_project_model(db: AsyncSession, project_id: uuid.UUID) -> Project
     )
 
 
+async def _to_project_response_with_readiness(
+    db: AsyncSession, project: Project,
+) -> ProjectResponse:
+    """ProjectResponse + readiness 포함"""
+    resp = _to_project_response(project)
+    resp.readiness = await _get_readiness(db, project.id)
+    return resp
+
+
 async def get_project(db: AsyncSession, project_id: uuid.UUID) -> ProjectResponse:
     """프로젝트 상세 조회"""
     project = await _get_project_model(db, project_id)
-    return _to_project_response(project)
+    return await _to_project_response_with_readiness(db, project)
 
 
 async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectResponse:
@@ -136,7 +143,7 @@ async def create_project(db: AsyncSession, data: ProjectCreate) -> ProjectRespon
     await db.commit()
     await db.refresh(project)
     logger.info(f"프로젝트 생성: id={project.id}, name={project.name}")
-    return _to_project_response(project)
+    return await _to_project_response_with_readiness(db, project)
 
 
 async def update_project(
@@ -155,7 +162,7 @@ async def update_project(
     await db.commit()
     await db.refresh(project)
     logger.info(f"프로젝트 수정: id={project_id}")
-    return _to_project_response(project)
+    return await _to_project_response_with_readiness(db, project)
 
 
 async def delete_project(db: AsyncSession, project_id: uuid.UUID) -> None:

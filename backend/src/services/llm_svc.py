@@ -16,10 +16,12 @@ _srs_client: AsyncAzureOpenAI | None = None
 _tc_client: AsyncAzureOpenAI | None = None
 
 
-def _get_default_model() -> str:
+def _get_default_model(client_type: str = "srs") -> str:
     if _get_provider() == "openai":
         return os.getenv("OPENAI_MODEL", "gpt-4o")
-    return "gpt-5.2"
+    if client_type == "tc":
+        return os.getenv("TC_MODEL", "gpt-5.2")
+    return os.getenv("SRS_MODEL", "gpt-5.2")
 
 
 def get_openai_client() -> AsyncOpenAI:
@@ -81,7 +83,7 @@ async def chat_completion(
     max_completion_tokens: int = 4096,
 ) -> str:
     """Chat Completion 호출 (OpenAI / Azure OpenAI 자동 전환)"""
-    resolved_model = model or _get_default_model()
+    resolved_model = model or _get_default_model(client_type)
     client = get_client(client_type)
     provider = _get_provider()
 

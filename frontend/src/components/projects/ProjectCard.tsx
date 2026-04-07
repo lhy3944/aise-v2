@@ -57,7 +57,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           ))}
         </div>
 
-        <div className='text-fg-muted border-line-primary flex items-center justify-between border-t border-dotted pt-5 text-xs'>
+        <div className='text-fg-muted border-line-primary flex items-center justify-between border-t border-dotted pt-5 text-[12px]'>
           <div className='flex items-center gap-4'>
             <span className='flex items-center gap-1'>
               <Clock className='size-4' />
@@ -72,7 +72,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           {project.readiness && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className='flex items-center gap-2'>
+                <div className='flex items-center gap-2 text-[12px]'>
                   <span className='flex items-center gap-1'>
                     <FolderOpen className={'size-4'} />
                     <span>{project.readiness.knowledge}</span>

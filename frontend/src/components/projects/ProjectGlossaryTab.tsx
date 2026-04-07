@@ -1,16 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { GlossaryGeneratePanel } from '@/components/projects/GlossaryGeneratePanel';
+import {
+  GlossaryGenerateActions,
+  GlossaryGenerateList,
+  useGlossarySelection,
+} from '@/components/projects/GlossaryGeneratePanel';
 import { GlossaryTable } from '@/components/projects/GlossaryTable';
+import { Modal } from '@/components/overlay/Modal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import { ApiError } from '@/lib/api';
 import { showToast } from '@/lib/toast';
 import { glossaryService } from '@/services/glossary-service';
 import { useOverlayStore } from '@/stores/overlay-store';
 import { useReadinessStore } from '@/stores/readiness-store';
-import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
+import { useCallback, useEffect, useState } from 'react';
 
 interface ProjectGlossaryTabProps {
   projectId: string;
@@ -25,6 +30,9 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
   const showSkeleton = useDeferredLoading(loading);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GlossaryCreate[]>([]);
+  const [adding, setAdding] = useState(false);
+
+  const { selected, toggle, toggleAll, reset } = useGlossarySelection(generated.length);
 
   const fetchGlossary = useCallback(async () => {
     setLoading(true);
@@ -92,7 +100,6 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          // TODO: bulk delete API 추가 후 glossaryService.bulkDelete(projectId, ids) 로 교체
           await Promise.all(ids.map((id) => glossaryService.delete(projectId, id)));
           setItems((prev) => prev.filter((item) => !ids.includes(item.glossary_id)));
           invalidateReadiness();
@@ -110,14 +117,14 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     setGenerated([]);
     try {
       const result = await glossaryService.extract(projectId);
-      setGenerated(
-        result.candidates.map((c) => ({
-          term: c.term,
-          definition: c.definition,
-          synonyms: c.synonyms,
-          abbreviations: c.abbreviations,
-        })),
-      );
+      const newItems = result.candidates.map((c) => ({
+        term: c.term,
+        definition: c.definition,
+        synonyms: c.synonyms,
+        abbreviations: c.abbreviations,
+      }));
+      setGenerated(newItems);
+      reset(newItems.length);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '자동 생성에 실패했습니다.';
       showToast.error(msg);
@@ -126,10 +133,14 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     }
   }
 
-  async function handleAddGenerated(newItems: GlossaryCreate[]) {
+  async function handleApplyGenerated() {
+    const selectedItems = generated.filter((_, i) => selected.has(i));
+    if (selectedItems.length === 0) return;
+
+    setAdding(true);
     try {
       const created = await Promise.all(
-        newItems.map((item) => glossaryService.create(projectId, item)),
+        selectedItems.map((item) => glossaryService.create(projectId, item)),
       );
       setItems((prev) => [...prev, ...created]);
       setGenerated([]);
@@ -138,6 +149,8 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '용어 추가에 실패했습니다.';
       showToast.error(msg);
+    } finally {
+      setAdding(false);
     }
   }
 
@@ -156,14 +169,6 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
 
   return (
     <div className='flex flex-col gap-4'>
-      {generated.length > 0 && (
-        <GlossaryGeneratePanel
-          generated={generated}
-          onAdd={handleAddGenerated}
-          onClose={() => setGenerated([])}
-        />
-      )}
-
       <GlossaryTable
         items={items}
         onAdd={handleAdd}
@@ -173,6 +178,32 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
         generating={generating}
         onGenerate={handleGenerate}
       />
+
+      {/* AI 생성 결과 Modal */}
+      <Modal
+        open={generated.length > 0}
+        onOpenChange={(open) => {
+          if (!open) setGenerated([]);
+        }}
+        title={`AI 제안 용어 (${generated.length}건)`}
+        description='추가할 용어를 선택하세요.'
+        size='lg'
+        footer={
+          <GlossaryGenerateActions
+            selectedCount={selected.size}
+            onApply={handleApplyGenerated}
+            onCancel={() => setGenerated([])}
+            isLoading={adding}
+          />
+        }
+      >
+        <GlossaryGenerateList
+          generated={generated}
+          selected={selected}
+          onToggle={toggle}
+          onToggleAll={toggleAll}
+        />
+      </Modal>
     </div>
   );
 }

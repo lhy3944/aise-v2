@@ -38,7 +38,7 @@ export function ThreadList() {
       {isLoading ? (
         <ThreadListSkeleton />
       ) : (
-        <div className='flex flex-col gap-2 pr-2.5'>
+        <div className='flex w-0 min-w-full flex-col gap-2 pr-2.5'>
           {threads.map((thread) => (
             <ThreadItem
               key={thread.id}

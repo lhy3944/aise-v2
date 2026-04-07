@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
@@ -137,10 +138,7 @@ function GlossaryRow({
   return (
     <TableRow className='group hover:bg-muted/20'>
       <TableCell className='w-10 px-3'>
-        <Checkbox
-          checked={selected}
-          onCheckedChange={() => onToggleSelect(item.glossary_id)}
-        />
+        <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.glossary_id)} />
       </TableCell>
       <TableCell className='text-fg-primary truncate font-medium'>{item.term}</TableCell>
       <TableCell className='text-fg-secondary line-clamp-2 leading-relaxed'>
@@ -232,7 +230,8 @@ export function GlossaryTable({
     return result;
   }, [items, search, activeFilter]);
 
-  const allSelected = filtered.length > 0 && filtered.every((item) => selectedIds.has(item.glossary_id));
+  const allSelected =
+    filtered.length > 0 && filtered.every((item) => selectedIds.has(item.glossary_id));
   const someSelected = filtered.some((item) => selectedIds.has(item.glossary_id)) && !allSelected;
 
   function handleSelectAll() {
@@ -312,7 +311,7 @@ export function GlossaryTable({
                 onClick={onGenerate}
                 disabled={generating}
               >
-                <Sparkles className='size-3.5' />
+                {generating ? <Spinner className='size-3.5' /> : <Sparkles className='size-3.5' />}
                 {generating ? '생성 중...' : 'AI 생성'}
               </Button>
             )}
@@ -364,7 +363,9 @@ export function GlossaryTable({
             </TableHead>
             <TableHead className='text-fg-secondary w-[20%] text-xs font-semibold'>용어</TableHead>
             <TableHead className='text-fg-secondary w-[45%] text-xs font-semibold'>정의</TableHead>
-            <TableHead className='text-fg-secondary w-[20%] text-xs font-semibold'>제품군</TableHead>
+            <TableHead className='text-fg-secondary w-[20%] text-xs font-semibold'>
+              제품군
+            </TableHead>
             <TableHead className='w-[10%]' />
           </TableRow>
         </TableHeader>
@@ -414,7 +415,9 @@ export function GlossaryTable({
           ) : (
             <>
               <p className='text-fg-primary text-sm font-medium'>아직 등록된 용어가 없습니다</p>
-              <p className='text-fg-muted mt-1 text-sm'>상단의 추가 버튼이나 AI 생성을 사용하세요</p>
+              <p className='text-fg-muted mt-1 text-sm'>
+                상단의 추가 버튼이나 AI 생성을 사용하세요
+              </p>
             </>
           )}
         </div>

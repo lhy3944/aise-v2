@@ -44,7 +44,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${fontVariables} antialiased`}>
+      <body className={`${fontVariables} font-medium antialiased`}>
         <NextTopLoader {...topLoaderOptions} />
         <StoreProvider>
           <ThemeProvider attribute='class' defaultTheme='dark' enableSystem storageKey='aise-theme'>

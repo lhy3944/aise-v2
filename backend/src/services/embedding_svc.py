@@ -13,7 +13,7 @@ BATCH_SIZE = 100
 def _get_embedding_model() -> str:
     if _get_provider() == "openai":
         return os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-    return "text-embedding-3-large"
+    return os.getenv("AZURE_EMBEDDING_MODEL", "text-embedding-3-large")
 
 
 async def get_embeddings(
