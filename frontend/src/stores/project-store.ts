@@ -2,14 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Project } from '@/types/project';
 
+type ViewMode = 'card' | 'list';
+
 interface ProjectState {
   projects: Project[];
   currentProject: Project | null;
+  viewMode: ViewMode;
   isLoading: boolean;
   error: string | null;
 
   setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
+  setViewMode: (mode: ViewMode) => void;
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
   removeProject: (projectId: string) => void;
@@ -22,11 +26,13 @@ export const useProjectStore = create<ProjectState>()(
     (set) => ({
       projects: [],
       currentProject: null,
+      viewMode: 'card',
       isLoading: false,
       error: null,
 
       setProjects: (projects) => set({ projects }),
       setCurrentProject: (project) => set({ currentProject: project }),
+      setViewMode: (viewMode) => set({ viewMode }),
       addProject: (project) => set((s) => ({ projects: [project, ...s.projects] })),
       updateProject: (project) =>
         set((s) => ({
@@ -44,7 +50,7 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'aise-project',
-      partialize: (s) => ({ currentProject: s.currentProject }),
+      partialize: (s) => ({ currentProject: s.currentProject, viewMode: s.viewMode }),
     },
   ),
 );
