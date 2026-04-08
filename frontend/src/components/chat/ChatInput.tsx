@@ -271,12 +271,14 @@ export function ChatInput({
   onStop,
   disabled,
   isStreaming,
+  autoFocus = true,
 }: {
   onSubmit?: (text: string) => void;
   onAction?: (text: string) => void;
   onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
+  autoFocus?: boolean;
 }) {
   const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
@@ -291,7 +293,7 @@ export function ChatInput({
       <PromptInputBody>
         <AttachmentsDisplay />
         <PromptInputTextarea
-          autoFocus
+          autoFocus={autoFocus}
           value={inputValue}
           onChange={(e) => setInputValue(e.currentTarget.value)}
           disabled={disabled}

@@ -14,7 +14,7 @@ import { useChatStore } from '@/stores/chat-store';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
 import { useRecordStore } from '@/stores/record-store';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -52,6 +52,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     // sessionId가 있고 캐시가 없으면 로딩 상태로 시작 (빈 화면 깜빡임 방지)
     () => !!sessionId && !useChatStore.getState().sessionMessages[sessionId],
   );
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // sessionId 변경 시 로딩 상태 동기화 (effect 내 동기 setState 대신 렌더 중 조정)
   const prevSessionIdRef = useRef(sessionId);
@@ -195,6 +196,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
       // 세션이 없으면 서버에서 생성 → URL 변경
       if (!activeSessionId) {
+        setIsCreatingSession(true);
         try {
           const newSession = await sessionService.create(
             currentProject.project_id,
@@ -205,6 +207,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
           // URL 변경 (replace로 뒤로가기 시 빈 /agent로 안 돌아감)
           router.replace(`/agent/${activeSessionId}`);
         } catch {
+          setIsCreatingSession(false);
           return;
         }
       }
@@ -302,7 +305,19 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
       <AnimatePresence mode='wait'>
-        {!hasMessages && !isLoadingMessages ? (
+        {isCreatingSession ? (
+          /* === 세션 생성 중: 스피너 === */
+          <motion.div
+            key='creating'
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+            className='flex flex-1 flex-col items-center justify-center gap-3'
+          >
+            <Loader2 className='text-fg-muted size-8 animate-spin' />
+            <p className='text-fg-muted text-sm'>세션을 시작하는 중...</p>
+          </motion.div>
+        ) : !hasMessages && !isLoadingMessages ? (
           /* === 빈 화면: 중앙 프롬프트 === */
           <motion.div
             key='empty'
@@ -399,6 +414,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                   onStop={stopStreaming}
                   isStreaming={isStreaming}
                   disabled={!currentProject}
+                  autoFocus={false}
                 />
               </div>
             </div>
