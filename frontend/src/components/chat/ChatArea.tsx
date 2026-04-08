@@ -384,7 +384,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                   <MessageRenderer messages={messages} isStreaming={isStreaming} />
                 </div>
                 {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
-                <div className='min-h-[40vh]' />
+                <div className='min-h-[40dvh]' />
               </ScrollArea>
 
               {/* Scroll to bottom floating button */}

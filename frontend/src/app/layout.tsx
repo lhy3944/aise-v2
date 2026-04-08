@@ -3,7 +3,7 @@ import { StoreProvider } from '@/components/providers/StoreProvider';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { fontVariables } from '@/lib/fonts';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from 'next-themes';
 import NextTopLoader from 'nextjs-toploader';
 import './globals.css';
@@ -11,6 +11,12 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'AISE+',
   description: 'AI Agent Development Platform',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  interactiveWidget: 'resizes-content',
 };
 
 const themeScript = `
