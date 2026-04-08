@@ -383,8 +383,9 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                 <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
                   <MessageRenderer messages={messages} isStreaming={isStreaming} />
                 </div>
-                {/* 하단 여백 — 마지막 메시지가 상단에 위치하도록 */}
-                <div className='min-h-[40dvh]' />
+                {/* 하단 여백 — 스크롤 to bottom 시 마지막 메시지가 뷰포트 상단에 위치하도록
+                     100dvh - 20rem ≈ 스크롤 뷰포트 높이 - 여유(8rem), ChatGPT 스타일 */}
+                <div className='min-h-[calc(100dvh-20rem)]' />
               </ScrollArea>
 
               {/* Scroll to bottom floating button */}
