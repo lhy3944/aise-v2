@@ -125,8 +125,8 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
   if (showSkeleton) {
     return (
       <div className='flex flex-col gap-6'>
-        <Skeleton className='h-8 w-60' />
-        <Skeleton className='h-32 w-full' />
+        <Skeleton className='h-10' />
+        <Skeleton className='h-48 w-full' />
       </div>
     );
   }
@@ -283,7 +283,11 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
                               <FolderOpen className='size-3.5' />
                               지식 문서
                             </span>
-                            <span className={readiness.knowledge.sufficient ? 'text-green-600' : 'text-amber-600'}>
+                            <span
+                              className={
+                                readiness.knowledge.sufficient ? 'text-green-600' : 'text-amber-600'
+                              }
+                            >
                               {readiness.knowledge.count}개
                             </span>
                           </div>
@@ -292,7 +296,11 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
                               <BookOpen className='size-3.5' />
                               용어
                             </span>
-                            <span className={readiness.glossary.sufficient ? 'text-green-600' : 'text-fg-muted'}>
+                            <span
+                              className={
+                                readiness.glossary.sufficient ? 'text-green-600' : 'text-fg-muted'
+                              }
+                            >
                               {readiness.glossary.count}개
                             </span>
                           </div>
@@ -301,7 +309,11 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
                               <LayoutList className='size-3.5' />
                               섹션
                             </span>
-                            <span className={readiness.sections.sufficient ? 'text-green-600' : 'text-amber-600'}>
+                            <span
+                              className={
+                                readiness.sections.sufficient ? 'text-green-600' : 'text-amber-600'
+                              }
+                            >
                               {readiness.sections.count}개
                             </span>
                           </div>
@@ -400,7 +412,6 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
                 <span className='text-sm'>{formatDateTime(project.created_at)}</span>
               </div>
             </div>
-
           </div>
         )}
       </div>

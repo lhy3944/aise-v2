@@ -15,7 +15,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GlossaryCreate, GlossaryItem } from '@/types/project';
-import { cn } from '@/lib/utils';
 import { BookOpen, Check, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -207,28 +206,13 @@ export function GlossaryTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-
-  const productGroups = useMemo(() => {
-    const groups = new Set(items.map((item) => item.product_group).filter(Boolean));
-    return Array.from(groups) as string[];
-  }, [items]);
-
   const filtered = useMemo(() => {
-    let result = items;
-
-    if (activeFilter) {
-      result = result.filter((item) => item.product_group === activeFilter);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (item) => item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [items, search, activeFilter]);
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter(
+      (item) => item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q),
+    );
+  }, [items, search]);
 
   const allSelected =
     filtered.length > 0 && filtered.every((item) => selectedIds.has(item.glossary_id));
@@ -317,37 +301,6 @@ export function GlossaryTable({
             )}
           </div>
         </div>
-
-        {/* Product Group Filters */}
-        {productGroups.length > 0 && (
-          <div className='flex flex-wrap gap-2'>
-            <button
-              onClick={() => setActiveFilter(null)}
-              className={cn(
-                'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                !activeFilter
-                  ? 'bg-neutral-600 text-white'
-                  : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
-              )}
-            >
-              전체
-            </button>
-            {productGroups.map((group) => (
-              <button
-                key={group}
-                onClick={() => setActiveFilter(activeFilter === group ? null : group)}
-                className={cn(
-                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                  activeFilter === group
-                    ? 'bg-neutral-600 text-white'
-                    : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 hover:text-neutral-600',
-                )}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ─── Table ─── */}

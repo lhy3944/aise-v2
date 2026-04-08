@@ -429,6 +429,60 @@ export function MyFormActions({ onCancel, isLoading }: ActionProps) {
 
 ---
 
+## Effect 내 동기 setState 금지 (React 19)
+
+React 19 strict mode에서 `useEffect` 본문 안에서 동기적으로 `setState`를 호출하면 cascading render 경고가 발생한다. 비동기 콜백(`.then`, `await` 이후) 안에서의 `setState`는 허용된다.
+
+### 금지 패턴
+
+```tsx
+// BAD: effect 본문에서 동기 setState → cascading render 경고
+useEffect(() => {
+  setLoading(true); // ← 금지
+  fetchData().then(() => setLoading(false)); // ← 이건 OK (비동기)
+}, [id]);
+```
+
+### 허용 패턴
+
+**1. props 변경에 따른 state 조정 → 렌더 중 조건부 setState**
+
+```tsx
+const prevIdRef = useRef(id);
+if (prevIdRef.current !== id) {
+  prevIdRef.current = id;
+  setLoading(true); // 렌더 중 setState — React가 허용하는 패턴
+}
+```
+
+**2. 외부 스토어 기반 → `useSyncExternalStore`**
+
+```tsx
+const showRef = useRef(false);
+const listenerRef = useRef<(() => void) | null>(null);
+
+const subscribe = useCallback((cb: () => void) => {
+  listenerRef.current = cb;
+  return () => { listenerRef.current = null; };
+}, []);
+
+useEffect(() => {
+  // ref 변경 + listener 호출 (setState 아님)
+  showRef.current = true;
+  listenerRef.current?.();
+}, [dep]);
+
+return useSyncExternalStore(subscribe, () => showRef.current, () => false);
+```
+
+**3. 초기 상태로 충분한 경우 → `useState` initializer만 사용**
+
+```tsx
+const [loading] = useState(() => !!id && !cache[id]); // 초기값으로 해결
+```
+
+---
+
 ## 금지 사항
 
 - `default export` 사용 금지 → named export 사용
@@ -439,3 +493,4 @@ export function MyFormActions({ onCancel, isLoading }: ActionProps) {
 - `console.log` 코드 잔류 금지
 - HTML5 네이티브 폼 검증 사용 금지 → react-hook-form + zod 사용
 - Modal 안에 폼 + 액션 버튼 함께 배치 금지 → 액션은 `footer` prop으로 분리
+- `useEffect` 본문 내 동기 `setState` 금지 → 렌더 중 조정 또는 `useSyncExternalStore` 사용

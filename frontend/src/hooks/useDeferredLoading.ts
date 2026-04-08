@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 
 /**
  * 로딩이 짧으면 스켈레톤을 보여주지 않아서 깜빡임을 방지
@@ -6,17 +6,34 @@ import { useEffect, useState } from 'react';
  * - delay를 넘기면 그때부터 스켈레톤 표시
  */
 export function useDeferredLoading(loading: boolean, delay = 300): boolean {
-  const [showSkeleton, setShowSkeleton] = useState(false);
+  const showRef = useRef(false);
+  const listenerRef = useRef<(() => void) | null>(null);
+
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    listenerRef.current = onStoreChange;
+    return () => {
+      listenerRef.current = null;
+    };
+  }, []);
+
+  const getSnapshot = useCallback(() => showRef.current, []);
 
   useEffect(() => {
     if (!loading) {
-      setShowSkeleton(false);
+      if (showRef.current) {
+        showRef.current = false;
+        listenerRef.current?.();
+      }
       return;
     }
 
-    const timer = setTimeout(() => setShowSkeleton(true), delay);
+    const timer = setTimeout(() => {
+      showRef.current = true;
+      listenerRef.current?.();
+    }, delay);
+
     return () => clearTimeout(timer);
   }, [loading, delay]);
 
-  return showSkeleton;
+  return useSyncExternalStore(subscribe, getSnapshot, () => false);
 }

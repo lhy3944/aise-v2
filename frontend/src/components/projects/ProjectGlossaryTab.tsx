@@ -7,7 +7,7 @@ import {
 } from '@/components/projects/GlossaryGeneratePanel';
 import { GlossaryTable } from '@/components/projects/GlossaryTable';
 import { Modal } from '@/components/overlay/Modal';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/shared/ListSkeleton';
 import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import { ApiError } from '@/lib/api';
 import { showToast } from '@/lib/toast';
@@ -155,14 +155,7 @@ export function ProjectGlossaryTab({ projectId }: ProjectGlossaryTabProps) {
   }
 
   if (showSkeleton) {
-    return (
-      <div className='flex flex-col gap-2'>
-        <Skeleton className='h-8 w-full rounded-md' />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className='h-10 w-full rounded-md' />
-        ))}
-      </div>
-    );
+    return <ListSkeleton />;
   }
 
   if (loading) return null;

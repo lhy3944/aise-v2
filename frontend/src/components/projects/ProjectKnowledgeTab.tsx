@@ -28,6 +28,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ListSkeleton } from '../shared/ListSkeleton';
 import { Textarea } from '../ui/textarea';
 
 type KnowledgeInputMode = 'file' | 'text';
@@ -266,11 +267,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   }, []);
 
   if (loading) {
-    return (
-      <div className='flex items-center justify-center py-20'>
-        <Loader2 className='text-fg-muted size-6 animate-spin' />
-      </div>
-    );
+    return <ListSkeleton />;
   }
 
   return (

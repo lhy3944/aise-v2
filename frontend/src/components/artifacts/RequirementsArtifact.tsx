@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/shared/ListSkeleton';
 import { RequirementTable } from '@/components/requirements/RequirementTable';
 import { RequirementInput } from '@/components/requirements/RequirementInput';
 import { RefineCompare } from '@/components/requirements/RefineCompare';
@@ -348,11 +348,7 @@ export function RequirementsArtifact({ projectId }: RequirementsArtifactProps) {
     }
 
     return loading ? (
-      <div className='flex flex-col gap-2'>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className='h-12 w-full rounded-md' />
-        ))}
-      </div>
+      <ListSkeleton rows={4} rowHeight='h-12' header={false} />
     ) : (
       <RequirementTable
         requirements={typeReqs}

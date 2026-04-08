@@ -1,18 +1,31 @@
 'use client';
 
-import { LeftSidebar } from '@/components/layout/LeftSidebar';
 import { MobileBottomDrawer } from '@/components/layout/MobileBottomDrawer';
 import { MobileRightDrawer } from '@/components/layout/MobileRightDrawer';
-import { NotificationPanel } from '@/components/layout/NotificationPanel';
 import { PanelToggleBar } from '@/components/layout/PanelToggleBar';
 import { ResizeHandle } from '@/components/layout/ResizeHandle';
-import { RightPanel } from '@/components/layout/RightPanel';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { useResponsivePanel } from '@/hooks/useMediaQuery';
 import { useResize } from '@/hooks/useResize';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
+import dynamic from 'next/dynamic';
 import { useRef } from 'react';
+
+const LeftSidebar = dynamic(
+  () => import('@/components/layout/LeftSidebar').then((m) => m.LeftSidebar),
+  { ssr: false },
+);
+
+const RightPanel = dynamic(
+  () => import('@/components/layout/RightPanel').then((m) => m.RightPanel),
+  { ssr: false },
+);
+
+const NotificationPanel = dynamic(
+  () => import('@/components/layout/NotificationPanel').then((m) => m.NotificationPanel),
+  { ssr: false },
+);
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);

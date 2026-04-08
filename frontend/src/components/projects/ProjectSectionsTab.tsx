@@ -1,21 +1,5 @@
 'use client';
 
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +12,25 @@ import { cn } from '@/lib/utils';
 import { sectionService } from '@/services/section-service';
 import { useReadinessStore } from '@/stores/readiness-store';
 import type { Section, SectionCreate, SectionUpdate } from '@/types/project';
-import { GripVertical, Loader2, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ListSkeleton } from '@/components/shared/ListSkeleton';
 
 interface ProjectSectionsTabProps {
   projectId: string;
@@ -206,7 +207,7 @@ function SortableSectionRow({ section, onToggle, onEdit, onDelete }: SortableSec
       {/* Drag handle */}
       <button
         type='button'
-        className='text-fg-muted flex shrink-0 cursor-grab self-center touch-none active:cursor-grabbing'
+        className='text-fg-muted flex shrink-0 cursor-grab touch-none self-center active:cursor-grabbing'
         {...attributes}
         {...listeners}
       >
@@ -346,9 +347,7 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           section.section_id,
           !section.is_active,
         );
-        setSections((prev) =>
-          prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
-        );
+        setSections((prev) => prev.map((s) => (s.section_id === updated.section_id ? updated : s)));
         invalidateReadiness();
       } catch {
         // 글로벌 핸들링
@@ -482,11 +481,7 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
   );
 
   if (loading) {
-    return (
-      <div className='flex items-center justify-center py-20'>
-        <Loader2 className='text-fg-muted size-6 animate-spin' />
-      </div>
-    );
+    return <ListSkeleton />;
   }
 
   return (
@@ -509,11 +504,7 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           </Button>
         </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
             items={sections.map((s) => s.section_id)}
             strategy={verticalListSortingStrategy}

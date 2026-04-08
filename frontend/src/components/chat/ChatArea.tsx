@@ -5,9 +5,9 @@ import { MessageRenderer } from '@/components/chat/MessageRenderer';
 import { PromptSuggestions } from '@/components/chat/PromptSuggestions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { streamAgentChat } from '@/services/agent-service';
 import { recordService } from '@/services/record-service';
 import { sessionService } from '@/services/session-service';
-import { streamAgentChat } from '@/services/agent-service';
 import { useArtifactStore } from '@/stores/artifact-store';
 import type { ChatMessage, ToolCallData } from '@/stores/chat-store';
 import { useChatStore } from '@/stores/chat-store';
@@ -31,7 +31,6 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const setRightPanelPreset = usePanelStore((s) => s.setRightPanelPreset);
   const currentProject = useProjectStore((s) => s.currentProject);
 
-  const inputValue = useChatStore((s) => s.inputValue);
   const setInputValue = useChatStore((s) => s.setInputValue);
   const addMessage = useChatStore((s) => s.addMessage);
   const appendToLastAssistant = useChatStore((s) => s.appendToLastAssistant);
@@ -41,8 +40,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const messages = useChatStore(
     (s) => (sessionId ? s.sessionMessages[sessionId] : undefined) ?? EMPTY_MESSAGES,
   );
-  const isStreaming = useChatStore(
-    (s) => sessionId ? s.streamingSessionIds.has(sessionId) : false,
+  const isStreaming = useChatStore((s) =>
+    sessionId ? s.streamingSessionIds.has(sessionId) : false,
   );
   const hasMessages = messages.length > 0;
 
@@ -53,6 +52,16 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     // sessionId가 있고 캐시가 없으면 로딩 상태로 시작 (빈 화면 깜빡임 방지)
     () => !!sessionId && !useChatStore.getState().sessionMessages[sessionId],
   );
+
+  // sessionId 변경 시 로딩 상태 동기화 (effect 내 동기 setState 대신 렌더 중 조정)
+  const prevSessionIdRef = useRef(sessionId);
+  if (prevSessionIdRef.current !== sessionId) {
+    prevSessionIdRef.current = sessionId;
+    const needsLoading = !!sessionId && !useChatStore.getState().sessionMessages[sessionId];
+    if (needsLoading !== isLoadingMessages) {
+      setIsLoadingMessages(needsLoading);
+    }
+  }
 
   // Record store
   const setExtracting = useRecordStore((s) => s.setExtracting);
@@ -70,28 +79,32 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     if (cached) return;
 
     let cancelled = false;
-    setIsLoadingMessages(true);
-    sessionService.get(sessionId).then((detail) => {
-      if (cancelled) return;
-      const msgs: ChatMessage[] = detail.messages.map((m) => ({
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        toolCalls: m.tool_calls?.map((tc) => ({
-          name: tc.name,
-          arguments: tc.arguments,
-          state: 'completed' as const,
-        })),
-        toolData: m.tool_data ? { type: 'requirements' as const, data: m.tool_data } : undefined,
-        createdAt: m.created_at,
-      }));
-      setMessages(sessionId, msgs);
-      setIsLoadingMessages(false);
-    }).catch(() => {
-      if (!cancelled) setIsLoadingMessages(false);
-    });
+    sessionService
+      .get(sessionId)
+      .then((detail) => {
+        if (cancelled) return;
+        const msgs: ChatMessage[] = detail.messages.map((m) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          toolCalls: m.tool_calls?.map((tc) => ({
+            name: tc.name,
+            arguments: tc.arguments,
+            state: 'completed' as const,
+          })),
+          toolData: m.tool_data ? { type: 'requirements' as const, data: m.tool_data } : undefined,
+          createdAt: m.created_at,
+        }));
+        setMessages(sessionId, msgs);
+        setIsLoadingMessages(false);
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoadingMessages(false);
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, setMessages]);
 
   // Scroll position tracking
@@ -183,7 +196,10 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
       // 세션이 없으면 서버에서 생성 → URL 변경
       if (!activeSessionId) {
         try {
-          const newSession = await sessionService.create(currentProject.project_id, text.slice(0, 40));
+          const newSession = await sessionService.create(
+            currentProject.project_id,
+            text.slice(0, 40),
+          );
           activeSessionId = newSession.id;
           setRightPanelPreset(LayoutMode.SPLIT);
           // URL 변경 (replace로 뒤로가기 시 빈 /agent로 안 돌아감)
@@ -272,10 +288,11 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
   // Cleanup on unmount — abort only the current session's stream
   useEffect(() => {
+    const controllers = abortControllersRef.current;
     return () => {
       if (sessionId) {
-        abortControllersRef.current.get(sessionId)?.();
-        abortControllersRef.current.delete(sessionId);
+        controllers.get(sessionId)?.();
+        controllers.delete(sessionId);
       }
     };
   }, [sessionId]);
@@ -291,7 +308,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
             key='empty'
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
-            className='flex flex-1 flex-col justify-start px-4 pt-[12vh]'
+            className='flex flex-1 flex-col justify-start px-4 pt-[4vh] sm:pt-[12vh]'
           >
             <div className={cn('mx-auto w-full transition-[max-width] duration-300', maxW)}>
               <div className='flex justify-center py-4'>
@@ -316,7 +333,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
               {!currentProject && (
                 <div className='text-fg-muted mb-4 text-center text-sm'>
-                  사이드바에서 프로젝트를 선택하면 AI 어시스턴트와 대화를 시작할 수 있습니다.
+                  사이드바에서 프로젝트를 선택하면 에이전트와 대화를 시작할 수 있습니다.
                 </div>
               )}
 

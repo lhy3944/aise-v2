@@ -39,7 +39,15 @@
       "Bash(cat:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(grep -E '\\\\.\\(ts|js|json\\)$')"
+      "Bash(grep -E '\\\\.\\(ts|js|json\\)$')",
+      "Bash(wait)",
+      "Bash(rm -rf .next)",
+      "Bash(lsof -ti:3000 -ti:3001)",
+      "Bash(fuser -k 3000/tcp)",
+      "Bash(fuser -k 3001/tcp)"
+    ],
+    "additionalDirectories": [
+      "/home/workspace/aise-v2/frontend/.next"
     ]
   },
   "hooks": {
