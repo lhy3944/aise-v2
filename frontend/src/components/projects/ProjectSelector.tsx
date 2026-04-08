@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { useProjectStore } from '@/stores/project-store';
 import type { Project, ProjectCreate } from '@/types/project';
-import { Box, Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { Box, Check, ChevronsUpDown, Plus, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ProjectSelectorProps {
@@ -179,6 +180,8 @@ function ProjectDropdownItems({
   onSelect: (project: Project) => void;
   onOpenCreate: () => void;
 }) {
+  const router = useRouter();
+
   if (projects.length === 0) {
     return (
       <div className='px-3 py-4 text-center'>
@@ -202,7 +205,16 @@ function ProjectDropdownItems({
               className={cn('gap-2 text-xs', isSelected && 'text-accent-primary')}
             >
               <Check className={cn('size-3 shrink-0', isSelected ? 'opacity-100' : 'opacity-0')} />
-              <span className='truncate'>{project.name}</span>
+              <span className='flex-1 truncate'>{project.name}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/projects/${project.project_id}`);
+                }}
+                className='text-fg-muted hover:text-fg-primary -mr-1 flex size-5 shrink-0 items-center justify-center rounded transition-colors'
+              >
+                <Settings className='size-3' />
+              </button>
             </DropdownMenuItem>
           );
         })}
