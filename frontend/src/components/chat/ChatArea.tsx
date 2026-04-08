@@ -333,7 +333,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
               {!currentProject && (
                 <div className='text-fg-muted mb-4 text-center text-sm'>
-                  사이드바에서 프로젝트를 선택하면 에이전트와 대화를 시작할 수 있습니다.
+                  프로젝트를 선택하면 에이전트와 대화를 시작할 수 있습니다.
                 </div>
               )}
 
