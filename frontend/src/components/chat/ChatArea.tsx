@@ -204,6 +204,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
           );
           activeSessionId = newSession.id;
           setRightPanelPreset(LayoutMode.SPLIT);
+          useChatStore.getState().bumpSessionListNonce();
           // URL 변경 (replace로 뒤로가기 시 빈 /agent로 안 돌아감)
           router.replace(`/agent/${activeSessionId}`);
         } catch {
@@ -380,12 +381,14 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
             {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
             <div className='relative flex-1 overflow-hidden'>
               <ScrollArea className='h-full' viewportRef={scrollRef}>
-                <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
-                  <MessageRenderer messages={messages} isStreaming={isStreaming} />
+                <div className='flex min-h-full flex-col'>
+                  <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
+                    <MessageRenderer messages={messages} isStreaming={isStreaming} />
+                  </div>
+                  {/* 동적 스페이서 — 메시지가 짧으면 남은 공간을 채워 상단 배치,
+                       메시지가 길면 0이 되어 일반 스크롤 동작 */}
+                  <div className='flex-1' />
                 </div>
-                {/* 하단 여백 — 스크롤 to bottom 시 마지막 메시지가 뷰포트 상단에 위치하도록
-                     100dvh - 20rem ≈ 스크롤 뷰포트 높이 - 여유(8rem), ChatGPT 스타일 */}
-                <div className='min-h-[calc(100dvh-20rem)]' />
               </ScrollArea>
 
               {/* Scroll to bottom floating button */}

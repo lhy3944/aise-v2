@@ -30,6 +30,9 @@ interface ChatState {
 
   inputValue: string;
 
+  /** 세션 목록 갱신 트리거 (새 세션 생성 시 bump) */
+  sessionListNonce: number;
+
   // 메시지 관리
   setMessages: (sessionId: string, messages: ChatMessage[]) => void;
   addMessage: (sessionId: string, message: ChatMessage) => void;
@@ -44,12 +47,16 @@ interface ChatState {
 
   // 입력값
   setInputValue: (val: string) => void;
+
+  // 세션 목록 갱신
+  bumpSessionListNonce: () => void;
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({
   sessionMessages: {},
   streamingSessionIds: new Set(),
   inputValue: '',
+  sessionListNonce: 0,
 
   setMessages: (sessionId, messages) =>
     set((s) => ({
@@ -103,4 +110,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }),
 
   setInputValue: (val) => set({ inputValue: val }),
+
+  bumpSessionListNonce: () => set((s) => ({ sessionListNonce: s.sessionListNonce + 1 })),
 }));

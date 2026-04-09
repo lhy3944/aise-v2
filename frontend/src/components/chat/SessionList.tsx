@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { sessionService } from '@/services/session-service';
 import type { SessionResponse } from '@/services/session-service';
+import { useChatStore } from '@/stores/chat-store';
 import { useProjectStore } from '@/stores/project-store';
 
 const SKELETON_WIDTHS = [72, 58, 85, 63, 91, 54, 78, 67];
@@ -30,6 +31,7 @@ export function SessionList() {
   const activeSessionId = params?.sessionId as string | undefined;
 
   const currentProject = useProjectStore((s) => s.currentProject);
+  const sessionListNonce = useChatStore((s) => s.sessionListNonce);
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,7 +54,7 @@ export function SessionList() {
 
   useEffect(() => {
     fetchSessions();
-  }, [fetchSessions]);
+  }, [fetchSessions, sessionListNonce]);
 
   // 세션 삭제 후 리패치 + 현재 세션이면 리다이렉트
   const handleDelete = useCallback(
