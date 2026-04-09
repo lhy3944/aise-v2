@@ -17,7 +17,7 @@ import { useRecordStore } from '@/stores/record-store';
 import { ArrowDown, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 
@@ -46,6 +46,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const hasMessages = messages.length > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
@@ -71,6 +72,24 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const setActiveTab = useArtifactStore((s) => s.setActiveTab);
 
   const BOTTOM_THRESHOLD = 80;
+
+  // 스크롤 뷰포트를 측정하여 스페이서 높이를 정밀 설정
+  // spacer = viewport높이 - offset → scroll to bottom 시 마지막 메시지가 상단에 위치
+  useLayoutEffect(() => {
+    const viewport = scrollRef.current;
+    const spacer = spacerRef.current;
+    if (!viewport || !spacer) return;
+
+    const SPACER_TOP_OFFSET = 160; // 상단에 남길 여유 (메시지 버블 + 로딩 표시)
+    const update = () => {
+      spacer.style.minHeight = `${Math.max(0, viewport.clientHeight - SPACER_TOP_OFFSET)}px`;
+    };
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(viewport);
+    return () => ro.disconnect();
+  }, [hasMessages]);
 
   // 세션 메시지 로드
   useEffect(() => {
@@ -381,14 +400,12 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
             {/* 메시지 영역 — 하단 여백으로 새 메시지가 뷰포트 상단에 위치 */}
             <div className='relative flex-1 overflow-hidden'>
               <ScrollArea className='h-full' viewportRef={scrollRef}>
-                <div className='flex min-h-full flex-col'>
-                  <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
-                    <MessageRenderer messages={messages} isStreaming={isStreaming} />
-                  </div>
-                  {/* 동적 스페이서 — 메시지가 짧으면 남은 공간을 채워 상단 배치,
-                       메시지가 길면 0이 되어 일반 스크롤 동작 */}
-                  <div className='flex-1' />
+                <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
+                  <MessageRenderer messages={messages} isStreaming={isStreaming} />
                 </div>
+                {/* 하단 스페이서 — ResizeObserver로 스크롤 뷰포트 높이를 측정하여
+                     scroll to bottom 시 마지막 메시지가 뷰포트 상단에 위치하도록 설정 */}
+                <div ref={spacerRef} />
               </ScrollArea>
 
               {/* Scroll to bottom floating button */}
