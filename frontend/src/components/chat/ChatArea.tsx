@@ -74,22 +74,31 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const BOTTOM_THRESHOLD = 80;
 
   // 스크롤 뷰포트를 측정하여 스페이서 높이를 정밀 설정
-  // spacer = viewport높이 - offset → scroll to bottom 시 마지막 메시지가 상단에 위치
+  // 스트리밍 중에만 활성 → scroll to bottom 시 마지막 메시지가 상단에 위치
+  // 스트리밍 종료 시 스페이서 축소 → 불필요한 공백 제거
   useLayoutEffect(() => {
     const viewport = scrollRef.current;
     const spacer = spacerRef.current;
     if (!viewport || !spacer) return;
 
-    const SPACER_TOP_OFFSET = 160; // 상단에 남길 여유 (메시지 버블 + 로딩 표시)
+    const SPACER_TOP_OFFSET = 160;
     const update = () => {
-      spacer.style.minHeight = `${Math.max(0, viewport.clientHeight - SPACER_TOP_OFFSET)}px`;
+      if (isStreaming) {
+        // 스트리밍 시작: 즉시 확장 (auto-scroll이 정확한 scrollHeight를 참조하도록)
+        spacer.style.transition = 'none';
+        spacer.style.minHeight = `${Math.max(0, viewport.clientHeight - SPACER_TOP_OFFSET)}px`;
+      } else {
+        // 스트리밍 종료: 부드럽게 축소
+        spacer.style.transition = 'min-height 0.5s ease-out';
+        spacer.style.minHeight = '0px';
+      }
     };
     update();
 
     const ro = new ResizeObserver(update);
     ro.observe(viewport);
     return () => ro.disconnect();
-  }, [hasMessages]);
+  }, [hasMessages, isStreaming]);
 
   // 세션 메시지 로드
   useEffect(() => {
