@@ -47,6 +47,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentTurnRef = useRef<HTMLElement>(null);
+  const answerAreaRef = useRef<HTMLDivElement>(null);
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
@@ -90,15 +91,20 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     return { pastMessages: messages, currentTurn: null };
   }, [messages, isStreaming]);
 
-  // 현재 턴 섹션의 min-height를 스크롤 뷰포트 높이로 설정
-  // → 질문이 상단에 anchor, 답변이 남은 공간을 채움
+  // 현재 턴: 섹션 min-height + 답변 영역 min-height를 뷰포트 기준으로 설정
+  // → 질문이 상단 anchor, 답변 영역이 남은 공간을 확보하고 스트리밍 중 유지
   useLayoutEffect(() => {
     const viewport = scrollRef.current;
     const turnEl = currentTurnRef.current;
-    if (!viewport || !turnEl) return;
+    const answerEl = answerAreaRef.current;
+    if (!viewport || !turnEl || !answerEl) return;
 
+    const GAP = 24; // gap-6
     const update = () => {
-      turnEl.style.minHeight = `${viewport.clientHeight}px`;
+      const vh = viewport.clientHeight;
+      turnEl.style.minHeight = `${vh}px`;
+      const questionH = turnEl.firstElementChild?.getBoundingClientRect().height ?? 0;
+      answerEl.style.minHeight = `${Math.max(0, vh - questionH - GAP)}px`;
     };
     update();
 
@@ -450,7 +456,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                           isStreaming={false}
                         />
                       </div>
-                      <div className='min-h-0 flex-1'>
+                      <div ref={answerAreaRef}>
                         <MessageRenderer
                           messages={[currentTurn.answer]}
                           isStreaming
