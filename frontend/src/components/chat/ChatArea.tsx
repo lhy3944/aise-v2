@@ -17,7 +17,7 @@ import { useRecordStore } from '@/stores/record-store';
 import { ArrowDown, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 
@@ -46,7 +46,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
   const hasMessages = messages.length > 0;
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const spacerRef = useRef<HTMLDivElement>(null);
+  const currentTurnRef = useRef<HTMLElement>(null);
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
@@ -73,32 +73,39 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
 
   const BOTTOM_THRESHOLD = 80;
 
-  // 스크롤 뷰포트를 측정하여 스페이서 높이를 정밀 설정
-  // 스트리밍 중에만 활성 → scroll to bottom 시 마지막 메시지가 상단에 위치
-  // 스트리밍 종료 시 스페이서 축소 → 불필요한 공백 제거
+  // 턴 기반 메시지 분리: 스트리밍 중 → 과거 메시지 + 현재 턴(질문+답변)
+  // 스트리밍 종료 → 전체를 일반 리스트로 렌더
+  const { pastMessages, currentTurn } = useMemo(() => {
+    if (!isStreaming || messages.length < 2) {
+      return { pastMessages: messages, currentTurn: null };
+    }
+    const last = messages[messages.length - 1];
+    const secondLast = messages[messages.length - 2];
+    if (secondLast.role === 'user' && last.role === 'assistant') {
+      return {
+        pastMessages: messages.slice(0, -2),
+        currentTurn: { question: secondLast, answer: last },
+      };
+    }
+    return { pastMessages: messages, currentTurn: null };
+  }, [messages, isStreaming]);
+
+  // 현재 턴 섹션의 min-height를 스크롤 뷰포트 높이로 설정
+  // → 질문이 상단에 anchor, 답변이 남은 공간을 채움
   useLayoutEffect(() => {
     const viewport = scrollRef.current;
-    const spacer = spacerRef.current;
-    if (!viewport || !spacer) return;
+    const turnEl = currentTurnRef.current;
+    if (!viewport || !turnEl) return;
 
-    const SPACER_TOP_OFFSET = 160;
     const update = () => {
-      if (isStreaming) {
-        // 스트리밍 시작: 즉시 확장 (auto-scroll이 정확한 scrollHeight를 참조하도록)
-        spacer.style.transition = 'none';
-        spacer.style.minHeight = `${Math.max(0, viewport.clientHeight - SPACER_TOP_OFFSET)}px`;
-      } else {
-        // 스트리밍 종료: 부드럽게 축소
-        spacer.style.transition = 'min-height 0.5s ease-out';
-        spacer.style.minHeight = '0px';
-      }
+      turnEl.style.minHeight = `${viewport.clientHeight}px`;
     };
     update();
 
     const ro = new ResizeObserver(update);
     ro.observe(viewport);
     return () => ro.disconnect();
-  }, [hasMessages, isStreaming]);
+  }, [!!currentTurn]);
 
   // 세션 메시지 로드
   useEffect(() => {
@@ -410,11 +417,38 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
             <div className='relative flex-1 overflow-hidden'>
               <ScrollArea className='h-full' viewportRef={scrollRef}>
                 <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
-                  <MessageRenderer messages={messages} isStreaming={isStreaming} />
+                  {/* 과거 완료된 턴들 — 일반 리스트 */}
+                  {pastMessages.length > 0 && (
+                    <MessageRenderer
+                      messages={pastMessages}
+                      isStreaming={!currentTurn && isStreaming}
+                    />
+                  )}
+
+                  {/* 현재 턴 — 질문이 anchor, 답변이 남은 viewport를 채움 */}
+                  {currentTurn && (
+                    <section
+                      ref={currentTurnRef}
+                      className={cn(
+                        'flex flex-col gap-6',
+                        pastMessages.length > 0 && 'mt-6',
+                      )}
+                    >
+                      <div className='shrink-0'>
+                        <MessageRenderer
+                          messages={[currentTurn.question]}
+                          isStreaming={false}
+                        />
+                      </div>
+                      <div className='min-h-0 flex-1'>
+                        <MessageRenderer
+                          messages={[currentTurn.answer]}
+                          isStreaming
+                        />
+                      </div>
+                    </section>
+                  )}
                 </div>
-                {/* 하단 스페이서 — ResizeObserver로 스크롤 뷰포트 높이를 측정하여
-                     scroll to bottom 시 마지막 메시지가 뷰포트 상단에 위치하도록 설정 */}
-                <div ref={spacerRef} />
               </ScrollArea>
 
               {/* Scroll to bottom floating button */}
