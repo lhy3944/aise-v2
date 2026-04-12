@@ -107,6 +107,16 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     return () => ro.disconnect();
   }, [!!currentTurn]);
 
+  // 현재 턴 시작 시 질문 말풍선을 뷰포트 상단으로 스크롤
+  const prevHadTurnRef = useRef(false);
+  useLayoutEffect(() => {
+    const hasTurn = !!currentTurn;
+    if (hasTurn && !prevHadTurnRef.current && currentTurnRef.current) {
+      currentTurnRef.current.scrollIntoView({ block: 'start' });
+    }
+    prevHadTurnRef.current = hasTurn;
+  }, [!!currentTurn]);
+
   // 세션 메시지 로드
   useEffect(() => {
     if (!sessionId) return;
