@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Check, CheckSquare, ChevronLeft, Forward, HelpCircle, Square } from 'lucide-react';
+import { ArrowRight, CheckSquare, ChevronLeft, Forward, HelpCircle, Square } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 /* ── 타입 정의 ── */
@@ -244,29 +244,8 @@ export function Questionnaire({ questions, onSubmit }: QuestionnaireProps) {
     }
   };
 
-  /* 제출 완료 상태 */
-  if (submitted) {
-    return (
-      <div className='bg-canvas-surface border-line-primary w-full rounded-xl border p-4'>
-        <div className='text-fg-muted flex items-center gap-1.5 text-xs'>
-          <Check className='size-3.5' />
-          {total}개 질문에 답변 완료
-        </div>
-        <div className='mt-2 flex flex-col gap-1'>
-          {questions.map((q, i) => {
-            const key = q.id ?? `q${i}`;
-            const answer = answers[key] ?? EMPTY_ANSWER;
-            return (
-              <p key={key} className='text-fg-secondary text-xs'>
-                <span className='text-fg-primary font-medium'>{q.question}</span>{' '}
-                {getAnswerSummary(q, answer)}
-              </p>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  /* 제출 완료 — 질문지 숨김 (답변은 사용자 메시지로 전송됨) */
+  if (submitted) return null;
 
   /* 스텝별 위저드 */
   return (
