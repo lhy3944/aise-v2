@@ -40,6 +40,14 @@ export function useTurnLayout(
 
   const hasTurn = !!currentTurn;
 
+  /** currentTurn 섹션의 상단을 스크롤 뷰포트 상단에 맞춤 */
+  const scrollTurnToTop = () => {
+    const viewport = scrollRef.current;
+    const turnEl = currentTurnRef.current;
+    if (!viewport || !turnEl) return;
+    viewport.scrollTop = turnEl.offsetTop;
+  };
+
   // 현재 턴: 섹션 min-height + 답변 영역 min-height를 뷰포트 기준으로 설정
   useLayoutEffect(() => {
     const viewport = scrollRef.current;
@@ -56,7 +64,12 @@ export function useTurnLayout(
     };
     update();
 
-    const ro = new ResizeObserver(update);
+    // 뷰포트 크기 변경 시 (모바일 키보드 열림/닫힘 포함) min-height 재계산
+    const ro = new ResizeObserver(() => {
+      update();
+      // 모바일 키보드로 뷰포트가 변해도 질문이 상단에 유지되도록 스크롤 보정
+      scrollTurnToTop();
+    });
     ro.observe(viewport);
     return () => ro.disconnect();
   }, [hasTurn, scrollRef]);
@@ -64,8 +77,9 @@ export function useTurnLayout(
   // 새 턴 시작 시 질문 말풍선을 뷰포트 상단으로 스크롤
   const prevHadTurnRef = useRef(false);
   useLayoutEffect(() => {
-    if (hasTurn && !prevHadTurnRef.current && currentTurnRef.current) {
-      currentTurnRef.current.scrollIntoView({ block: 'start' });
+    if (hasTurn && !prevHadTurnRef.current) {
+      // requestAnimationFrame으로 레이아웃 완료 후 스크롤
+      requestAnimationFrame(scrollTurnToTop);
     }
     prevHadTurnRef.current = hasTurn;
   }, [hasTurn]);
