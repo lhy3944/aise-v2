@@ -105,40 +105,36 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <CommandDialog
       open={open}
       onOpenChange={handleOpenChange}
-      title="검색"
-      description="페이지, 프로젝트, 명령어를 검색하세요"
-      className="w-[90vw] max-w-[540px]"
+      title='검색'
+      description='페이지, 프로젝트, 명령어를 검색하세요'
+      className='w-[90vw] max-w-[540px]'
       showCloseButton={false}
     >
-      <CommandInput
-        placeholder="검색어를 입력하세요..."
-        value={query}
-        onValueChange={setQuery}
-      />
-      <CommandList className="max-h-[400px]">
+      <CommandInput placeholder='검색어를 입력하세요...' value={query} onValueChange={setQuery} />
+      <CommandList className='max-h-[420px]'>
         <CommandEmpty>
-          <span className="text-fg-muted text-sm">검색 결과가 없습니다</span>
+          <span className='text-fg-muted text-sm'>검색 결과가 없습니다</span>
         </CommandEmpty>
 
         {!query && recentItems.length > 0 && (
           <>
-            <CommandGroup heading="최근 검색">
+            <CommandGroup heading='최근 검색'>
               {recentItems.map((item) => (
                 <CommandItem
                   key={item.id}
                   value={`recent-${item.label}`}
                   onSelect={() => handleRecentSelect(item)}
                 >
-                  <Clock className="text-fg-muted h-4 w-4 shrink-0" />
+                  <Clock className='text-fg-muted h-4 w-4 shrink-0' />
                   <span>{item.label}</span>
                   <button
-                    className="text-fg-muted hover:text-fg-primary ml-auto rounded p-0.5"
+                    className='text-fg-muted hover:text-fg-primary ml-auto rounded p-0.5'
                     onClick={(e) => {
                       e.stopPropagation();
                       removeRecentItem(item.id);
                     }}
                   >
-                    <X className="h-3 w-3" />
+                    <X className='h-3 w-3' />
                   </button>
                 </CommandItem>
               ))}
@@ -147,7 +143,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           </>
         )}
 
-        <CommandGroup heading="페이지">
+        <CommandGroup heading='페이지'>
           {SEARCH_NAVIGATION_ITEMS.map((item) => (
             <CommandItem
               key={item.id}
@@ -155,34 +151,32 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               keywords={item.keywords}
               onSelect={() => handleNavigationSelect(item)}
             >
-              <item.icon className="text-fg-muted h-4 w-4 shrink-0" />
+              <item.icon className='text-fg-muted h-4 w-4 shrink-0' />
               <span>{item.label}</span>
             </CommandItem>
           ))}
         </CommandGroup>
 
         {projects.length > 0 && (
-          <CommandGroup heading="프로젝트">
+          <CommandGroup heading='프로젝트'>
             {projects.map((project) => (
               <CommandItem
                 key={project.project_id}
                 value={`project-${project.name}`}
-                keywords={[project.description, project.domain].filter(
-                  (v): v is string => !!v,
-                )}
+                keywords={[project.description, project.domain].filter((v): v is string => !!v)}
                 onSelect={() => handleProjectSelect(project)}
               >
-                <Box className="text-fg-muted h-4 w-4 shrink-0" />
+                <Box className='text-fg-muted h-4 w-4 shrink-0' />
                 <span>{project.name}</span>
                 {project.domain && (
-                  <span className="text-fg-muted ml-auto text-xs">{project.domain}</span>
+                  <span className='text-fg-muted ml-auto text-xs'>{project.domain}</span>
                 )}
               </CommandItem>
             ))}
           </CommandGroup>
         )}
 
-        <CommandGroup heading="빠른 실행">
+        <CommandGroup heading='빠른 실행'>
           {SEARCH_ACTION_ITEMS.map((item) => (
             <CommandItem
               key={item.id}
@@ -190,7 +184,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               keywords={item.keywords}
               onSelect={() => handleActionSelect(item)}
             >
-              <item.icon className="text-fg-muted h-4 w-4 shrink-0" />
+              <item.icon className='text-fg-muted h-4 w-4 shrink-0' />
               <span>{item.label}</span>
             </CommandItem>
           ))}

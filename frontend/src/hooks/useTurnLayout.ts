@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChatMessage } from '@/stores/chat-store';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 
 interface TurnPair {
   question: ChatMessage;
@@ -41,12 +41,15 @@ export function useTurnLayout(
   const hasTurn = !!currentTurn;
 
   /** currentTurn 섹션의 상단을 스크롤 뷰포트 상단에 맞춤 */
-  const scrollTurnToTop = () => {
-    const viewport = scrollRef.current;
-    const turnEl = currentTurnRef.current;
-    if (!viewport || !turnEl) return;
-    viewport.scrollTop = turnEl.offsetTop;
-  };
+  const scrollTurnToTop = useCallback(
+    (smooth = false) => {
+      const viewport = scrollRef.current;
+      const turnEl = currentTurnRef.current;
+      if (!viewport || !turnEl) return;
+      viewport.scrollTo({ top: turnEl.offsetTop, behavior: smooth ? 'smooth' : 'instant' });
+    },
+    [scrollRef],
+  );
 
   // 현재 턴: 섹션 min-height + 답변 영역 min-height를 뷰포트 기준으로 설정
   useLayoutEffect(() => {
@@ -72,17 +75,18 @@ export function useTurnLayout(
     });
     ro.observe(viewport);
     return () => ro.disconnect();
-  }, [hasTurn, scrollRef]);
+  }, [hasTurn, scrollRef, scrollTurnToTop]);
 
   // 새 턴 시작 시 질문 말풍선을 뷰포트 상단으로 스크롤
-  const prevHadTurnRef = useRef(false);
+  // hasTurn boolean이 아닌 질문 ID를 추적 — 같은 렌더 배치에서 turn이 교체되어도 감지
+  const prevTurnQuestionIdRef = useRef<string | null>(null);
   useLayoutEffect(() => {
-    if (hasTurn && !prevHadTurnRef.current) {
-      // requestAnimationFrame으로 레이아웃 완료 후 스크롤
-      requestAnimationFrame(scrollTurnToTop);
+    const questionId = currentTurn?.question.id ?? null;
+    if (questionId && questionId !== prevTurnQuestionIdRef.current) {
+      requestAnimationFrame(() => scrollTurnToTop(true));
     }
-    prevHadTurnRef.current = hasTurn;
-  }, [hasTurn]);
+    prevTurnQuestionIdRef.current = questionId;
+  }, [currentTurn, scrollTurnToTop]);
 
   return { pastMessages, currentTurn, currentTurnRef, answerAreaRef };
 }

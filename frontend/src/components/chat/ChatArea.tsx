@@ -137,7 +137,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                         <MessageRenderer messages={[currentTurn.question]} isStreaming={false} />
                       </div>
                       <div ref={answerAreaRef}>
-                        <MessageRenderer messages={[currentTurn.answer]} isStreaming />
+                        <MessageRenderer messages={[currentTurn.answer]} isStreaming={isStreaming} />
                       </div>
                     </section>
                   )}

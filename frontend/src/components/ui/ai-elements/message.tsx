@@ -6,8 +6,8 @@ import { cjk } from '@streamdown/cjk';
 import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
 import { createMermaidPlugin } from '@streamdown/mermaid';
-import { Bot, Copy, User } from 'lucide-react';
-import { type ReactNode, memo, useCallback } from 'react';
+import { Bot, Check, Copy, User } from 'lucide-react';
+import { type ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
 // ── Message Container ──
@@ -142,8 +142,32 @@ interface MessageActionsProps {
 }
 
 export function MessageActions({ content, className }: MessageActionsProps) {
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(content);
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch {
+      // HTTP 환경: Clipboard API 불가 → textarea + execCommand fallback
+      const ta = document.createElement('textarea');
+      ta.value = content;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
   }, [content]);
 
   return (
@@ -155,10 +179,13 @@ export function MessageActions({ content, className }: MessageActionsProps) {
     >
       <button
         onClick={handleCopy}
-        className='text-fg-muted hover:text-fg-primary rounded p-1 transition-colors'
+        className={cn(
+          'rounded p-1 transition-colors',
+          'text-fg-muted hover:text-fg-primary',
+        )}
         aria-label='복사'
       >
-        <Copy className='size-3.5' />
+        {copied ? <Check className='size-3.5' /> : <Copy className='size-3.5' />}
       </button>
     </div>
   );
