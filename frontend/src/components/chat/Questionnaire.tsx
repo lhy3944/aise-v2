@@ -91,7 +91,7 @@ function QuestionItem({
                 className={cn(
                   'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
                   isSelected
-                    ? 'border-accent-primary/30 bg-accent-primary/5 text-fg-primary'
+                    ? 'border-accent-primary text-fg-primary'
                     : 'border-line-primary text-fg-secondary hover:bg-canvas-secondary',
                 )}
               >
@@ -127,7 +127,7 @@ function QuestionItem({
             className={cn(
               'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
               isCustomActive
-                ? 'border-accent-primary/30 text-accent-primary'
+                ? 'border-accent-primary text-accent-primary'
                 : 'border-line-primary text-fg-muted hover:bg-canvas-secondary',
             )}
           >

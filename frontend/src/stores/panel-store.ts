@@ -77,7 +77,10 @@ export const usePanelStore = create<PanelState>()(
       },
 
       toggleNotification: () => {
-        set((s) => ({ notificationOpen: !s.notificationOpen }));
+        set((s) => ({
+          notificationOpen: !s.notificationOpen,
+          rightPanelOpen: s.notificationOpen ? s.rightPanelOpen : false,
+        }));
       },
 
       toggleFullWidth: () => {

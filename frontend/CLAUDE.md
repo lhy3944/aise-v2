@@ -159,6 +159,40 @@ shadcn 기본 컬러가 아닌 **AISE+ 전용 토큰**을 우선 사용:
 <div className='border-accent-primary rounded-lg border p-4'>
 ```
 
+### 인터랙티브 카드 UI 패턴
+
+채팅 내 질문지, 요구사항 카드 등 사용자 인터랙션이 있는 카드 컴포넌트는 다음 규칙을 따른다.
+
+**카드 컨테이너:**
+
+- 외곽: `bg-canvas-surface border-line-primary rounded-xl border` — 뉴트럴 톤 유지, accent 테두리 금지
+- 헤더/푸터 구분: `border-line-primary border-b` / `border-t` 사용
+
+**선택 가능한 항목 (옵션 버튼):**
+
+- 배경은 항상 **투명** — `bg-accent-*` 사용 금지
+- 선택 상태: `border-accent-primary text-fg-primary` (보더만 accent)
+- 미선택 상태: `border-line-primary text-fg-secondary hover:bg-canvas-secondary`
+
+```tsx
+// GOOD: 선택 시 보더만 accent, 배경 투명
+<button className={cn(
+  'rounded-lg border px-3 py-2 text-sm',
+  isSelected ? 'border-accent-primary text-fg-primary' : 'border-line-primary text-fg-secondary',
+)}>
+
+// BAD: 선택 시 배경색 사용
+<button className={cn(
+  'rounded-lg border px-3 py-2',
+  isSelected ? 'border-accent-primary/30 bg-accent-primary/5' : '...',
+)}>
+```
+
+**액션 버튼:**
+
+- 카드 하단에 배치, **항상 오른쪽 정렬** (`flex justify-end`)
+- 카드에 헤더/푸터가 있는 경우 `border-t` 영역에 배치
+
 ### 크기는 Tailwind 단위 사용
 
 - 고정 크기: `size-4`, `h-9 w-9`, `w-[220px]`

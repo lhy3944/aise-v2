@@ -50,9 +50,9 @@ export function ExtractedRequirements({ requirements, onAccept }: ExtractedRequi
   }
 
   return (
-    <div className='bg-canvas-surface border-accent-primary/20 w-full rounded-xl border p-4'>
+    <div className='bg-canvas-surface border-line-primary w-full rounded-xl border p-4'>
       <div className='mb-3 flex items-center gap-2'>
-        <ListChecks className='text-accent-primary size-4' />
+        <ListChecks className='text-fg-secondary size-4' />
         <span className='text-fg-primary text-sm font-medium'>추출된 요구사항</span>
         <Badge variant='secondary' className='text-xs'>
           {requirements.length}개
@@ -67,7 +67,7 @@ export function ExtractedRequirements({ requirements, onAccept }: ExtractedRequi
             className={cn(
               'flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition-colors',
               selected.has(i)
-                ? 'border-accent-primary/30 bg-accent-primary/5'
+                ? 'border-accent-primary'
                 : 'border-line-primary opacity-50',
             )}
           >
@@ -96,10 +96,12 @@ export function ExtractedRequirements({ requirements, onAccept }: ExtractedRequi
         ))}
       </div>
 
-      <Button size='sm' onClick={handleAccept} disabled={selected.size === 0} className='gap-1.5'>
-        <Check className='size-3.5' />
-        선택 항목 반영 ({selected.size}개)
-      </Button>
+      <div className='flex justify-end'>
+        <Button size='sm' onClick={handleAccept} disabled={selected.size === 0} className='gap-1.5'>
+          <Check className='size-3.5' />
+          선택 항목 반영 ({selected.size}개)
+        </Button>
+      </div>
     </div>
   );
 }
