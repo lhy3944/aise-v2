@@ -38,25 +38,30 @@ kill_port $FRONTEND_PORT
 
 # --- Backend ---
 log "Backend 의존성 동기화 중..."
-cd "$ROOT_DIR/backend"
-uv sync
+(cd "$ROOT_DIR/backend" && uv sync)
 log "Backend 시작 중... (port: $BACKEND_PORT)"
-uv run uvicorn src.main:app --port=$BACKEND_PORT --reload --host 0.0.0.0 &
+(
+    cd "$ROOT_DIR/backend"
+    exec env PYTHONUNBUFFERED=1 uv run uvicorn src.main:app \
+        --port=$BACKEND_PORT \
+        --reload \
+        --host 0.0.0.0 \
+        --log-level debug
+) 2>&1 &
 BACKEND_PID=$!
 
 # --- Frontend ---
 log "Frontend 의존성 확인 중..."
-cd "$ROOT_DIR/frontend"
-if [ ! -d "node_modules" ]; then
+if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     log "node_modules 없음 — npm install 실행"
-    npm install
+    (cd "$ROOT_DIR/frontend" && npm install)
 fi
 log "Frontend 시작 중... (port: $FRONTEND_PORT)"
-npx next dev --hostname 0.0.0.0 --port $FRONTEND_PORT &
+(
+    cd "$ROOT_DIR/frontend"
+    exec npx next dev --hostname 0.0.0.0 --port $FRONTEND_PORT
+) 2>&1 &
 FRONTEND_PID=$!
-
-# --- 완료 ---
-cd "$ROOT_DIR"
 echo ""
 log "========================================="
 log "  AISE 2.0 개발 서버 시작 완료"
