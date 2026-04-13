@@ -124,6 +124,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                     <MessageRenderer
                       messages={pastMessages}
                       isStreaming={!currentTurn && isStreaming}
+                      onSendMessage={sendMessage}
                     />
                   )}
 
@@ -134,10 +135,18 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                       className={cn('flex flex-col gap-6', pastMessages.length > 0 && 'mt-6')}
                     >
                       <div className='shrink-0'>
-                        <MessageRenderer messages={[currentTurn.question]} isStreaming={false} />
+                        <MessageRenderer
+                          messages={[currentTurn.question]}
+                          isStreaming={false}
+                          onSendMessage={sendMessage}
+                        />
                       </div>
                       <div ref={answerAreaRef}>
-                        <MessageRenderer messages={[currentTurn.answer]} isStreaming={isStreaming} />
+                        <MessageRenderer
+                          messages={[currentTurn.answer]}
+                          isStreaming={isStreaming}
+                          onSendMessage={sendMessage}
+                        />
                       </div>
                     </section>
                   )}

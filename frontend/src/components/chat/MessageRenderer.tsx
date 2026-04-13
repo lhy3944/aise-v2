@@ -1,6 +1,6 @@
 'use client';
 
-import { ClarifyQuestion } from '@/components/chat/ClarifyQuestion';
+import { Questionnaire, type QuestionData } from '@/components/chat/Questionnaire';
 import {
   Message,
   MessageActions,
@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 interface MessageRendererProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  onSendMessage?: (text: string) => void;
 }
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
@@ -26,28 +27,28 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 
 /* ── 구조화 블록 파싱 ── */
 
-interface ClarifyData {
-  question: string;
-  options: string[];
-  allow_custom: boolean;
-}
-
 // [CLARIFY]{json}[/CLARIFY] 블록을 모두 추출하고 본문에서 제거
 // 코드펜스(```...```)로 감싸진 경우도 함께 제거
+// 배열 형식과 단일 객체 형식 모두 지원 (하위 호환)
 const CLARIFY_BLOCK_RE =
   /```[\w]*\s*\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]\s*```|\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]/g;
 
 function parseClarifyBlocks(content: string): {
-  items: ClarifyData[];
+  items: QuestionData[];
   cleanContent: string;
 } {
-  const items: ClarifyData[] = [];
+  const items: QuestionData[] = [];
   let cleanContent = content;
 
   for (const match of content.matchAll(CLARIFY_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
-      items.push(JSON.parse(jsonStr) as ClarifyData);
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        items.push(...(parsed as QuestionData[]));
+      } else {
+        items.push(parsed as QuestionData);
+      }
     } catch {
       // JSON 파싱 실패 시 무시
     }
@@ -63,10 +64,12 @@ function MessageItem({
   message,
   isLast,
   isStreaming,
+  onSendMessage,
 }: {
   message: ChatMessage;
   isLast: boolean;
   isStreaming: boolean;
+  onSendMessage?: (text: string) => void;
 }) {
   const isUser = message.role === 'user';
   const showCursor = isLast && isStreaming && !isUser;
@@ -119,16 +122,10 @@ function MessageItem({
               </div>
             )}
 
-            {/* CLARIFY 카드 */}
-            {parsed.items.map((clarify, i) => (
-              <ClarifyQuestion
-                key={i}
-                data={clarify}
-                onAnswer={() => {
-                  // TODO: 답변을 다음 메시지로 전송하는 기능 추후 구현
-                }}
-              />
-            ))}
+            {/* CLARIFY 질문지 */}
+            {parsed.items.length > 0 && onSendMessage && (
+              <Questionnaire questions={parsed.items} onSubmit={onSendMessage} />
+            )}
 
             {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
             {!showCursor && displayContent && <MessageActions content={displayContent} />}
@@ -139,7 +136,7 @@ function MessageItem({
   );
 }
 
-export function MessageRenderer({ messages, isStreaming }: MessageRendererProps) {
+export function MessageRenderer({ messages, isStreaming, onSendMessage }: MessageRendererProps) {
   if (messages.length === 0) return null;
 
   return (
@@ -150,6 +147,7 @@ export function MessageRenderer({ messages, isStreaming }: MessageRendererProps)
           message={msg}
           isLast={i === messages.length - 1}
           isStreaming={isStreaming}
+          onSendMessage={onSendMessage}
         />
       ))}
     </div>
