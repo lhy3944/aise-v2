@@ -1,12 +1,12 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { api } from '@/lib/api';
+import { useProjectStore } from '@/stores/project-store';
 import { CornerRightUp, LightbulbIcon, RefreshCwIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useProjectStore } from '@/stores/project-store';
-import { api } from '@/lib/api';
 
 interface PromptCard {
   title: string;
@@ -132,9 +132,12 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
   if (loading) {
     return (
       <div className='mt-10 space-y-2'>
-        <div className='text-muted-foreground flex items-center gap-1.5 text-sm'>
-          <LightbulbIcon className='size-5 text-red-500' fill='currentColor' />
-          <span>프로젝트에 맞는 질문을 준비하고 있습니다...</span>
+        <div className='flex items-center justify-between'>
+          <div className='text-muted-foreground flex items-center gap-1.5 text-sm'>
+            <LightbulbIcon className='size-5 text-red-500' fill='currentColor' />
+            <span>프로젝트에 최적화된 질문을 준비하고 있습니다...</span>
+          </div>
+          <Skeleton className='h-7 w-16 rounded-lg' />
         </div>
         <div className='grid grid-cols-2 gap-2'>
           {Array.from({ length: count }).map((_, i) => (
@@ -181,7 +184,7 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
               <Button
                 key={card.title}
                 variant='ghost'
-                className='group border-border hover:bg-accent relative h-auto w-full flex-col items-start rounded-lg border p-3 text-left whitespace-normal transition-colors'
+                className='group border-border hover:bg-accent relative h-full w-full flex-col items-start justify-start rounded-lg border p-3 text-left whitespace-normal transition-colors'
                 onClick={() => onSelect?.(card.description)}
               >
                 <CornerRightUp className='text-muted-foreground absolute top-2.5 right-2.5 size-3.5 opacity-0 transition-opacity group-hover:opacity-100' />

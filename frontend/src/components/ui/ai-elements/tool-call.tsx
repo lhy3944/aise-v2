@@ -66,7 +66,7 @@ export function ToolCall({
           {input && Object.keys(input).length > 0 && (
             <div className='border-line-primary border-b px-3 py-2'>
               <p className='text-fg-muted mb-1 text-[10px] font-semibold uppercase'>Input</p>
-              <pre className='text-fg-secondary max-w-full overflow-x-auto text-[11px] leading-relaxed'>
+              <pre className='text-fg-secondary w-full overflow-x-auto text-[11px] leading-relaxed' style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 {JSON.stringify(input, null, 2)}
               </pre>
             </div>

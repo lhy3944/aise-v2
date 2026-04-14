@@ -329,7 +329,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
       </div>
 
       {/* Record list */}
-      <ScrollArea className='flex-1'>
+      <ScrollArea className='flex-1 h-full'>
         <div className='p-3'>
           {Object.entries(grouped).map(([sectionName, sectionRecords]) => (
             <div key={sectionName} className='mb-4'>

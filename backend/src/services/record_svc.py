@@ -417,7 +417,15 @@ async def approve_records(
         created.append(record)
 
     await db.commit()
-    for r in created:
-        await db.refresh(r)
 
-    return RecordListResponse(records=[_to_response(r) for r in created], total=len(created))
+    record_ids = [r.id for r in created]
+    stmt = (
+        select(Record)
+        .options(selectinload(Record.section), selectinload(Record.source_document))
+        .where(Record.id.in_(record_ids))
+        .order_by(Record.order_index.asc())
+    )
+    result = await db.execute(stmt)
+    loaded = result.scalars().all()
+
+    return RecordListResponse(records=[_to_response(r) for r in loaded], total=len(loaded))
