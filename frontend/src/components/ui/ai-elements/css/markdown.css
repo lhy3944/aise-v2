@@ -13,7 +13,9 @@
 .markdown-body {
   line-height: 1.7;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   color: var(--color-fg-primary);
+  max-width: 100%;
 }
 
 /* ── Headings ── */
@@ -148,6 +150,8 @@
 
 .markdown-body pre {
   margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* ═══════════════════════════════════════════════════════════

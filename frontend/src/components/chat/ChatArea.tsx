@@ -117,8 +117,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
               animate={{ opacity: 1, transition: { duration: 0.3 } }}
               className='relative h-full'
             >
-              <ScrollArea className='h-full' viewportRef={scrollRef}>
-                <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>
+              <ScrollArea className='h-full [&_[data-slot=scroll-area-viewport]]:!overflow-x-hidden' viewportRef={scrollRef}>
+                <div className={cn('mx-auto px-4 pt-6 transition-[max-width] duration-300 sm:px-6', maxW)}>
                   {pastMessages.length > 0 && (
                     <MessageRenderer
                       messages={pastMessages}

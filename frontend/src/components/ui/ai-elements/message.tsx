@@ -26,7 +26,7 @@ export function Message({ from, children, className }: MessageProps) {
   return (
     <div
       className={cn(
-        'group flex gap-3',
+        'group flex min-w-0 gap-3',
         from === 'user' ? 'flex-row-reverse' : 'flex-row',
         className,
       )}
@@ -72,7 +72,7 @@ export function MessageContent({ from, children, className }: MessageContentProp
     <div
       className={cn(
         'flex flex-col gap-1.5',
-        from === 'user' ? 'max-w-[85%] items-end' : 'w-full items-start',
+        from === 'user' ? 'max-w-[85%] items-end' : 'min-w-0 w-full items-start',
         className,
       )}
     >
