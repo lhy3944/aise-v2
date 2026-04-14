@@ -2,6 +2,13 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { recordService } from '@/services/record-service';
@@ -11,6 +18,7 @@ import {
   CheckCircle2,
   Database,
   FileText,
+  Filter,
   Loader2,
   MinusCircle,
   Trash2,
@@ -46,7 +54,7 @@ function ConfidenceBadge({ score }: { score: number | null }) {
 export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
   const [records, setRecords] = useState<RecordType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sectionFilter, setSectionFilter] = useState<string | null>(null);
+  const [sectionFilters, setSectionFilters] = useState<string[]>([]);
 
   const extracting = useRecordStore((s) => s.extracting);
   const candidates = useRecordStore((s) => s.candidates);
@@ -58,14 +66,14 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
 
   const fetchRecords = useCallback(async () => {
     try {
-      const res = await recordService.list(projectId, sectionFilter ?? undefined);
+      const res = await recordService.list(projectId);
       setRecords(res.records);
     } catch {
       // 글로벌 핸들링
     } finally {
       setLoading(false);
     }
-  }, [projectId, sectionFilter]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchRecords();
@@ -80,8 +88,13 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
     ),
   );
 
-  // 섹션별 그룹핑
-  const grouped = records.reduce<Record<string, RecordType[]>>((acc, r) => {
+  // 섹션별 그룹핑 (클라이언트 필터링)
+  const filteredRecords =
+    sectionFilters.length === 0
+      ? records
+      : records.filter((r) => r.section_id && sectionFilters.includes(r.section_id));
+
+  const grouped = filteredRecords.reduce<Record<string, RecordType[]>>((acc, r) => {
     const key = r.section_name || '미분류';
     if (!acc[key]) acc[key] = [];
     acc[key].push(r);
@@ -295,37 +308,46 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
     <div className='flex h-full flex-col'>
       {/* Header */}
       <div className='border-line-primary flex items-center justify-between border-b px-4 py-2'>
-        <div className='flex items-center gap-2'>
-          <span className='text-fg-primary text-xs font-semibold'>{records.length}개 레코드</span>
-          {/* Section filter chips */}
-          <div className='flex gap-1'>
-            <button
-              onClick={() => setSectionFilter(null)}
-              className={cn(
-                'rounded-full px-2 py-0.5 text-[10px] transition-colors',
-                !sectionFilter
-                  ? 'bg-accent-primary/10 text-accent-primary font-medium'
-                  : 'text-fg-muted hover:bg-canvas-surface',
+        <span className='text-fg-primary text-xs font-semibold'>{records.length}개 레코드</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant='ghost' size='sm' className='h-7 gap-1.5 text-xs'>
+              <Filter className='size-3' />
+              필터
+              {sectionFilters.length > 0 && (
+                <Badge className='ml-0.5 h-4 min-w-4 rounded-full px-1 text-[10px]'>
+                  {sectionFilters.length}
+                </Badge>
               )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-48 text-xs'>
+            <DropdownMenuCheckboxItem
+              checked={sectionFilters.length === 0}
+              onCheckedChange={() => setSectionFilters([])}
+              onSelect={(e) => e.preventDefault()}
+              className='text-xs'
             >
               전체
-            </button>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
             {sections.map(([id, name]) => (
-              <button
+              <DropdownMenuCheckboxItem
                 key={id}
-                onClick={() => setSectionFilter(id)}
-                className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] transition-colors',
-                  sectionFilter === id
-                    ? 'bg-accent-primary/10 text-accent-primary font-medium'
-                    : 'text-fg-muted hover:bg-canvas-surface',
-                )}
+                checked={sectionFilters.includes(id)}
+                onCheckedChange={(checked) =>
+                  setSectionFilters((prev) =>
+                    checked ? [...prev, id] : prev.filter((s) => s !== id),
+                  )
+                }
+                onSelect={(e) => e.preventDefault()}
+                className='text-xs'
               >
                 {name}
-              </button>
+              </DropdownMenuCheckboxItem>
             ))}
-          </div>
-        </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Record list */}
