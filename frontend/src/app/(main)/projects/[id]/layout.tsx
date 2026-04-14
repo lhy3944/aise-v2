@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
-import { ArrowLeft, BookOpen, Box, FolderOpen, LayoutList } from 'lucide-react';
+import { ArrowLeft, BookOpen, Box, FolderOpen, LayoutList, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { use, useEffect } from 'react';
 
@@ -74,6 +74,13 @@ export default function ProjectDetailLayout({ params }: Props) {
                 </span>
               )}
             </Badge>
+
+            <Button variant='outline' size='sm' className='ml-auto gap-1.5' asChild>
+              <Link href='/agent'>
+                <MessageSquare className='size-3.5' />
+                <span>에이전트 대화</span>
+              </Link>
+            </Button>
           </div>
           <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
             {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
