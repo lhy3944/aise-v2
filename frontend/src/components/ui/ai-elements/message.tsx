@@ -10,6 +10,7 @@ import { Bot, Check, Copy, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { type ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
+import 'streamdown/styles.css';
 
 // ── Message Container ──
 
@@ -105,8 +106,12 @@ export const MessageResponse = memo(
         {content ? (
           <Streamdown
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
-            caret='block'
             plugins={plugins}
+            animated={{
+              animation: 'fadeIn',
+              duration: 200,              
+              easing: 'ease-out',
+            }}
             // mermaid={{
             //   config: {
             //     theme: 'dark',
