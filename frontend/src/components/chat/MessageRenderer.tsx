@@ -208,8 +208,8 @@ function MessageItem({
               />
             )}
 
-            {/* CLARIFY 질문지 */}
-            {parsed.clarifyItems.length > 0 && onSendMessage && (
+            {/* CLARIFY 질문지 — 마지막 메시지에서만 표시 (제출 후 새 메시지 추가되면 자동 소멸) */}
+            {isLast && parsed.clarifyItems.length > 0 && onSendMessage && (
               <Questionnaire questions={parsed.clarifyItems} onSubmit={onSendMessage} />
             )}
 
