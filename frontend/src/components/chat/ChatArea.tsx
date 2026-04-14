@@ -115,7 +115,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
               key='chat'
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { duration: 0.3 } }}
-              className='h-full'
+              className='relative h-full'
             >
               <ScrollArea className='h-full' viewportRef={scrollRef}>
                 <div className={cn('mx-auto px-6 pt-6 transition-[max-width] duration-300', maxW)}>

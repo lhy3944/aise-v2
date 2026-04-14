@@ -105,6 +105,7 @@ export const MessageResponse = memo(
         {content ? (
           <Streamdown
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+            caret='block'
             plugins={plugins}
             // mermaid={{
             //   config: {
