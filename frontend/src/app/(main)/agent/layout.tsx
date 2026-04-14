@@ -22,11 +22,6 @@ const RightPanel = dynamic(
   { ssr: false },
 );
 
-const NotificationPanel = dynamic(
-  () => import('@/components/layout/NotificationPanel').then((m) => m.NotificationPanel),
-  { ssr: false },
-);
-
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -79,8 +74,8 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden'>
           <div className='relative flex shrink-0 items-center justify-end px-2 py-1.5 sm:px-4'>
             {isMobile && (
-              <div className='absolute inset-x-0 flex justify-center pointer-events-none'>
-                <div className='pointer-events-auto min-w-[200px] max-w-[60%]'>
+              <div className='pointer-events-none absolute inset-x-0 flex justify-center'>
+                <div className='pointer-events-auto max-w-[60%] min-w-[200px]'>
                   <ProjectSelector />
                 </div>
               </div>
@@ -115,9 +110,6 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         >
           <RightPanel />
         </div>
-
-        {/* NotificationPanel — Drawer overlay */}
-        <NotificationPanel />
       </div>
     </div>
   );
