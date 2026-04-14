@@ -179,13 +179,14 @@ export function useChatStream(sessionId?: string) {
 
       // tool call 상태를 completed로 업데이트
       const success = result.success as boolean;
+      const newState: 'completed' | 'error' = success ? 'completed' : 'error';
       updateLast(sid, (msg) => ({
         ...msg,
         toolCalls: msg.toolCalls?.map((tc) =>
           tc.name === name && tc.state === 'running'
             ? {
                 ...tc,
-                state: (success ? 'completed' : 'error') as const,
+                state: newState,
                 result: success ? _formatToolResult(name, result) : undefined,
                 error: success ? undefined : (result.error as string),
               }
