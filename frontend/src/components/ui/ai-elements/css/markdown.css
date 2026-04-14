@@ -134,11 +134,7 @@
   text-align: left;
 }
 
-/* 셀 사이 세로 구분선 (첫 번째 열 제외) */
-.markdown-body th + th,
-.markdown-body td + td {
-  border-left: 1px solid var(--color-line-primary);
-}
+/* 테이블 세로 구분선 없이 GitHub 스타일 유지 */
 
 .markdown-body th {
   font-weight: 600;
@@ -210,6 +206,38 @@
 
 .markdown-body pre {
   margin: 0;
+}
+
+/* ── Streamdown 컴포넌트 border 정리 ── */
+
+/* 코드블록 내장 컨트롤 버튼 (copy/download): border 제거 */
+.markdown-body [data-streamdown='code-block-actions'],
+.markdown-body [data-streamdown='mermaid-block-actions'] {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 테이블: Streamdown wrapper border 제거, 테이블 자체 스타일 유지 */
+.markdown-body div:has(> [data-streamdown='table']),
+.markdown-body [data-streamdown='table'] {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* 테이블 내장 컨트롤 버튼: border 제거 */
+.markdown-body [data-streamdown='table'] button {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 머메이드: wrapper border 제거 */
+.markdown-body [data-language='mermaid'] {
+  border: none !important;  
+}
+
+.markdown-body [data-streamdown='mermaid'] {
+  padding: 12px 0px !important;
 }
 
 /* ── 인접 요소 간격 보정 ── */

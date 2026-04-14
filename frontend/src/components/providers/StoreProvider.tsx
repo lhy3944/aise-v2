@@ -1,7 +1,10 @@
 'use client';
 
 import { useStoreHydration } from '@/hooks/useStoreHydration';
+import { installClipboardPolyfill } from '@/lib/clipboard-polyfill';
 import { usePanelStore } from '@/stores/panel-store';
+
+installClipboardPolyfill();
 
 function LoadingScreen() {
   return (
