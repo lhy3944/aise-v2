@@ -63,7 +63,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
               key='empty'
               initial={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
-              className='flex h-full flex-col justify-start px-4 pt-[4vh] sm:pt-[12vh]'
+              className='flex h-full flex-col justify-start px-4 pt-8 sm:pt-[12vh]'
             >
               <div className={cn('mx-auto w-full transition-[max-width] duration-300', maxW)}>
                 <div className='flex justify-center py-4'>
