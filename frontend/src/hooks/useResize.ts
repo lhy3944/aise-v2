@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CLOSE_THRESHOLD = 5; // % 미만이면 닫힘
 const SNAP_ZONE = 1.5; // 스냅 허용 범위 (±%)
@@ -19,13 +19,19 @@ function getTargetSidebarPx(leftSidebarOpen: boolean, isMobile: boolean) {
 }
 
 /** 채팅 영역 실제 px 계산 */
-function getChatPx(containerWidth: number, sidebarPx: number, rightPanelPct: number) {
+function getChatPx(
+  containerWidth: number,
+  sidebarPx: number,
+  rightPanelPct: number,
+) {
   return containerWidth - sidebarPx - (containerWidth * rightPanelPct) / 100;
 }
 
 /** 오른쪽 패널 최대 % (채팅 550px 보장) */
 function getMaxPct(containerWidth: number, sidebarPx: number) {
-  const available = containerWidth - sidebarPx - MIN_CHAT_WIDTH;
+  const { isMobile } = usePanelStore.getState();
+  const minChatWidth = isMobile ? MIN_CHAT_WIDTH - 70 : MIN_CHAT_WIDTH;
+  const available = containerWidth - sidebarPx - minChatWidth;
   return Math.max(0, (available / containerWidth) * 100);
 }
 
@@ -61,8 +67,13 @@ function resolveSnap(
  *   - "resize": 브라우저 리사이즈 → 사이드바 닫기 우선 → 패널 축소
  *   - "store":  사용자 액션(사이드바 열기 등) → 패널 축소 우선 (사이드바 건드리지 않음)
  */
-function enforceMinChat(containerWidth: number, panelEl: HTMLElement, source: 'resize' | 'store') {
-  const { rightPanelOpen, rightPanelWidth, leftSidebarOpen, isMobile } = usePanelStore.getState();
+function enforceMinChat(
+  containerWidth: number,
+  panelEl: HTMLElement,
+  source: 'resize' | 'store',
+) {
+  const { rightPanelOpen, rightPanelWidth, leftSidebarOpen, isMobile } =
+    usePanelStore.getState();
   if (!rightPanelOpen) return;
 
   // CSS transition 중에도 정확한 목표값 사용
@@ -82,7 +93,8 @@ function enforceMinChat(containerWidth: number, panelEl: HTMLElement, source: 'r
       splitPct <= maxPct &&
       (source === 'resize' || rightPanelWidth === 50);
     const snapWide =
-      layoutMode === LayoutMode.WIDE && (source === 'resize' || rightPanelWidth === 70);
+      layoutMode === LayoutMode.WIDE &&
+      (source === 'resize' || rightPanelWidth === 70);
 
     if (snapSplit) {
       if (rightPanelWidth !== splitPct) {
@@ -109,7 +121,11 @@ function enforceMinChat(containerWidth: number, panelEl: HTMLElement, source: 'r
 
   if (source === 'resize' && leftSidebarOpen) {
     // 브라우저 리사이즈: 사이드바 닫기로 먼저 공간 확보
-    const chatAfter = getChatPx(containerWidth, SIDEBAR_COLLAPSED, rightPanelWidth);
+    const chatAfter = getChatPx(
+      containerWidth,
+      SIDEBAR_COLLAPSED,
+      rightPanelWidth,
+    );
     if (chatAfter >= MIN_CHAT_WIDTH) {
       usePanelStore.setState({ leftSidebarOpen: false });
       return;
@@ -129,7 +145,10 @@ function enforceMinChat(containerWidth: number, panelEl: HTMLElement, source: 'r
   }
 
   // 패널 닫기
-  usePanelStore.setState({ rightPanelOpen: false, layoutMode: LayoutMode.CLOSED });
+  usePanelStore.setState({
+    rightPanelOpen: false,
+    layoutMode: LayoutMode.CLOSED,
+  });
   panelEl.style.width = '0%';
 }
 
@@ -163,7 +182,8 @@ export function useResize(
   // 브라우저 리사이즈 시 최소 채팅 영역 보장
   useEffect(() => {
     const onWindowResize = () => {
-      if (isDragging.current || !containerRef.current || !panelRef.current) return;
+      if (isDragging.current || !containerRef.current || !panelRef.current)
+        return;
       const containerWidth = containerRef.current.getBoundingClientRect().width;
       enforceMinChat(containerWidth, panelRef.current, 'resize');
     };
@@ -173,7 +193,8 @@ export function useResize(
 
   // 토글 프리셋 변경 시에도 제약 적용
   useEffect(() => {
-    if (isDragging.current || !containerRef.current || !panelRef.current) return;
+    if (isDragging.current || !containerRef.current || !panelRef.current)
+      return;
     const containerWidth = containerRef.current.getBoundingClientRect().width;
     enforceMinChat(containerWidth, panelRef.current, 'store');
   });
@@ -183,8 +204,10 @@ export function useResize(
 
   const onDrag = useCallback(
     (e: MouseEvent | TouchEvent) => {
-      if (!isDragging.current || !panelRef.current || !containerRef.current) return;
-      const clientX = e instanceof MouseEvent ? e.clientX : (e.touches[0]?.clientX ?? 0);
+      if (!isDragging.current || !panelRef.current || !containerRef.current)
+        return;
+      const clientX =
+        e instanceof MouseEvent ? e.clientX : (e.touches[0]?.clientX ?? 0);
 
       if (!dragMoved.current) {
         if (Math.abs(clientX - dragStartX.current) < 3) return;
@@ -193,7 +216,8 @@ export function useResize(
       }
 
       const containerRect = containerRef.current.getBoundingClientRect();
-      const rawPct = ((containerRect.right - clientX) / containerRect.width) * 100;
+      const rawPct =
+        ((containerRect.right - clientX) / containerRect.width) * 100;
 
       const sidebarPx = getSidebarPx();
       const maxPct = getMaxPct(containerRect.width, sidebarPx);
@@ -226,7 +250,9 @@ export function useResize(
         // 클릭 → 토글
         const { rightPanelOpen, rightPanelWidth } = storeRef.current;
         if (!rightPanelOpen) {
-          const cw = containerRef.current?.getBoundingClientRect().width ?? window.innerWidth;
+          const cw =
+            containerRef.current?.getBoundingClientRect().width ??
+            window.innerWidth;
           const sidebarPx = getSidebarPx();
           const maxPct = getMaxPct(cw, sidebarPx);
           const splitPct = getSplitPct(cw, sidebarPx);
@@ -241,18 +267,26 @@ export function useResize(
             layoutMode: mode,
           });
         } else {
-          usePanelStore.setState({ rightPanelOpen: false, layoutMode: LayoutMode.CLOSED });
+          usePanelStore.setState({
+            rightPanelOpen: false,
+            layoutMode: LayoutMode.CLOSED,
+          });
         }
       } else {
         // 드래그 완료 → store commit
         const finalPct = parseFloat(panelRef.current.style.width);
-        const cw = containerRef.current?.getBoundingClientRect().width ?? window.innerWidth;
+        const cw =
+          containerRef.current?.getBoundingClientRect().width ??
+          window.innerWidth;
         const sidebarPx = getSidebarPx();
         const maxPct = getMaxPct(cw, sidebarPx);
         const splitPct = getSplitPct(cw, sidebarPx);
 
         if (isNaN(finalPct) || finalPct < CLOSE_THRESHOLD) {
-          usePanelStore.setState({ rightPanelOpen: false, layoutMode: LayoutMode.CLOSED });
+          usePanelStore.setState({
+            rightPanelOpen: false,
+            layoutMode: LayoutMode.CLOSED,
+          });
         } else {
           const { displayPct, mode } = resolveSnap(finalPct, maxPct, splitPct);
           usePanelStore.setState({
@@ -285,7 +319,8 @@ export function useResize(
       isDragging.current = true;
       dragMoved.current = false;
       prevSnapMode.current = LayoutMode.CUSTOM;
-      dragStartX.current = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+      dragStartX.current =
+        'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
       setIsResizing(true);
       document.body.style.userSelect = 'none';
       document.body.style.cursor = 'col-resize';
