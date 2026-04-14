@@ -44,7 +44,8 @@
       "Bash(rm -rf .next)",
       "Bash(lsof -ti:3000 -ti:3001)",
       "Bash(fuser -k 3000/tcp)",
-      "Bash(fuser -k 3001/tcp)"
+      "Bash(fuser -k 3001/tcp)",
+      "WebFetch(domain:streamdown.ai)"
     ],
     "additionalDirectories": [
       "/home/workspace/aise-v2/frontend/.next"

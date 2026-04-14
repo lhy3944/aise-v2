@@ -77,16 +77,28 @@ export function useTurnLayout(
     return () => ro.disconnect();
   }, [hasTurn, scrollRef, scrollTurnToTop]);
 
-  // 새 턴 시작 시 질문 말풍선을 뷰포트 상단으로 스크롤
-  // hasTurn boolean이 아닌 질문 ID를 추적 — 같은 렌더 배치에서 turn이 교체되어도 감지
+  // 턴 변경 시 스크롤 처리
+  // - 히스토리 로드(첫 마운트): 하단으로 instant scroll
+  // - 새 메시지 전송: 질문을 상단으로 smooth scroll
   const prevTurnQuestionIdRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef(true);
   useLayoutEffect(() => {
     const questionId = currentTurn?.question.id ?? null;
     if (questionId && questionId !== prevTurnQuestionIdRef.current) {
-      requestAnimationFrame(() => scrollTurnToTop(true));
+      if (isInitialLoadRef.current) {
+        // 히스토리 로드 시 하단으로 즉시 이동
+        isInitialLoadRef.current = false;
+        requestAnimationFrame(() => {
+          const viewport = scrollRef.current;
+          if (viewport) viewport.scrollTop = viewport.scrollHeight;
+        });
+      } else {
+        // 새 메시지 전송 시 질문을 상단으로 부드럽게 이동
+        requestAnimationFrame(() => scrollTurnToTop(true));
+      }
     }
     prevTurnQuestionIdRef.current = questionId;
-  }, [currentTurn, scrollTurnToTop]);
+  }, [currentTurn, scrollTurnToTop, scrollRef]);
 
   return { pastMessages, currentTurn, currentTurnRef, answerAreaRef };
 }

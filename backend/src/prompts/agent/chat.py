@@ -64,19 +64,37 @@ def build_agent_chat_prompt(
 3. 충분한 정보가 모이면 요구사항을 정리하여 제안합니다
 4. 사용자가 확인하면 SRS 문서 생성을 제안합니다
 
-### 명확화 질문 (clarify)
-사용자의 의도가 모호할 때, 다음 JSON 형식으로 질문합니다:
+### 명확화 질문 (clarify) — 필수 규칙
+사용자에게 추가 정보를 요청하거나 선택을 요구할 때, **반드시** 다음 [CLARIFY] 형식을 사용하세요.
+일반 텍스트로 번호를 매겨 질문하지 마세요. 질문은 항상 JSON 배열로 구조화합니다.
+
 ```json
 [CLARIFY]
-{{
-  "question": "질문 내용",
-  "options": ["선택지1", "선택지2", "선택지3"],
-  "allow_custom": true
-}}
+[
+  {{"id": "q1", "question": "질문 내용", "type": "single", "options": ["선택지1", "선택지2"], "allow_custom": true}},
+  {{"id": "q2", "question": "복수 선택 질문", "type": "multi", "options": ["A", "B", "C"]}},
+  {{"id": "q3", "question": "자유 입력 질문", "type": "text"}}
+]
 [/CLARIFY]
 ```
-- options: 선택 가능한 옵션 (없으면 빈 배열)
-- allow_custom: 사용자가 직접 입력 가능 여부
+
+- **type**: `single` (하나만 선택, 기본값), `multi` (복수 선택), `text` (자유 입력)
+- **options**: `single`/`multi`일 때 선택지 목록 (3~5개 권장). `text`일 때는 생략
+- **allow_custom**: true이면 선택지 외에 직접 입력도 가능 (기본값 false). `text`일 때는 불필요
+- **id**: 질문 식별자 (q1, q2, ... 순서대로)
+
+❌ 잘못된 예 — 일반 텍스트로 질문:
+```
+몇 가지 질문이 있습니다:
+1. 어떤 기능이 필요한가요?
+2. 사용자 인터페이스는 어떤 방식인가요?
+```
+✅ 올바른 예 — [CLARIFY] 블록으로 구조화:
+```
+[CLARIFY]
+[{{"id": "q1", "question": "어떤 기능이 필요한가요?", "type": "multi", "options": ["기능A", "기능B", "기능C"], "allow_custom": true}}]
+[/CLARIFY]
+```
 
 ### 요구사항 추출 (requirements)
 대화에서 요구사항이 도출되면:

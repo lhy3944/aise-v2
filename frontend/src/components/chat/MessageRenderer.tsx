@@ -1,6 +1,7 @@
 'use client';
 
-import { ClarifyQuestion } from '@/components/chat/ClarifyQuestion';
+import { ExtractedRequirements } from '@/components/chat/ExtractedRequirements';
+import { Questionnaire, type QuestionData } from '@/components/chat/Questionnaire';
 import {
   Message,
   MessageActions,
@@ -17,6 +18,7 @@ import { useMemo } from 'react';
 interface MessageRendererProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  onSendMessage?: (text: string) => void;
 }
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
@@ -26,35 +28,62 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
 
 /* ── 구조화 블록 파싱 ── */
 
-interface ClarifyData {
-  question: string;
-  options: string[];
-  allow_custom: boolean;
+interface RequirementData {
+  type: string;
+  text: string;
+  reason: string;
 }
 
-// [CLARIFY]{json}[/CLARIFY] 블록을 모두 추출하고 본문에서 제거
-// 코드펜스(```...```)로 감싸진 경우도 함께 제거
+// [CLARIFY] 블록 — 코드펜스 래핑 및 직접 사용 모두 지원
 const CLARIFY_BLOCK_RE =
   /```[\w]*\s*\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]\s*```|\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]/g;
 
-function parseClarifyBlocks(content: string): {
-  items: ClarifyData[];
+// [REQUIREMENTS] 블록 — 동일 패턴
+const REQUIREMENTS_BLOCK_RE =
+  /```[\w]*\s*\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]\s*```|\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]/g;
+
+interface ParsedBlocks {
+  clarifyItems: QuestionData[];
+  requirementItems: RequirementData[];
   cleanContent: string;
-} {
-  const items: ClarifyData[] = [];
+}
+
+function parseStructuredBlocks(content: string): ParsedBlocks {
+  const clarifyItems: QuestionData[] = [];
+  const requirementItems: RequirementData[] = [];
   let cleanContent = content;
 
+  // CLARIFY 블록 파싱
   for (const match of content.matchAll(CLARIFY_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
-      items.push(JSON.parse(jsonStr) as ClarifyData);
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        clarifyItems.push(...(parsed as QuestionData[]));
+      } else {
+        clarifyItems.push(parsed as QuestionData);
+      }
     } catch {
       // JSON 파싱 실패 시 무시
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  return { items, cleanContent: cleanContent.trim() };
+  // REQUIREMENTS 블록 파싱
+  for (const match of content.matchAll(REQUIREMENTS_BLOCK_RE)) {
+    const jsonStr = match[1] ?? match[2];
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        requirementItems.push(...(parsed as RequirementData[]));
+      }
+    } catch {
+      // JSON 파싱 실패 시 무시
+    }
+    cleanContent = cleanContent.replace(match[0], '');
+  }
+
+  return { clarifyItems, requirementItems, cleanContent: cleanContent.trim() };
 }
 
 /* ── Message Item ── */
@@ -63,18 +92,21 @@ function MessageItem({
   message,
   isLast,
   isStreaming,
+  onSendMessage,
 }: {
   message: ChatMessage;
   isLast: boolean;
   isStreaming: boolean;
+  onSendMessage?: (text: string) => void;
 }) {
   const isUser = message.role === 'user';
   const showCursor = isLast && isStreaming && !isUser;
 
-  // 스트리밍 중이 아닐 때만 CLARIFY 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
+  // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
   const parsed = useMemo(() => {
-    if (isUser || (isLast && isStreaming)) return { items: [], cleanContent: message.content };
-    return parseClarifyBlocks(message.content);
+    if (isUser || (isLast && isStreaming))
+      return { clarifyItems: [], requirementItems: [], cleanContent: message.content };
+    return parseStructuredBlocks(message.content);
   }, [message.content, isUser, isLast, isStreaming]);
 
   const displayContent = parsed.cleanContent;
@@ -119,16 +151,20 @@ function MessageItem({
               </div>
             )}
 
-            {/* CLARIFY 카드 */}
-            {parsed.items.map((clarify, i) => (
-              <ClarifyQuestion
-                key={i}
-                data={clarify}
-                onAnswer={() => {
-                  // TODO: 답변을 다음 메시지로 전송하는 기능 추후 구현
+            {/* REQUIREMENTS 요구사항 카드 */}
+            {parsed.requirementItems.length > 0 && (
+              <ExtractedRequirements
+                requirements={parsed.requirementItems}
+                onAccept={() => {
+                  // TODO: 수락된 요구사항을 레코드 스토어에 반영
                 }}
               />
-            ))}
+            )}
+
+            {/* CLARIFY 질문지 */}
+            {parsed.clarifyItems.length > 0 && onSendMessage && (
+              <Questionnaire questions={parsed.clarifyItems} onSubmit={onSendMessage} />
+            )}
 
             {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
             {!showCursor && displayContent && <MessageActions content={displayContent} />}
@@ -139,7 +175,7 @@ function MessageItem({
   );
 }
 
-export function MessageRenderer({ messages, isStreaming }: MessageRendererProps) {
+export function MessageRenderer({ messages, isStreaming, onSendMessage }: MessageRendererProps) {
   if (messages.length === 0) return null;
 
   return (
@@ -150,6 +186,7 @@ export function MessageRenderer({ messages, isStreaming }: MessageRendererProps)
           message={msg}
           isLast={i === messages.length - 1}
           isStreaming={isStreaming}
+          onSendMessage={onSendMessage}
         />
       ))}
     </div>

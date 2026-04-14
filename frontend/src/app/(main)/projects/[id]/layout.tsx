@@ -7,7 +7,7 @@ import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { layoutMaxW } from '@/config/layout';
+import { layoutMaxWNormal } from '@/config/layout';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { usePanelStore } from '@/stores/panel-store';
@@ -51,7 +51,7 @@ export default function ProjectDetailLayout({ params }: Props) {
   }, [id, currentProject?.project_id, projects, setCurrentProject]);
 
   const projectName = currentProject?.project_id === id ? currentProject.name : null;
-  const maxW = layoutMaxW(fullWidthMode);
+  const maxW = layoutMaxWNormal(fullWidthMode);  
 
   return (
     <Tabs defaultValue='overview' className='flex flex-1 flex-col overflow-hidden'>

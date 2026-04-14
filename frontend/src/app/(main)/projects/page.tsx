@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { layoutMaxW } from '@/config/layout';
 import { ApiError } from '@/lib/api';
-import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/project-service';
 import { usePanelStore } from '@/stores/panel-store';

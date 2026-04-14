@@ -7,8 +7,10 @@ import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
 import { createMermaidPlugin } from '@streamdown/mermaid';
 import { Bot, Check, Copy, User } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { type ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
+import 'streamdown/styles.css';
 
 // ── Message Container ──
 
@@ -81,8 +83,10 @@ export function MessageContent({ from, children, className }: MessageContentProp
 
 // ── Markdown Response (assistant) ──
 
-const mermaid = createMermaidPlugin({ config: { theme: 'dark' } });
-const streamdownPlugins = { cjk, code, math, mermaid };
+const mermaidDark = createMermaidPlugin({ config: { theme: 'dark' } });
+const mermaidLight = createMermaidPlugin({ config: { theme: 'neutral' } });
+const pluginsDark = { cjk, code, math, mermaid: mermaidDark };
+const pluginsLight = { cjk, code, math, mermaid: mermaidLight };
 
 interface MessageResponseProps {
   children: string;
@@ -92,6 +96,9 @@ interface MessageResponseProps {
 
 export const MessageResponse = memo(
   function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
+    const { resolvedTheme } = useTheme();
+    const plugins = resolvedTheme === 'dark' ? pluginsDark : pluginsLight;
+
     if (!content && !streaming) return null;
 
     return (
@@ -99,8 +106,40 @@ export const MessageResponse = memo(
         {content ? (
           <Streamdown
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
-            plugins={streamdownPlugins}
+            plugins={plugins}
+            animated={{
+              animation: 'fadeIn',
+              duration: 200,              
+              easing: 'ease-out',
+            }}
+            // mermaid={{
+            //   config: {
+            //     theme: 'dark',
+            //     themeVariables: {
+            //       primaryColor: '#ff6b6b',
+            //       primaryTextColor: '#fff',
+            //       primaryBorderColor: '#ff6b6b',
+            //       lineColor: '#f5f5f5',
+            //       secondaryColor: '#4ecdc4',
+            //       tertiaryColor: '#45b7d1',
+            //     },
+            //   },
+            // }}
+            mermaid={{
+              config: {
+                themeVariables: {
+                  fontSize: '16px',
+                  fontFamily: 'Inter, sans-serif',
+                },
+                look: 'classic',
+              },
+            }}
             isAnimating={streaming}
+            controls={{
+              code: { copy: true, download: true },
+              table: { fullscreen: true, copy: true, download: true },
+              mermaid: { fullscreen: true, download: true, copy: true, panZoom: true },
+            }}
           >
             {content}
           </Streamdown>
@@ -179,10 +218,7 @@ export function MessageActions({ content, className }: MessageActionsProps) {
     >
       <button
         onClick={handleCopy}
-        className={cn(
-          'rounded p-1 transition-colors',
-          'text-fg-muted hover:text-fg-primary',
-        )}
+        className={cn('rounded p-1 transition-colors', 'text-fg-muted hover:text-fg-primary')}
         aria-label='복사'
       >
         {copied ? <Check className='size-3.5' /> : <Copy className='size-3.5' />}

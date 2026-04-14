@@ -1,6 +1,5 @@
 'use client';
 
-import { ArrowRight, Bell } from 'lucide-react';
 import {
   Drawer,
   DrawerClose,
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePanelStore } from '@/stores/panel-store';
+import { ArrowRight, Bell } from 'lucide-react';
 
 export function NotificationPanel() {
   const notificationOpen = usePanelStore((s) => s.notificationOpen);

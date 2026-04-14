@@ -6,7 +6,7 @@ import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 const CLOSE_THRESHOLD = 5; // % 미만이면 닫힘
 const SNAP_ZONE = 1.5; // 스냅 허용 범위 (±%)
 const DEFAULT_WIDTH = 50;
-const MIN_CHAT_WIDTH = 550; // 채팅 영역 최소 px
+const MIN_CHAT_WIDTH = 620; // 채팅 영역 최소 px
 const SIDEBAR_EXPANDED = 220;
 const SIDEBAR_COLLAPSED = 60;
 

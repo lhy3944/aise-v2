@@ -1,8 +1,5 @@
 'use client';
 
-import { Bell, Fullscreen, Search } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useState } from 'react';
 import { AppsDropdown } from '@/components/overlay/AppsDropdown';
 import { LabsDialog, LabsTrigger } from '@/components/overlay/LabsDialog';
 import { ProfileDropdown } from '@/components/overlay/ProfileDropdown';
@@ -11,6 +8,9 @@ import { SettingsDialog } from '@/components/overlay/SettingsDialog';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePanelStore } from '@/stores/panel-store';
+import { Bell, Fullscreen, Search } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { NotificationPanel } from './NotificationPanel';
@@ -57,7 +57,10 @@ export function HeaderActions({ showLayoutToggle = false }: HeaderActionsProps) 
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={toggleNotification}
+              onClick={(e) => {
+                (e.currentTarget as HTMLElement).blur();
+                toggleNotification();
+              }}
               variant={'ghost'}
               className={`transition-colors ${notificationOpen ? 'text-icon-active' : 'text-icon-default hover:text-icon-active'}`}
             >
@@ -122,7 +125,11 @@ export function HeaderActions({ showLayoutToggle = false }: HeaderActionsProps) 
 
       {/* Dialogs */}
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} initialTab={settingsInitialTab} />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        initialTab={settingsInitialTab}
+      />
       <LabsDialog open={labsOpen} onOpenChange={setLabsOpen} />
       <NotificationPanel />
     </>
