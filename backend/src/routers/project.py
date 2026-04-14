@@ -15,7 +15,7 @@ from src.schemas.api.project import (
     ProjectSettingsUpdate,
 )
 from src.schemas.api.readiness import ReadinessResponse
-from src.services import project_svc, readiness_svc
+from src.services import project_svc, readiness_svc, suggestion_svc
 
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
@@ -90,3 +90,20 @@ async def update_project_settings(
 ):
     """프로젝트 설정 수정"""
     return await project_svc.update_project_settings(db, project_id, data)
+
+
+@router.get("/{project_id}/prompt-suggestions")
+async def get_prompt_suggestions(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """프로젝트 기반 맞춤형 프롬프트 제안 생성 (캐시 10분)"""
+    project = await project_svc.get_project(db, project_id)
+    suggestions = await suggestion_svc.generate_prompt_suggestions(
+        db,
+        project_id=project_id,
+        project_name=project.name,
+        project_description=project.description,
+        project_domain=project.domain,
+    )
+    return {"suggestions": suggestions}

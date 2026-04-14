@@ -92,3 +92,17 @@ async def knowledge_chat(
     db: AsyncSession = Depends(get_db),
 ):
     return await rag_svc.chat(project_id, body.message, body.history, body.top_k, db)
+
+
+@router.get("/documents/{document_id}/chunks/{chunk_index}")
+async def get_chunk(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    chunk_index: int,
+    context: int = Query(1, ge=0, le=5, description="전후 청크 수"),
+    db: AsyncSession = Depends(get_db),
+):
+    """특정 청크 + 전후 context 청크 반환 (원문 추적용)"""
+    return await knowledge_svc.get_chunk_with_context(
+        project_id, document_id, chunk_index, context, db,
+    )

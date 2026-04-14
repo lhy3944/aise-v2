@@ -2,6 +2,8 @@
 
 import { ExtractedRequirements } from '@/components/chat/ExtractedRequirements';
 import { Questionnaire, type QuestionData } from '@/components/chat/Questionnaire';
+import { SourceReference, type SourceData } from '@/components/chat/SourceReference';
+import { SuggestionChips } from '@/components/chat/SuggestionChips';
 import {
   Message,
   MessageActions,
@@ -24,6 +26,11 @@ interface MessageRendererProps {
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   extract_records: '레코드 추출',
   generate_srs: 'SRS 문서 생성',
+  create_record: '레코드 생성',
+  update_record: '레코드 수정',
+  delete_record: '레코드 삭제',
+  update_record_status: '상태 변경',
+  search_records: '레코드 검색',
 };
 
 /* ── 구조화 블록 파싱 ── */
@@ -42,15 +49,27 @@ const CLARIFY_BLOCK_RE =
 const REQUIREMENTS_BLOCK_RE =
   /```[\w]*\s*\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]\s*```|\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]/g;
 
+// [SUGGESTIONS] 블록 — 후속 질문 제안
+const SUGGESTIONS_BLOCK_RE =
+  /```[\w]*\s*\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]\s*```|\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/g;
+
+// [SOURCES] 블록 — 출처 추적
+const SOURCES_BLOCK_RE =
+  /```[\w]*\s*\[SOURCES\]\s*([\s\S]*?)\s*\[\/SOURCES\]\s*```|\[SOURCES\]\s*([\s\S]*?)\s*\[\/SOURCES\]/g;
+
 interface ParsedBlocks {
   clarifyItems: QuestionData[];
   requirementItems: RequirementData[];
+  suggestions: string[];
+  sources: SourceData[];
   cleanContent: string;
 }
 
 function parseStructuredBlocks(content: string): ParsedBlocks {
   const clarifyItems: QuestionData[] = [];
   const requirementItems: RequirementData[] = [];
+  const suggestions: string[] = [];
+  const sources: SourceData[] = [];
   let cleanContent = content;
 
   // CLARIFY 블록 파싱
@@ -83,7 +102,35 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  return { clarifyItems, requirementItems, cleanContent: cleanContent.trim() };
+  // SUGGESTIONS 블록 파싱
+  for (const match of content.matchAll(SUGGESTIONS_BLOCK_RE)) {
+    const jsonStr = match[1] ?? match[2];
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        suggestions.push(...(parsed as string[]));
+      }
+    } catch {
+      // JSON 파싱 실패 시 무시
+    }
+    cleanContent = cleanContent.replace(match[0], '');
+  }
+
+  // SOURCES 블록 파싱
+  for (const match of content.matchAll(SOURCES_BLOCK_RE)) {
+    const jsonStr = match[1] ?? match[2];
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        sources.push(...(parsed as SourceData[]));
+      }
+    } catch {
+      // JSON 파싱 실패 시 무시
+    }
+    cleanContent = cleanContent.replace(match[0], '');
+  }
+
+  return { clarifyItems, requirementItems, suggestions, sources, cleanContent: cleanContent.trim() };
 }
 
 /* ── Message Item ── */
@@ -105,7 +152,7 @@ function MessageItem({
   // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
   const parsed = useMemo(() => {
     if (isUser || (isLast && isStreaming))
-      return { clarifyItems: [], requirementItems: [], cleanContent: message.content };
+      return { clarifyItems: [], requirementItems: [], suggestions: [], sources: [], cleanContent: message.content };
     return parseStructuredBlocks(message.content);
   }, [message.content, isUser, isLast, isStreaming]);
 
@@ -164,6 +211,16 @@ function MessageItem({
             {/* CLARIFY 질문지 */}
             {parsed.clarifyItems.length > 0 && onSendMessage && (
               <Questionnaire questions={parsed.clarifyItems} onSubmit={onSendMessage} />
+            )}
+
+            {/* SOURCES 출처 링크 */}
+            {parsed.sources.length > 0 && (
+              <SourceReference sources={parsed.sources} />
+            )}
+
+            {/* SUGGESTIONS 추천 질문 — 마지막 메시지에서만 표시 */}
+            {isLast && parsed.suggestions.length > 0 && onSendMessage && (
+              <SuggestionChips suggestions={parsed.suggestions} onSelect={onSendMessage} />
             )}
 
             {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}

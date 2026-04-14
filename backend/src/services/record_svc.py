@@ -332,6 +332,59 @@ async def extract_records(
     return RecordExtractResponse(candidates=candidates)
 
 
+async def get_record_by_display_id(
+    db: AsyncSession, project_id: uuid.UUID, display_id: str,
+) -> Record | None:
+    """display_id(예: FR-001)로 레코드 조회"""
+    stmt = (
+        select(Record)
+        .options(selectinload(Record.section), selectinload(Record.source_document))
+        .where(Record.project_id == project_id, Record.display_id == display_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def search_records(
+    db: AsyncSession, project_id: uuid.UUID, query: str,
+    section_name: str | None = None, limit: int = 10,
+) -> list[RecordResponse]:
+    """키워드 검색 — content ILIKE 또는 display_id 매칭"""
+    stmt = (
+        select(Record)
+        .options(selectinload(Record.section), selectinload(Record.source_document))
+        .where(Record.project_id == project_id)
+    )
+
+    if section_name:
+        stmt = stmt.join(Record.section).where(RequirementSection.name.ilike(f"%{section_name}%"))
+
+    # display_id 정확 매칭 또는 content ILIKE 검색
+    stmt = stmt.where(
+        Record.display_id.ilike(f"%{query}%") | Record.content.ilike(f"%{query}%")
+    )
+    stmt = stmt.order_by(Record.order_index.asc()).limit(limit)
+
+    result = await db.execute(stmt)
+    return [_to_response(r) for r in result.scalars().all()]
+
+
+async def get_section_by_name(
+    db: AsyncSession, project_id: uuid.UUID, section_name: str,
+) -> RequirementSection | None:
+    """섹션 이름으로 조회 (ILIKE)"""
+    stmt = (
+        select(RequirementSection)
+        .where(
+            RequirementSection.project_id == project_id,
+            RequirementSection.name.ilike(f"%{section_name}%"),
+            RequirementSection.is_active == True,  # noqa: E712
+        )
+    )
+    result = await db.execute(stmt)
+    return result.scalars().first()
+
+
 async def approve_records(
     db: AsyncSession, project_id: uuid.UUID, data: RecordApproveRequest,
 ) -> RecordListResponse:

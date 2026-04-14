@@ -272,3 +272,52 @@ async def delete_document(
     await db.commit()
 
     logger.info(f"문서 삭제 완료: document_id={document_id}")
+
+
+async def get_chunk_with_context(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    chunk_index: int,
+    context: int,
+    db: AsyncSession,
+) -> dict:
+    """특정 청크 + 전후 context 청크 반환"""
+    doc = await _find_document(project_id, document_id, db)
+
+    min_index = max(0, chunk_index - context)
+    max_index = chunk_index + context
+
+    result = await db.execute(
+        select(KnowledgeChunk.chunk_index, KnowledgeChunk.content)
+        .where(
+            KnowledgeChunk.document_id == document_id,
+            KnowledgeChunk.chunk_index >= min_index,
+            KnowledgeChunk.chunk_index <= max_index,
+        )
+        .order_by(KnowledgeChunk.chunk_index)
+    )
+    rows = result.all()
+
+    before = []
+    after = []
+    target = None
+
+    for idx, content in rows:
+        entry = {"index": idx, "content": content}
+        if idx < chunk_index:
+            before.append(entry)
+        elif idx == chunk_index:
+            target = entry
+        else:
+            after.append(entry)
+
+    if target is None:
+        raise AppException(404, f"청크 {chunk_index}를 찾을 수 없습니다.")
+
+    return {
+        "document_id": str(document_id),
+        "document_name": doc.name,
+        "target": target,
+        "before": before,
+        "after": after,
+    }

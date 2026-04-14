@@ -14,6 +14,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 
+/** 백엔드 도구 결과를 사용자 친화적 문자열로 포맷 */
+function _formatToolResult(name: string, result: Record<string, unknown>): string {
+  switch (name) {
+    case 'create_record':
+      return `${result.display_id} 생성 완료`;
+    case 'update_record':
+      return `${result.display_id} 수정 완료`;
+    case 'delete_record':
+      return `${result.display_id} 삭제 완료`;
+    case 'update_record_status':
+      return `${result.display_id}: ${result.old_status} → ${result.new_status}`;
+    case 'search_records':
+      return `${result.count}개 레코드 검색됨`;
+    default:
+      return '완료';
+  }
+}
+
 /**
  * 채팅 메시지 전송, 스트리밍, tool call 실행, 세션 로드를 관리
  */
@@ -130,6 +148,9 @@ export function useChatStream(sessionId?: string) {
     [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
   );
 
+  // Records 갱신 트리거
+  const bumpRefresh = useRecordStore((s) => s.bumpRefresh);
+
   // Tool call 실행 디스패처
   const executeToolCall = useCallback(
     (sid: string, name: string, _args: Record<string, unknown>) => {
@@ -144,6 +165,35 @@ export function useChatStream(sessionId?: string) {
       }
     },
     [currentProject, triggerExtractRecords],
+  );
+
+  // 백엔드 도구 실행 결과 처리 (레코드 CUD)
+  const handleToolResult = useCallback(
+    (sid: string, name: string, result: Record<string, unknown>) => {
+      const updateLast = useChatStore.getState().updateLastAssistantMessage;
+
+      // 레코드 CUD 도구 결과 → Records 탭 갱신
+      if (['create_record', 'update_record', 'delete_record', 'update_record_status'].includes(name)) {
+        bumpRefresh();
+      }
+
+      // tool call 상태를 completed로 업데이트
+      const success = result.success as boolean;
+      updateLast(sid, (msg) => ({
+        ...msg,
+        toolCalls: msg.toolCalls?.map((tc) =>
+          tc.name === name && tc.state === 'running'
+            ? {
+                ...tc,
+                state: (success ? 'completed' : 'error') as const,
+                result: success ? _formatToolResult(name, result) : undefined,
+                error: success ? undefined : (result.error as string),
+              }
+            : tc,
+        ),
+      }));
+    },
+    [bumpRefresh],
   );
 
   const sendMessage = useCallback(
@@ -212,6 +262,9 @@ export function useChatStream(sessionId?: string) {
             }));
             executeToolCall(activeSessionId!, toolCall.name, toolCall.arguments);
           },
+          onToolResult: (toolResult) => {
+            handleToolResult(activeSessionId!, toolResult.name, toolResult.result);
+          },
           onDone: () => {
             setSessionStreaming(activeSessionId!, false);
           },
@@ -233,6 +286,7 @@ export function useChatStream(sessionId?: string) {
       appendToLastAssistant,
       setSessionStreaming,
       executeToolCall,
+      handleToolResult,
       router,
     ],
   );

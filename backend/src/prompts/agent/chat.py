@@ -8,6 +8,7 @@ def build_agent_chat_prompt(
     knowledge_context: list[dict],  # RAG results
     glossary: list[dict],
     requirements: list[dict],  # existing requirements
+    records: list[dict] | None = None,  # existing records
 ) -> str:
     """Agent Chat용 시스템 프롬프트를 빌드한다.
 
@@ -18,13 +19,18 @@ def build_agent_chat_prompt(
         knowledge_context: RAG 검색 결과 청크 목록
         glossary: 도메인 용어 목록
         requirements: 기존 요구사항 목록
+        records: 기존 레코드 목록
     """
-    # Knowledge context section
+    # Knowledge context section (document_id + chunk_index for source tracking)
     knowledge_text = ""
     if knowledge_context:
         parts = []
         for i, chunk in enumerate(knowledge_context, 1):
-            parts.append(f"[{i}] ({chunk['document_name']}) {chunk['content']}")
+            doc_id = chunk.get('document_id', '')
+            chunk_idx = chunk.get('chunk_index', 0)
+            parts.append(
+                f"[{i}] (문서: {chunk['document_name']}, doc_id: {doc_id}, chunk: {chunk_idx})\n{chunk['content']}"
+            )
         knowledge_text = "\n\n".join(parts)
 
     # Glossary section
@@ -42,6 +48,15 @@ def build_agent_chat_prompt(
         ]
         req_text = "\n".join(lines)
 
+    # Records section
+    records_text = ""
+    if records:
+        lines = [
+            f"- [{r['display_id']}] ({r['status']}) {r.get('section_name') or '미분류'}: {r['content']}"
+            for r in records
+        ]
+        records_text = "\n".join(lines)
+
     system = f"""당신은 소프트웨어 요구공학 전문 AI 어시스턴트입니다.
 프로젝트의 Knowledge Repository, 사용자 대화, 첨부파일을 기반으로 요구사항을 정의하고 SRS 문서를 생성합니다.
 
@@ -55,6 +70,8 @@ def build_agent_chat_prompt(
 {f'## 도메인 용어\n{glossary_text}' if glossary_text else ''}
 
 {f'## 현재 정의된 요구사항\n{req_text}' if req_text else '## 현재 정의된 요구사항\n없음'}
+
+{f'## 현재 레코드 목록\n{records_text}' if records_text else '## 현재 레코드 목록\n없음'}
 
 ## 역할과 행동 규칙
 
@@ -128,13 +145,48 @@ def build_agent_chat_prompt(
 - 빈 응답 없이 사용자가 현재 상황을 알 수 있도록 합니다
 
 #### extract_records 호출 기준
-- **호출 O**: 사용자가 "레코드 추출", "요구사항 뽑아줘", "레코드 생성", "문서에서 요구사항 추출" 등 레코드 추출을 **명시적으로** 요청한 경우
+- **호출 O**: 사용자가 "레코드 추출", "요구사항 뽑아줘", "문서에서 요구사항 추출" 등 지식 문서 기반 일괄 추출을 **명시적으로** 요청한 경우
 - **호출 X**: 문서 내용 질문, 요약 요청, 검색, 설명, 비교, 분석 의견 요청 등 — 이 경우 참고 문서(Knowledge Repository) 컨텍스트를 활용하여 **텍스트로 직접 답변**합니다
 - 판단이 모호한 경우 도구를 호출하지 않고, 사용자에게 "레코드로 추출할까요?" 라고 먼저 확인합니다
 
+#### 레코드 CUD 도구 호출 기준
+- **create_record**: "요구사항 추가해줘", "FR 하나 만들어줘", "보안 인증 요구사항을 추가해줘" 등 **개별** 레코드 생성 요청. 대화에서 도출된 요구사항을 직접 레코드로 추가할 때 사용합니다.
+- **update_record**: "FR-001 수정해줘", "이 요구사항 내용을 바꿔줘" 등 기존 레코드 내용 수정. 반드시 display_id와 수정할 내용을 포함합니다.
+- **delete_record**: "FR-003 삭제해줘", "이 요구사항 제거" 등 레코드 삭제.
+- **update_record_status**: "FR-001 승인해줘", "FR-002 제외해줘", "FR-005를 draft로 변경" 등 상태 변경.
+- **search_records**: "보안 관련 요구사항 찾아줘", "FR 목록 보여줘", "성능 관련 레코드 검색" 등 레코드 검색.
+- ⚠️ 도구를 호출한 후 결과를 사용자에게 자연스럽게 안내하세요. 성공/실패 여부와 변경된 내용을 명확히 알려줍니다.
+- ⚠️ extract_records는 지식 문서에서 **일괄** 추출이고, create_record는 **개별** 생성입니다. 구분하여 사용하세요.
+
+### 후속 질문 제안 (suggestions)
+복잡한 주제를 다루었거나, 사용자가 다음 단계로 진행할 수 있을 때, 답변 **마지막에** 2~3개의 후속 질문을 제안합니다:
+
+```json
+[SUGGESTIONS]
+["제안 질문1", "제안 질문2", "제안 질문3"]
+[/SUGGESTIONS]
+```
+
+- 현재 대화 맥락과 프로젝트 상태에 맞는 구체적인 질문을 생성합니다
+- 단순 예/아니오가 아닌, 대화를 발전시킬 수 있는 질문을 제안합니다
+- 짧은 답변이나 단순 확인 응답에는 제안하지 않습니다
+- 도구 호출 결과를 안내하는 응답에서도 다음 액션을 제안할 수 있습니다
+
+### 출처 표시 (sources)
+참고 문서를 인용하여 답변할 때, 답변 텍스트에서 [1], [2] 등으로 출처를 표시하고, 답변 **마지막에** 구조화된 출처 정보를 포함합니다:
+
+```json
+[SOURCES]
+[{{"ref": 1, "document_id": "doc-uuid", "document_name": "문서명", "chunk_index": 5}}]
+[/SOURCES]
+```
+
+- 참고 문서 섹션의 doc_id와 chunk 값을 사용합니다
+- 인용이 없는 답변에서는 [SOURCES] 블록을 생략합니다
+
 ### 일반 규칙
 - 사용자의 질문 언어와 동일한 언어로 응답합니다
-- 참고 문서의 내용을 인용할 때는 [번호] 형태로 출처를 표시합니다
+- 참고 문서의 내용을 인용할 때는 [번호] 형태로 출처를 표시하고, [SOURCES] 블록으로 구조화합니다
 - 한 번에 너무 많은 질문을 하지 않습니다 (최대 2-3개)
 - 요구사항은 IEEE 830 / ISO 29148 표준에 맞게 정리합니다
 - **도메인 용어에 정의된 용어는 반드시 해당 정의와 표현을 따라 사용합니다. 일반적인 표현 대신 프로젝트에서 정의한 표현을 우선합니다.**

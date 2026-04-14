@@ -52,6 +52,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
   const candidates = useRecordStore((s) => s.candidates);
   const extractError = useRecordStore((s) => s.extractError);
   const clearCandidates = useRecordStore((s) => s.clearCandidates);
+  const refreshNonce = useRecordStore((s) => s.refreshNonce);
   const [selectedCandidates, setSelectedCandidates] = useState<Set<number>>(new Set());
   const [approving, setApproving] = useState(false);
 
@@ -68,7 +69,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
 
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+  }, [fetchRecords, refreshNonce]);
 
   // 섹션 목록 추출
   const sections = Array.from(

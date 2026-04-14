@@ -14,11 +14,18 @@ export interface ToolCallEvent {
   arguments: Record<string, unknown>;
 }
 
+export interface ToolResultEvent {
+  name: string;
+  arguments: Record<string, unknown>;
+  result: Record<string, unknown>;
+}
+
 export interface SSEEvent {
-  type: 'token' | 'tool_call' | 'done' | 'error';
+  type: 'token' | 'tool_call' | 'tool_result' | 'done' | 'error';
   content?: string;
   name?: string;
   arguments?: Record<string, unknown>;
+  result?: Record<string, unknown>;
 }
 
 /**
@@ -30,6 +37,7 @@ export function streamAgentChat(
   callbacks: {
     onToken: (token: string) => void;
     onToolCall: (toolCall: ToolCallEvent) => void;
+    onToolResult?: (toolResult: ToolResultEvent) => void;
     onDone: () => void;
     onError: (error: string) => void;
   },
@@ -84,6 +92,15 @@ export function streamAgentChat(
                   callbacks.onToolCall({
                     name: event.name,
                     arguments: event.arguments ?? {},
+                  });
+                }
+                break;
+              case 'tool_result':
+                if (event.name && callbacks.onToolResult) {
+                  callbacks.onToolResult({
+                    name: event.name,
+                    arguments: event.arguments ?? {},
+                    result: event.result ?? {},
                   });
                 }
                 break;
