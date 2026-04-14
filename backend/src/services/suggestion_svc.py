@@ -1,5 +1,7 @@
 """동적 프롬프트 제안 서비스 — 프로젝트 메타데이터 기반 맞춤형 질문 생성"""
 
+import hashlib
+import json
 import time
 import uuid
 
@@ -17,7 +19,19 @@ from src.utils.json_parser import parse_llm_json
 
 # 프로젝트별 TTL 캐시 (10분)
 _CACHE_TTL = 600  # seconds
-_suggestion_cache: dict[str, tuple[float, list[dict]]] = {}  # key → (expires_at, data)
+_suggestion_cache: dict[str, tuple[float, str, list[dict]]] = {}  # key → (expires_at, fingerprint, data)
+
+
+def _make_fingerprint(context: dict) -> str:
+    """프로젝트 메타데이터 컨텍스트의 해시 fingerprint 생성"""
+    raw = json.dumps(context, sort_keys=True, default=str)
+    return hashlib.md5(raw.encode()).hexdigest()[:12]
+
+
+async def get_fingerprint(db: AsyncSession, project_id: uuid.UUID) -> str:
+    """프로젝트의 현재 메타데이터 fingerprint만 조회 (캐시 비교용)"""
+    context = await _gather_project_context(db, project_id)
+    return _make_fingerprint(context)
 
 
 async def generate_prompt_suggestions(
@@ -26,22 +40,23 @@ async def generate_prompt_suggestions(
     project_name: str,
     project_description: str | None = None,
     project_domain: str | None = None,
-) -> list[dict]:
+) -> dict:
     """프로젝트 메타데이터 기반 맞춤형 프롬프트 제안 생성
 
     Returns:
-        list[dict]: [{"title": "...", "description": "..."}]
+        dict: {"fingerprint": "...", "suggestions": [...]}
     """
     cache_key = str(project_id)
 
-    # 캐시 히트
-    cached = _suggestion_cache.get(cache_key)
-    if cached and cached[0] > time.monotonic():
-        logger.debug(f"프롬프트 제안 캐시 히트: project_id={project_id}")
-        return cached[1]
-
-    # 프로젝트 컨텍스트 수집
+    # 프로젝트 컨텍스트 수집 + fingerprint
     context = await _gather_project_context(db, project_id)
+    fingerprint = _make_fingerprint(context)
+
+    # 캐시 히트 (TTL 유효 + fingerprint 일치)
+    cached = _suggestion_cache.get(cache_key)
+    if cached and cached[0] > time.monotonic() and cached[1] == fingerprint:
+        logger.debug(f"프롬프트 제안 캐시 히트: project_id={project_id}")
+        return {"fingerprint": fingerprint, "suggestions": cached[2]}
 
     # LLM 호출
     suggestions = await _generate_with_llm(
@@ -52,8 +67,8 @@ async def generate_prompt_suggestions(
     )
 
     # 캐시에 저장
-    _suggestion_cache[cache_key] = (time.monotonic() + _CACHE_TTL, suggestions)
-    return suggestions
+    _suggestion_cache[cache_key] = (time.monotonic() + _CACHE_TTL, fingerprint, suggestions)
+    return {"fingerprint": fingerprint, "suggestions": suggestions}
 
 
 def invalidate_cache(project_id: uuid.UUID) -> None:

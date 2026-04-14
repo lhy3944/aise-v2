@@ -97,13 +97,22 @@ async def get_prompt_suggestions(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    """프로젝트 기반 맞춤형 프롬프트 제안 생성 (캐시 10분)"""
+    """프로젝트 기반 맞춤형 프롬프트 제안 생성 (메타 fingerprint 기반 캐시)"""
     project = await project_svc.get_project(db, project_id)
-    suggestions = await suggestion_svc.generate_prompt_suggestions(
+    return await suggestion_svc.generate_prompt_suggestions(
         db,
         project_id=project_id,
         project_name=project.name,
         project_description=project.description,
         project_domain=project.domain,
     )
-    return {"suggestions": suggestions}
+
+
+@router.get("/{project_id}/prompt-suggestions/fingerprint")
+async def get_prompt_suggestions_fingerprint(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """프로젝트 메타데이터 fingerprint 조회 (클라이언트 캐시 유효성 확인용)"""
+    fp = await suggestion_svc.get_fingerprint(db, project_id)
+    return {"fingerprint": fp}

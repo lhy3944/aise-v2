@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { useProjectStore } from '@/stores/project-store';
+import { useSuggestionStore } from '@/stores/suggestion-store';
 import { CornerRightUp, LightbulbIcon, RefreshCwIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -32,9 +33,6 @@ const FALLBACK_CARDS: PromptCard[] = [
   },
 ];
 
-/** 프로젝트별 프론트 캐시 */
-const _cardCache = new Map<string, PromptCard[]>();
-
 const CARDS_PER_ROW = 2;
 const AUTO_SLIDE_INTERVAL = 5000;
 
@@ -47,50 +45,82 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
   const currentProject = useProjectStore((s) => s.currentProject);
   const projectId = currentProject?.project_id;
 
+  const getCached = useSuggestionStore((s) => s.getCached);
+  const setCache = useSuggestionStore((s) => s.setCache);
+
+  // 로컬 캐시에서 즉시 로드
   const [cards, setCards] = useState<PromptCard[]>(() => {
-    if (projectId && _cardCache.has(projectId)) return _cardCache.get(projectId)!;
-    return [];
+    if (!projectId) return [];
+    const cached = getCached(projectId);
+    return cached ? cached.cards : [];
   });
   const [loading, setLoading] = useState(() => !cards.length);
 
-  // 프로젝트 변경 시 캐시 확인 + API 호출
+  // 프로젝트 변경 시 캐시 확인
   const prevProjectIdRef = useRef(projectId);
   if (prevProjectIdRef.current !== projectId) {
     prevProjectIdRef.current = projectId;
-    if (projectId && _cardCache.has(projectId)) {
-      if (cards !== _cardCache.get(projectId)) setCards(_cardCache.get(projectId)!);
-      if (loading) setLoading(false);
-    } else {
-      if (cards.length) setCards([]);
-      if (!loading) setLoading(true);
+    if (projectId) {
+      const cached = getCached(projectId);
+      if (cached) {
+        if (cards !== cached.cards) setCards(cached.cards);
+        if (loading) setLoading(false);
+      } else {
+        if (cards.length) setCards([]);
+        if (!loading) setLoading(true);
+      }
     }
   }
 
+  // fingerprint 비교 → 변경 시에만 전체 fetch
   useEffect(() => {
     if (!projectId) return;
-    if (_cardCache.has(projectId)) return;
-
     let cancelled = false;
-    api
-      .get<{ suggestions: PromptCard[] }>(`/api/v1/projects/${projectId}/prompt-suggestions`)
-      .then((res) => {
+
+    const cached = useSuggestionStore.getState().getCached(projectId);
+
+    async function sync() {
+      try {
+        // 1) fingerprint만 가볍게 조회
+        const { fingerprint } = await api.get<{ fingerprint: string }>(
+          `/api/v1/projects/${projectId}/prompt-suggestions/fingerprint`,
+        );
         if (cancelled) return;
+
+        // 2) 로컬 캐시와 fingerprint 비교 — 같으면 스킵
+        if (cached && cached.fingerprint === fingerprint) {
+          if (!cards.length) setCards(cached.cards);
+          setLoading(false);
+          return;
+        }
+
+        // 3) 변경됨 → 전체 suggestions fetch
+        const res = await api.get<{ fingerprint: string; suggestions: PromptCard[] }>(
+          `/api/v1/projects/${projectId}/prompt-suggestions`,
+        );
+        if (cancelled) return;
+
         const data = res.suggestions.length > 0 ? res.suggestions : FALLBACK_CARDS;
-        _cardCache.set(projectId, data);
+        setCache(projectId!, res.fingerprint, data);
         setCards(data);
         setLoading(false);
-      })
-      .catch(() => {
+      } catch {
         if (cancelled) return;
-        _cardCache.set(projectId, FALLBACK_CARDS);
-        setCards(FALLBACK_CARDS);
+        // API 실패 시 캐시가 있으면 유지, 없으면 fallback
+        if (cached) {
+          setCards(cached.cards);
+        } else {
+          setCards(FALLBACK_CARDS);
+        }
         setLoading(false);
-      });
+      }
+    }
 
+    sync();
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, setCache]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const count = rows * CARDS_PER_ROW;
   const totalPages = Math.max(1, Math.ceil(cards.length / count));
