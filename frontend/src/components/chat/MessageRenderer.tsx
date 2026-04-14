@@ -184,7 +184,7 @@ function MessageItem({
 
             {/* Tool Calls */}
             {message.toolCalls && message.toolCalls.length > 0 && (
-              <div className='w-full'>
+              <div className='w-full min-w-0'>
                 {message.toolCalls.map((tc, i) => (
                   <ToolCall
                     key={i}

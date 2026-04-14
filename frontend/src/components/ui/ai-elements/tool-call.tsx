@@ -40,15 +40,15 @@ export function ToolCall({
   const StatusIcon = config.icon;
 
   return (
-    <div className='border-line-primary my-2 overflow-hidden rounded-lg border'>
+    <div className='border-line-primary my-2 min-w-0 overflow-hidden rounded-lg border'>
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
-        className='hover:bg-canvas-surface/50 flex w-full items-center gap-2 px-3 py-2 text-left transition-colors'
+        className='hover:bg-canvas-surface/50 flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left transition-colors'
       >
         <Wrench className='text-fg-muted size-3.5 shrink-0' />
-        <span className='text-fg-primary flex-1 text-xs font-medium'>{name}</span>
-        <Badge variant='outline' className={cn('gap-1 text-[10px] [&>svg]:size-3', config.color)}>
+        <span className='text-fg-primary min-w-0 flex-1 truncate text-xs font-medium'>{name}</span>
+        <Badge variant='outline' className={cn('shrink-0 gap-1 text-[10px] [&>svg]:size-3', config.color)}>
           <StatusIcon className={cn(state === 'running' && 'animate-spin')} />
           {config.label}
         </Badge>
@@ -66,7 +66,7 @@ export function ToolCall({
           {input && Object.keys(input).length > 0 && (
             <div className='border-line-primary border-b px-3 py-2'>
               <p className='text-fg-muted mb-1 text-[10px] font-semibold uppercase'>Input</p>
-              <pre className='text-fg-secondary overflow-x-auto text-[11px] leading-relaxed'>
+              <pre className='text-fg-secondary max-w-full overflow-x-auto text-[11px] leading-relaxed'>
                 {JSON.stringify(input, null, 2)}
               </pre>
             </div>
