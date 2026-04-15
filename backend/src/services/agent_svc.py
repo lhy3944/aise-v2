@@ -1,6 +1,7 @@
 """Agent Chat 서비스 -- SSE 스트리밍 + Function Calling 기반 대화"""
 
 import json
+import re
 import uuid
 from collections.abc import AsyncGenerator
 from loguru import logger
@@ -390,6 +391,27 @@ async def stream_chat(
                     break
 
                 # 백엔드 도구 결과가 있으면 LLM 재호출하여 사용자에게 요약 생성
+
+            # 10-1. [SOURCES] 블록 자동 생성 (LLM이 누락한 경우)
+            if knowledge_chunks and "[SOURCES]" not in full_content:
+                refs = set()
+                for m in re.finditer(r"\[(\d+)\]", full_content):
+                    ref_num = int(m.group(1))
+                    if 1 <= ref_num <= len(knowledge_chunks):
+                        refs.add(ref_num)
+                if refs:
+                    sources = [
+                        {
+                            "ref": ref,
+                            "document_id": knowledge_chunks[ref - 1]["document_id"],
+                            "document_name": knowledge_chunks[ref - 1]["document_name"],
+                            "chunk_index": knowledge_chunks[ref - 1]["chunk_index"],
+                        }
+                        for ref in sorted(refs)
+                    ]
+                    sources_block = f"\n\n[SOURCES]\n{json.dumps(sources, ensure_ascii=False)}\n[/SOURCES]"
+                    full_content += sources_block
+                    yield _sse_event({"type": "token", "content": sources_block})
 
             # 11. assistant 메시지 저장
             await session_svc.add_message(
