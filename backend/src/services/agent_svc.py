@@ -392,26 +392,37 @@ async def stream_chat(
 
                 # 백엔드 도구 결과가 있으면 LLM 재호출하여 사용자에게 요약 생성
 
-            # 10-1. [SOURCES] 블록 자동 생성 (LLM이 누락한 경우)
-            if knowledge_chunks and "[SOURCES]" not in full_content:
-                refs = set()
+            # 10-1. [SOURCES] 블록 보완 (LLM이 누락하거나 불완전한 경우)
+            # 프론트엔드 파서는 복수 [SOURCES] 블록을 모두 수집하므로 추가 블록만 append
+            if knowledge_chunks:
+                text_refs = set()
                 for m in re.finditer(r"\[(\d+)\]", full_content):
                     ref_num = int(m.group(1))
                     if 1 <= ref_num <= len(knowledge_chunks):
-                        refs.add(ref_num)
-                if refs:
-                    sources = [
-                        {
-                            "ref": ref,
-                            "document_id": knowledge_chunks[ref - 1]["document_id"],
-                            "document_name": knowledge_chunks[ref - 1]["document_name"],
-                            "chunk_index": knowledge_chunks[ref - 1]["chunk_index"],
-                        }
-                        for ref in sorted(refs)
-                    ]
-                    sources_block = f"\n\n[SOURCES]\n{json.dumps(sources, ensure_ascii=False)}\n[/SOURCES]"
-                    full_content += sources_block
-                    yield _sse_event({"type": "token", "content": sources_block})
+                        text_refs.add(ref_num)
+
+                if text_refs:
+                    existing_refs: set[int] = set()
+                    for sm in re.finditer(r"\[SOURCES\]\s*([\s\S]*?)\s*\[/SOURCES\]", full_content):
+                        try:
+                            existing_refs.update(s["ref"] for s in json.loads(sm.group(1)))
+                        except (json.JSONDecodeError, KeyError):
+                            pass
+
+                    missing_refs = text_refs - existing_refs
+                    if missing_refs:
+                        sources = [
+                            {
+                                "ref": ref,
+                                "document_id": knowledge_chunks[ref - 1]["document_id"],
+                                "document_name": knowledge_chunks[ref - 1]["document_name"],
+                                "chunk_index": knowledge_chunks[ref - 1]["chunk_index"],
+                            }
+                            for ref in sorted(missing_refs)
+                        ]
+                        extra_block = f"\n\n[SOURCES]\n{json.dumps(sources, ensure_ascii=False)}\n[/SOURCES]"
+                        full_content += extra_block
+                        yield _sse_event({"type": "token", "content": extra_block})
 
             # 11. assistant 메시지 저장
             await session_svc.add_message(

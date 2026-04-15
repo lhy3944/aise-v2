@@ -104,8 +104,9 @@ def chunk_text(
                 word_parts.append(word)
                 word_tokens += wt
             if word_parts:
-                # 남은 단어들은 다음 세그먼트와 합쳐질 수 있도록 current에 넣음
-                current_parts = word_parts
+                # 남은 단어들을 하나의 세그먼트로 합쳐서 current에 넣음
+                # (개별 단어가 join_sep으로 합쳐지는 것을 방지)
+                current_parts = [" ".join(word_parts)]
                 current_tokens = word_tokens
             continue
 
