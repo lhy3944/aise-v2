@@ -14,10 +14,12 @@ export const knowledgeService = {
   get: (projectId: string, documentId: string) =>
     api.get<KnowledgeDocument>(`${BASE}/${projectId}/knowledge/documents/${documentId}`),
 
-  uploadText: async (projectId: string, title: string, content: string, overwrite = false) => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const fileName = title.endsWith('.txt') ? title : `${title}.txt`;
-    const file = new File([blob], fileName, { type: 'text/plain' });
+  uploadText: async (projectId: string, title: string, content: string, overwrite = false, fileType: 'txt' | 'md' = 'txt') => {
+    const mimeType = fileType === 'md' ? 'text/markdown' : 'text/plain';
+    const ext = fileType === 'md' ? '.md' : '.txt';
+    const blob = new Blob([content], { type: mimeType });
+    const fileName = title.endsWith(ext) ? title : `${title}${ext}`;
+    const file = new File([blob], fileName, { type: mimeType });
 
     return knowledgeService.upload(projectId, file, overwrite);
   },

@@ -82,6 +82,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(null);
   const [inputMode, setInputMode] = useState<KnowledgeInputMode>('file');
   const [textContent, setTextContent] = useState('');
+  const [textFormat, setTextFormat] = useState<'txt' | 'md'>('txt');
   const [textSubmitting, setTextSubmitting] = useState(false);
   const projectName = useProjectStore((s) => s.currentProject?.name ?? 'project');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -248,7 +249,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
 
     setTextSubmitting(true);
     try {
-      await knowledgeService.uploadText(projectId, title, trimmedContent);
+      await knowledgeService.uploadText(projectId, title, trimmedContent, false, textFormat);
       await fetchDocuments();
       invalidateReadiness();
       setTextContent('');
@@ -257,7 +258,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     } finally {
       setTextSubmitting(false);
     }
-  }, [projectId, projectName, textContent, fetchDocuments, invalidateReadiness]);
+  }, [projectId, projectName, textContent, textFormat, fetchDocuments, invalidateReadiness]);
 
   // 카드 클릭 → 미리보기 모달
   const handleCardClick = useCallback((doc: KnowledgeDocument) => {
@@ -354,18 +355,44 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
               <p className='text-fg-muted text-xs'>
                 {textContent.length > 0 && `${textContent.length.toLocaleString()}자`}
               </p>
-              <Button
-                onClick={handleTextSubmit}
-                disabled={!textContent.trim() || textSubmitting}
-                className='gap-1.5'
-              >
-                {textSubmitting ? (
-                  <Loader2 className='size-4 animate-spin' />
-                ) : (
-                  <Upload className='size-4' />
-                )}
-                {textSubmitting ? '저장 중...' : '문서로 저장'}
-              </Button>
+              <div className='flex items-center gap-2'>
+                <div className='border-line-primary flex rounded-md border text-xs'>
+                  <button
+                    onClick={() => setTextFormat('txt')}
+                    className={cn(
+                      'px-2.5 py-1 transition-colors',
+                      textFormat === 'txt'
+                        ? 'bg-canvas-surface text-fg-primary'
+                        : 'text-fg-muted hover:text-fg-secondary',
+                    )}
+                  >
+                    텍스트
+                  </button>
+                  <button
+                    onClick={() => setTextFormat('md')}
+                    className={cn(
+                      'border-line-primary border-l px-2.5 py-1 transition-colors',
+                      textFormat === 'md'
+                        ? 'bg-canvas-surface text-fg-primary'
+                        : 'text-fg-muted hover:text-fg-secondary',
+                    )}
+                  >
+                    마크다운
+                  </button>
+                </div>
+                <Button
+                  onClick={handleTextSubmit}
+                  disabled={!textContent.trim() || textSubmitting}
+                  className='gap-1.5'
+                >
+                  {textSubmitting ? (
+                    <Loader2 className='size-4 animate-spin' />
+                  ) : (
+                    <Upload className='size-4' />
+                  )}
+                  {textSubmitting ? '저장 중...' : '문서로 저장'}
+                </Button>
+              </div>
             </div>
           </div>
         )}
