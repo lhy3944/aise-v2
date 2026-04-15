@@ -1,20 +1,31 @@
 'use client';
 
-import { PanelRightOpen, X } from 'lucide-react';
-import { useState } from 'react';
+import { PanelRightOpen } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { RightPanel } from '@/components/layout/RightPanel';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { usePanelStore } from '@/stores/panel-store';
 
 export function MobileRightDrawer() {
   const [open, setOpen] = useState(false);
+  const sourceViewerData = usePanelStore((s) => s.sourceViewerData);
+
+  // 출처 버튼 클릭 시 자동 열기/닫기 (render-time conditional setState)
+  const prevSourceDataRef = useRef(sourceViewerData);
+  if (sourceViewerData !== prevSourceDataRef.current) {
+    if (sourceViewerData !== null && !open) {
+      setOpen(true);
+    } else if (sourceViewerData === null && prevSourceDataRef.current !== null && open) {
+      setOpen(false);
+    }
+    prevSourceDataRef.current = sourceViewerData;
+  }
 
   return (
     <Drawer direction='right' open={open} onOpenChange={setOpen}>
@@ -31,15 +42,8 @@ export function MobileRightDrawer() {
         className='border-line-primary bg-canvas-primary top-15! bottom-0! flex h-auto w-[85vw] flex-col border-l p-0 sm:w-[380px]'
         overlayClassName='top-15!'
       >
-        <DrawerHeader className='border-line-primary flex flex-row items-center justify-between border-b p-3'>
-          <DrawerTitle className='text-fg-primary text-base font-semibold'></DrawerTitle>
-          <DrawerDescription />
-          <DrawerClose asChild>
-            <Button variant='ghost' size='icon' className='text-fg-secondary h-8 w-8'>
-              <X className='h-4 w-4' />
-            </Button>
-          </DrawerClose>
-        </DrawerHeader>
+        <DrawerTitle className='sr-only'>패널</DrawerTitle>
+        <DrawerDescription className='sr-only' />
 
         <div className='flex-1 overflow-hidden'>
           <RightPanel />
