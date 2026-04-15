@@ -1,5 +1,10 @@
 "use client";
 
+import { cjk } from "@streamdown/cjk";
+import { code } from "@streamdown/code";
+import { useEffect, useRef, useState } from "react";
+import { Streamdown } from "streamdown";
+import "streamdown/styles.css";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
@@ -7,9 +12,9 @@ import { cn } from "@/lib/utils";
 import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { FileText, X } from "lucide-react";
-import { useEffect, useState } from "react";
 import "@/components/ui/ai-elements/css/markdown.css";
-import ReactMarkdown from "react-markdown";
+
+const sourcePlugins = { cjk, code };
 
 interface ChunkPreview {
   document_name: string;
@@ -25,10 +30,20 @@ export function SourceViewerPanel() {
 
   const [preview, setPreview] = useState<ChunkPreview | null>(null);
   const [fetchKey, setFetchKey] = useState<string | null>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
 
   // data가 바뀌면 fetchKey를 갱신하여 loading 파생
   const currentKey = data ? `${data.documentId}:${data.chunkIndex}` : null;
   const loading = currentKey !== null && currentKey !== fetchKey;
+
+  // 타겟 청크로 자동 스크롤
+  useEffect(() => {
+    if (!preview || !targetRef.current) return;
+    const raf = requestAnimationFrame(() => {
+      targetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [fetchKey, preview]);
 
   useEffect(() => {
     if (!projectId || !data) return;
@@ -99,6 +114,7 @@ export function SourceViewerPanel() {
 
               {/* 타겟 청크 — 강조 */}
               <div
+                ref={targetRef}
                 className={cn(
                   "border-accent-primary bg-primary/5 border-l-3 py-3 pl-3",
                 )}
@@ -123,11 +139,16 @@ export function SourceViewerPanel() {
   );
 }
 
-/** 청크 콘텐츠를 react-markdown으로 렌더링 */
 function ChunkContent({ content }: { content: string }) {
   return (
     <div className="markdown-body text-fg-primary text-sm">
-      <ReactMarkdown>{content}</ReactMarkdown>
+      <Streamdown
+        plugins={sourcePlugins}
+        isAnimating={false}
+        className="w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+      >
+        {content}
+      </Streamdown>
     </div>
   );
 }

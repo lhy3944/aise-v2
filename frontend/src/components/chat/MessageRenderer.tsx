@@ -14,8 +14,9 @@ import {
 import { Shimmer } from '@/components/ui/ai-elements/shimmer';
 import { ToolCall } from '@/components/ui/ai-elements/tool-call';
 import { Spinner } from '@/components/ui/spinner';
+import { usePanelStore } from '@/stores/panel-store';
 import type { ChatMessage } from '@/stores/chat-store';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface MessageRendererProps {
   messages: ChatMessage[];
@@ -158,6 +159,42 @@ function MessageItem({
 
   const displayContent = parsed.cleanContent;
 
+  const openSourceViewer = usePanelStore((s) => s.openSourceViewer);
+
+  // 인라인 [N] 출처 번호를 클릭 가능한 마크다운 링크로 변환
+  const processedContent = useMemo(() => {
+    if (!displayContent || parsed.sources.length === 0) return displayContent;
+    const sourceRefs = new Set(parsed.sources.map((s) => s.ref));
+    return displayContent.replace(/\[(\d+)\]/g, (match, num) => {
+      const ref = parseInt(num);
+      if (sourceRefs.has(ref)) {
+        return `[\\[${ref}\\]](#citation-${ref})`;
+      }
+      return match;
+    });
+  }, [displayContent, parsed.sources]);
+
+  const handleCitationClick = useCallback(
+    (e: React.MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a[href^="#citation-"]');
+      if (!anchor) return;
+      e.preventDefault();
+      const refStr = anchor.getAttribute('href')?.replace('#citation-', '');
+      if (!refStr) return;
+      const refNum = parseInt(refStr);
+      const source = parsed.sources.find((s) => s.ref === refNum);
+      if (source) {
+        openSourceViewer({
+          documentId: source.document_id,
+          documentName: source.document_name,
+          chunkIndex: source.chunk_index,
+          refNumber: source.ref,
+        });
+      }
+    },
+    [parsed.sources, openSourceViewer],
+  );
+
   return (
     <Message from={message.role}>
       <MessageContent from={message.role}>
@@ -175,11 +212,13 @@ function MessageItem({
               </div>
             )}
 
-            {/* 텍스트 응답 (마크다운) */}
+            {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
             {displayContent && (
-              <MessageResponse streaming={showCursor && !!displayContent} className='w-full'>
-                {displayContent}
-              </MessageResponse>
+              <div className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
+                <MessageResponse streaming={showCursor && !!displayContent} className='w-full'>
+                  {processedContent}
+                </MessageResponse>
+              </div>
             )}
 
             {/* Tool Calls */}
