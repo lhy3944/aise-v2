@@ -226,6 +226,7 @@ function MessageItem({
           documentName: source.document_name,
           chunkIndex: source.chunk_index,
           refNumber: source.ref,
+          fileType: source.file_type,
         });
       }
     },

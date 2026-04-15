@@ -320,6 +320,7 @@ export interface KnowledgeDocumentListResponse {
 export interface KnowledgeDocumentPreview {
   document_id: string;
   name: string;
+  file_type: KnowledgeDocumentFileType;
   preview_text: string;
   total_characters: number;
 }

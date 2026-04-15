@@ -114,7 +114,7 @@ async def process_document(document_id: uuid.UUID) -> None:
             logger.debug(f"파싱 완료: {len(text)}자")
 
             # 4. 청킹
-            chunks = chunk_text(text, max_tokens=500, overlap_tokens=50)
+            chunks = chunk_text(text, max_tokens=500, overlap_tokens=50, file_type=doc.file_type)
             if not chunks:
                 raise ValueError("청킹 결과가 비어 있습니다.")
             logger.debug(f"청킹 완료: {len(chunks)}개 청크")

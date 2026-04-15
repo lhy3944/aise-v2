@@ -38,6 +38,7 @@ class KnowledgeDocumentToggleRequest(BaseModel):
 class KnowledgeDocumentPreviewResponse(BaseModel):
     document_id: str
     name: str
+    file_type: str
     preview_text: str
     total_characters: int
 

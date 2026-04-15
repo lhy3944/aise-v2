@@ -10,6 +10,7 @@ export interface SourceData {
   document_id: string;
   document_name: string;
   chunk_index: number;
+  file_type?: string;
 }
 
 interface SourceReferenceProps {
@@ -41,6 +42,7 @@ export function SourceReference({ sources }: SourceReferenceProps) {
                   documentName: s.document_name,
                   chunkIndex: s.chunk_index,
                   refNumber: s.ref,
+                  fileType: s.file_type,
                 })
               }
               className={cn(

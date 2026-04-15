@@ -14,6 +14,7 @@ import "@/components/ui/ai-elements/css/markdown.css";
 
 interface ChunkPreview {
   document_name: string;
+  file_type?: string;
   target: { index: number; content: string };
   before: { index: number; content: string }[];
   after: { index: number; content: string }[];
@@ -32,6 +33,9 @@ export function SourceViewerPanel() {
   // data가 바뀌면 fetchKey를 갱신하여 loading 파생
   const currentKey = data ? `${data.documentId}:${data.chunkIndex}` : null;
   const loading = currentKey !== null && currentKey !== fetchKey;
+
+  // 문서 유형에 따른 렌더링 분기 (API 응답 우선, panel store fallback)
+  const isMarkdown = (preview?.file_type ?? data?.fileType) === "md";
 
   // 타겟 청크로 자동 스크롤 (ScrollArea viewport 내에서만)
   useEffect(() => {
@@ -112,7 +116,7 @@ export function SourceViewerPanel() {
             <div className="space-y-4">
               {preview.before.map((c) => (
                 <div key={c.index} className="opacity-40">
-                  <ChunkContent content={c.content} />
+                  <ChunkContent content={c.content} isMarkdown={isMarkdown} />
                 </div>
               ))}
 
@@ -123,12 +127,12 @@ export function SourceViewerPanel() {
                   "border-accent-primary bg-primary/5 border-l-3 py-3 pl-3",
                 )}
               >
-                <ChunkContent content={preview.target.content} />
+                <ChunkContent content={preview.target.content} isMarkdown={isMarkdown} />
               </div>
 
               {preview.after.map((c) => (
                 <div key={c.index} className="opacity-40">
-                  <ChunkContent content={c.content} />
+                  <ChunkContent content={c.content} isMarkdown={isMarkdown} />
                 </div>
               ))}
             </div>
@@ -143,10 +147,17 @@ export function SourceViewerPanel() {
   );
 }
 
-function ChunkContent({ content }: { content: string }) {
+function ChunkContent({ content, isMarkdown }: { content: string; isMarkdown: boolean }) {
+  if (isMarkdown) {
+    return (
+      <div className="source-markdown text-fg-primary text-sm">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      </div>
+    );
+  }
   return (
-    <div className="source-markdown text-fg-primary text-sm">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
+    <pre className="text-fg-primary whitespace-pre-wrap break-words text-sm leading-relaxed">
+      {content}
+    </pre>
   );
 }

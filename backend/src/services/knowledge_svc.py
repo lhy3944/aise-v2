@@ -215,6 +215,7 @@ async def get_document_preview(
     return KnowledgeDocumentPreviewResponse(
         document_id=str(doc.id),
         name=doc.name,
+        file_type=doc.file_type,
         preview_text=preview_text,
         total_characters=len(full_text),
     )
@@ -317,6 +318,7 @@ async def get_chunk_with_context(
     return {
         "document_id": str(document_id),
         "document_name": doc.name,
+        "file_type": doc.file_type,
         "target": target,
         "before": before,
         "after": after,

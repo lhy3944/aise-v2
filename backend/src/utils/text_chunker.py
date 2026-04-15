@@ -27,10 +27,8 @@ def _split_by_separators(text: str, separators: list[str]) -> tuple[list[str], s
     for sep in separators:
         parts = text.split(sep)
         if len(parts) > 1:
-            result = []
-            for part in parts:
-                if part.strip():
-                    result.append(part.strip())
+            # 빈 문자열만 필터링 (strip 하지 않아 들여쓰기 보존)
+            result = [part for part in parts if part]
             return result, sep
     # fallback: 공백으로 분할
     return text.split(), " "
@@ -40,18 +38,21 @@ def chunk_text(
     text: str,
     max_tokens: int = 500,
     overlap_tokens: int = 50,
+    file_type: str = "txt",
 ) -> list[str]:
     """텍스트를 max_tokens 이하의 청크로 분할한다.
 
     재귀 문자 분할 전략:
     1. 문단 (\\n\\n) 으로 분할
-    2. 문장 (. ! ?) 으로 분할
-    3. 단어 단위로 분할
+    2. 줄바꿈 (\\n) 으로 분할
+    3. 문장 (. ! ?) 으로 분할 (md 제외)
+    4. 단어 단위로 분할
 
     Args:
         text: 원본 텍스트
         max_tokens: 청크 최대 토큰 수
         overlap_tokens: 인접 청크 간 오버랩 토큰 수
+        file_type: 문서 유형 (md일 때 문장 분할 생략)
 
     Returns:
         청크 문자열 리스트
@@ -65,7 +66,11 @@ def chunk_text(
     if _token_count(text) <= max_tokens:
         return [text]
 
-    separators = ["\n\n", "\n", ". ", "! ", "? "]
+    # md: 문장 분할 생략 (마크다운 인라인 서식 보존)
+    if file_type == "md":
+        separators = ["\n\n", "\n"]
+    else:
+        separators = ["\n\n", "\n", ". ", "! ", "? "]
     segments, join_sep = _split_by_separators(text, separators)
 
     chunks: list[str] = []

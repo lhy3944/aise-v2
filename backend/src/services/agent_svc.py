@@ -417,6 +417,7 @@ async def stream_chat(
                                 "document_id": knowledge_chunks[ref - 1]["document_id"],
                                 "document_name": knowledge_chunks[ref - 1]["document_name"],
                                 "chunk_index": knowledge_chunks[ref - 1]["chunk_index"],
+                                "file_type": knowledge_chunks[ref - 1].get("file_type", "txt"),
                             }
                             for ref in sorted(missing_refs)
                         ]
@@ -564,19 +565,20 @@ async def _fetch_knowledge_chunks(
     try:
         chunks_with_scores = await search_similar_chunks(project_id, message, 5, db)
         doc_ids = {c.document_id for c, _ in chunks_with_scores}
-        doc_name_map: dict[uuid.UUID, str] = {}
+        doc_info_map: dict[uuid.UUID, tuple[str, str]] = {}
         if doc_ids:
             doc_result = await db.execute(
-                select(KnowledgeDocument.id, KnowledgeDocument.name)
+                select(KnowledgeDocument.id, KnowledgeDocument.name, KnowledgeDocument.file_type)
                 .where(KnowledgeDocument.id.in_(doc_ids))
             )
-            for did, dname in doc_result.all():
-                doc_name_map[did] = dname
+            for did, dname, ftype in doc_result.all():
+                doc_info_map[did] = (dname, ftype)
 
         return [
             {
                 "document_id": str(chunk.document_id),
-                "document_name": doc_name_map.get(chunk.document_id, "Unknown"),
+                "document_name": doc_info_map.get(chunk.document_id, ("Unknown", "txt"))[0],
+                "file_type": doc_info_map.get(chunk.document_id, ("Unknown", "txt"))[1],
                 "chunk_index": chunk.chunk_index,
                 "content": chunk.content,
             }

@@ -15,6 +15,7 @@ export interface SourceViewerData {
   documentName: string;
   chunkIndex: number;
   refNumber: number;
+  fileType?: string;
 }
 
 interface PanelState {
