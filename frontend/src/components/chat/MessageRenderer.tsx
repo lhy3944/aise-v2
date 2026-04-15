@@ -16,11 +16,10 @@ import { ToolCall } from '@/components/ui/ai-elements/tool-call';
 import { Spinner } from '@/components/ui/spinner';
 import { usePanelStore } from '@/stores/panel-store';
 import type { ChatMessage } from '@/stores/chat-store';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 interface MessageRendererProps {
   messages: ChatMessage[];
-  isStreaming: boolean;
   onSendMessage?: (text: string) => void;
 }
 
@@ -136,26 +135,26 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
 
 /* ── Message Item ── */
 
-function MessageItem({
-  message,
-  isLast,
-  isStreaming,
-  onSendMessage,
-}: {
+interface MessageItemProps {
   message: ChatMessage;
   isLast: boolean;
-  isStreaming: boolean;
   onSendMessage?: (text: string) => void;
-}) {
+}
+
+const MessageItem = memo(function MessageItem({
+  message,
+  isLast,
+  onSendMessage,
+}: MessageItemProps) {
   const isUser = message.role === 'user';
-  const showCursor = isLast && isStreaming && !isUser;
+  const showCursor = !isUser && message.status === 'streaming';
 
   // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
   const parsed = useMemo(() => {
-    if (isUser || (isLast && isStreaming))
+    if (isUser || message.status === 'streaming')
       return { clarifyItems: [], requirementItems: [], suggestions: [], sources: [], cleanContent: message.content };
     return parseStructuredBlocks(message.content);
-  }, [message.content, isUser, isLast, isStreaming]);
+  }, [message.content, message.status, isUser]);
 
   const displayContent = parsed.cleanContent;
 
@@ -253,7 +252,7 @@ function MessageItem({
             {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
             {displayContent && (
               <div ref={contentRef} className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
-                <MessageResponse streaming={showCursor && !!displayContent} className='w-full'>
+                <MessageResponse streaming={message.status === 'streaming' && !!displayContent} className='w-full'>
                   {displayContent}
                 </MessageResponse>
               </div>
@@ -264,7 +263,7 @@ function MessageItem({
               <div className='w-full min-w-0'>
                 {message.toolCalls.map((tc, i) => (
                   <ToolCall
-                    key={i}
+                    key={`${tc.name}-${i}`}
                     name={TOOL_DISPLAY_NAMES[tc.name] ?? tc.name}
                     state={tc.state}
                     input={Object.keys(tc.arguments).length > 0 ? tc.arguments : undefined}
@@ -307,10 +306,16 @@ function MessageItem({
       </MessageContent>
     </Message>
   );
-}
+}, (prev, next) =>
+  prev.message === next.message &&
+  prev.isLast === next.isLast &&
+  prev.onSendMessage === next.onSendMessage,
+);
 
-export function MessageRenderer({ messages, isStreaming, onSendMessage }: MessageRendererProps) {
+export function MessageRenderer({ messages, onSendMessage }: MessageRendererProps) {
   if (messages.length === 0) return null;
+
+  const lastIndex = messages.length - 1;
 
   return (
     <div className='flex flex-col gap-6'>
@@ -318,8 +323,7 @@ export function MessageRenderer({ messages, isStreaming, onSendMessage }: Messag
         <MessageItem
           key={msg.id}
           message={msg}
-          isLast={i === messages.length - 1}
-          isStreaming={isStreaming}
+          isLast={i === lastIndex}
           onSendMessage={onSendMessage}
         />
       ))}

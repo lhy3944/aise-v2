@@ -12,6 +12,8 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  /** 메시지 상태 — undefined는 'done'과 동일 (서버 로드 메시지 호환) */
+  status?: 'streaming' | 'done' | 'error';
   /** 구조화된 데이터 (clarify, requirements, generate_srs) */
   toolData?: {
     type: 'clarify' | 'requirements' | 'generate_srs';
@@ -44,6 +46,8 @@ interface ChatState {
   // 스트리밍 상태
   isSessionStreaming: (sessionId: string) => boolean;
   setSessionStreaming: (sessionId: string, streaming: boolean) => void;
+  /** message.status + streamingSessionIds를 원자적으로 업데이트 (재렌더 1회) */
+  finishStreaming: (sessionId: string, status?: 'done' | 'error') => void;
 
   // 입력값
   setInputValue: (val: string) => void;
@@ -73,12 +77,17 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   appendToLastAssistant: (sessionId, token) =>
     set((s) => {
-      const msgs = [...(s.sessionMessages[sessionId] ?? [])];
-      const last = msgs[msgs.length - 1];
-      if (last?.role === 'assistant') {
-        msgs[msgs.length - 1] = { ...last, content: last.content + token };
-      }
-      return { sessionMessages: { ...s.sessionMessages, [sessionId]: msgs } };
+      const current = s.sessionMessages[sessionId] ?? [];
+      const last = current[current.length - 1];
+      if (!last || last.role !== 'assistant') return s;
+
+      const nextMessages = [...current];
+      nextMessages[nextMessages.length - 1] = {
+        ...last,
+        content: last.content + token,
+        status: 'streaming',
+      };
+      return { sessionMessages: { ...s.sessionMessages, [sessionId]: nextMessages } };
     }),
 
   updateLastAssistantMessage: (sessionId, updater) =>
@@ -107,6 +116,23 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       if (streaming) next.add(sessionId);
       else next.delete(sessionId);
       return { streamingSessionIds: next };
+    }),
+
+  finishStreaming: (sessionId, status = 'done') =>
+    set((s) => {
+      const current = s.sessionMessages[sessionId] ?? [];
+      const last = current[current.length - 1];
+      let nextMessages = current;
+      if (last?.role === 'assistant' && last.status === 'streaming') {
+        nextMessages = [...current];
+        nextMessages[nextMessages.length - 1] = { ...last, status };
+      }
+      const next = new Set(s.streamingSessionIds);
+      next.delete(sessionId);
+      return {
+        sessionMessages: { ...s.sessionMessages, [sessionId]: nextMessages },
+        streamingSessionIds: next,
+      };
     }),
 
   setInputValue: (val) => set({ inputValue: val }),

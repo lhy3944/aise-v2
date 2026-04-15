@@ -20,6 +20,8 @@ export function useTurnLayout(
   const answerAreaRef = useRef<HTMLDivElement>(null);
 
   // 마지막 user+assistant 쌍을 currentTurn으로 분리
+  const prevPastRef = useRef<ChatMessage[]>([]);
+
   const { pastMessages, currentTurn } = useMemo((): {
     pastMessages: ChatMessage[];
     currentTurn: TurnPair | null;
@@ -30,8 +32,21 @@ export function useTurnLayout(
     const last = messages[messages.length - 1];
     const secondLast = messages[messages.length - 2];
     if (secondLast.role === 'user' && last.role === 'assistant') {
+      const newPast = messages.slice(0, -2);
+      // 참조 안정화: 개별 아이템이 같으면 이전 배열 반환 → 불필요한 재렌더 방지
+      const prev = prevPastRef.current;
+      if (
+        newPast.length === prev.length &&
+        newPast.every((msg, i) => msg === prev[i])
+      ) {
+        return {
+          pastMessages: prev,
+          currentTurn: { question: secondLast, answer: last },
+        };
+      }
+      prevPastRef.current = newPast;
       return {
-        pastMessages: messages.slice(0, -2),
+        pastMessages: newPast,
         currentTurn: { question: secondLast, answer: last },
       };
     }

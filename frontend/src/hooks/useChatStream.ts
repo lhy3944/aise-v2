@@ -45,6 +45,7 @@ export function useChatStream(sessionId?: string) {
   const appendToLastAssistant = useChatStore((s) => s.appendToLastAssistant);
   const setMessages = useChatStore((s) => s.setMessages);
   const setSessionStreaming = useChatStore((s) => s.setSessionStreaming);
+  const finishStreaming = useChatStore((s) => s.finishStreaming);
 
   const messages = useChatStore(
     (s) => (sessionId ? s.sessionMessages[sessionId] : undefined) ?? EMPTY_MESSAGES,
@@ -235,6 +236,7 @@ export function useChatStream(sessionId?: string) {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant',
         content: '',
+        status: 'streaming',
         createdAt: new Date().toISOString(),
       };
       addMessage(activeSessionId, assistantMsg);
@@ -267,11 +269,11 @@ export function useChatStream(sessionId?: string) {
             handleToolResult(activeSessionId!, toolResult.name, toolResult.result);
           },
           onDone: () => {
-            setSessionStreaming(activeSessionId!, false);
+            finishStreaming(activeSessionId!);
           },
           onError: (error) => {
             appendToLastAssistant(activeSessionId!, `\n\n⚠️ ${error}`);
-            setSessionStreaming(activeSessionId!, false);
+            finishStreaming(activeSessionId!, 'error');
           },
         },
       );
@@ -286,6 +288,7 @@ export function useChatStream(sessionId?: string) {
       setInputValue,
       appendToLastAssistant,
       setSessionStreaming,
+      finishStreaming,
       executeToolCall,
       handleToolResult,
       router,
@@ -297,8 +300,8 @@ export function useChatStream(sessionId?: string) {
     if (!sessionId) return;
     abortControllersRef.current.get(sessionId)?.();
     abortControllersRef.current.delete(sessionId);
-    setSessionStreaming(sessionId, false);
-  }, [sessionId, setSessionStreaming]);
+    finishStreaming(sessionId);
+  }, [sessionId, finishStreaming]);
 
   // Cleanup on unmount
   useEffect(() => {
