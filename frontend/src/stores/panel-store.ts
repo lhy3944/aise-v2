@@ -8,11 +8,22 @@ export enum LayoutMode {
   CUSTOM = 'custom',
 }
 
+export type RightPanelView = 'artifacts' | 'source-viewer';
+
+export interface SourceViewerData {
+  documentId: string;
+  documentName: string;
+  chunkIndex: number;
+  refNumber: number;
+}
+
 interface PanelState {
   leftSidebarOpen: boolean;
   rightPanelOpen: boolean;
   rightPanelWidth: number;
   layoutMode: LayoutMode;
+  rightPanelView: RightPanelView;
+  sourceViewerData: SourceViewerData | null;
   notificationOpen: boolean;
   fullWidthMode: boolean;
   isMobile: boolean;
@@ -23,6 +34,8 @@ interface PanelState {
   toggleRightPanel: () => void;
   setRightPanelWidth: (pct: number) => void;
   setRightPanelPreset: (preset: LayoutMode.WIDE | LayoutMode.SPLIT | LayoutMode.CLOSED) => void;
+  openSourceViewer: (data: SourceViewerData) => void;
+  closeSourceViewer: () => void;
   toggleNotification: () => void;
   toggleFullWidth: () => void;
   setViewport: (width: number) => void;
@@ -35,6 +48,8 @@ export const usePanelStore = create<PanelState>()(
       rightPanelOpen: false,
       rightPanelWidth: 0,
       layoutMode: LayoutMode.CLOSED,
+      rightPanelView: 'artifacts' as RightPanelView,
+      sourceViewerData: null as SourceViewerData | null,
       notificationOpen: false,
       fullWidthMode: false,
       isMobile: false,
@@ -54,6 +69,21 @@ export const usePanelStore = create<PanelState>()(
         set({ rightPanelWidth: clamped });
       },
 
+      openSourceViewer: (data) => {
+        const s = get();
+        set({
+          rightPanelView: 'source-viewer',
+          sourceViewerData: data,
+          rightPanelOpen: true,
+          // 패널이 닫혀있었으면 SPLIT으로 열기
+          ...(s.rightPanelOpen ? {} : { rightPanelWidth: 50, layoutMode: LayoutMode.SPLIT }),
+        });
+      },
+
+      closeSourceViewer: () => {
+        set({ rightPanelView: 'artifacts', sourceViewerData: null });
+      },
+
       setRightPanelPreset: (preset) => {
         switch (preset) {
           case LayoutMode.WIDE:
@@ -71,7 +101,7 @@ export const usePanelStore = create<PanelState>()(
             });
             break;
           case LayoutMode.CLOSED:
-            set({ rightPanelOpen: false, layoutMode: LayoutMode.CLOSED });
+            set({ rightPanelOpen: false, layoutMode: LayoutMode.CLOSED, rightPanelView: 'artifacts', sourceViewerData: null });
             break;
         }
       },

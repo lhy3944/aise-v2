@@ -2,6 +2,7 @@
 
 import uuid
 
+from loguru import logger
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -114,5 +115,6 @@ async def get_prompt_suggestions_fingerprint(
     db: AsyncSession = Depends(get_db),
 ):
     """프로젝트 메타데이터 fingerprint 조회 (클라이언트 캐시 유효성 확인용)"""
+
     fp = await suggestion_svc.get_fingerprint(db, project_id)
     return {"fingerprint": fp}

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { api } from '@/lib/api';
-import { useProjectStore } from '@/stores/project-store';
-import { useSuggestionStore } from '@/stores/suggestion-store';
-import { CornerRightUp, LightbulbIcon, RefreshCwIcon } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/lib/api";
+import { useProjectStore } from "@/stores/project-store";
+import { useSuggestionStore } from "@/stores/suggestion-store";
+import { CornerRightUp, LightbulbIcon, RefreshCwIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface PromptCard {
   title: string;
@@ -16,24 +16,28 @@ interface PromptCard {
 
 const FALLBACK_CARDS: PromptCard[] = [
   {
-    title: '문서 분석',
-    description: '업로드된 문서의 주요 내용을 요약해주세요',
+    title: "문서 분석",
+    description: "업로드된 문서의 주요 내용을 요약해주세요",
   },
   {
-    title: '요구사항 추출',
-    description: '지식 문서에서 요구사항 레코드를 추출해주세요',
+    title: "요구사항 추출",
+    description: "지식 문서에서 요구사항 레코드를 추출해주세요",
   },
   {
-    title: '프로젝트 현황',
-    description: '현재 프로젝트의 요구사항 정의 상태를 분석해주세요',
+    title: "프로젝트 현황",
+    description: "현재 프로젝트의 요구사항 정의 상태를 분석해주세요",
   },
   {
-    title: '요구사항 작성 도움',
-    description: '새로운 기능 요구사항을 작성하는 것을 도와주세요',
+    title: "요구사항 작성 도움",
+    description: "새로운 기능 요구사항을 작성하는 것을 도와주세요",
   },
 ];
 
 const CARDS_PER_ROW = 2;
+
+/** 카드 수를 짝수로 맞춤 (2개씩 노출하므로 홀수면 마지막 카드 제거) */
+const ensureEven = (cards: PromptCard[]): PromptCard[] =>
+  cards.length % 2 === 0 ? cards : cards.slice(0, -1);
 const AUTO_SLIDE_INTERVAL = 5000;
 
 interface PromptSuggestionsProps {
@@ -41,7 +45,10 @@ interface PromptSuggestionsProps {
   onSelect?: (prompt: string) => void;
 }
 
-export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps) {
+export function PromptSuggestions({
+  rows = 2,
+  onSelect,
+}: PromptSuggestionsProps) {
   const currentProject = useProjectStore((s) => s.currentProject);
   const projectId = currentProject?.project_id;
 
@@ -95,12 +102,15 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
         }
 
         // 3) 변경됨 → 전체 suggestions fetch
-        const res = await api.get<{ fingerprint: string; suggestions: PromptCard[] }>(
-          `/api/v1/projects/${projectId}/prompt-suggestions`,
-        );
+        const res = await api.get<{
+          fingerprint: string;
+          suggestions: PromptCard[];
+        }>(`/api/v1/projects/${projectId}/prompt-suggestions`);
         if (cancelled) return;
 
-        const data = res.suggestions.length > 0 ? res.suggestions : FALLBACK_CARDS;
+        const raw =
+          res.suggestions.length > 0 ? res.suggestions : FALLBACK_CARDS;
+        const data = ensureEven(raw);
         setCache(projectId!, res.fingerprint, data);
         setCards(data);
         setLoading(false);
@@ -161,17 +171,20 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
   // 로딩 스켈레톤
   if (loading) {
     return (
-      <div className='mt-10 space-y-2'>
-        <div className='flex items-center justify-between'>
-          <div className='text-muted-foreground flex items-center gap-1.5 text-sm'>
-            <LightbulbIcon className='size-5 text-red-500' fill='currentColor' />
+      <div className="mt-10 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+            <LightbulbIcon
+              className="size-5 text-red-500"
+              fill="currentColor"
+            />
             <span>질문을 준비하는 중...</span>
           </div>
-          <Skeleton className='h-7 w-16 rounded-lg' />
+          <Skeleton className="h-7 w-16 rounded-lg" />
         </div>
-        <div className='grid grid-cols-2 gap-2'>
+        <div className="grid grid-cols-2 gap-2">
           {Array.from({ length: count }).map((_, i) => (
-            <Skeleton key={i} className='h-[72px] rounded-lg' />
+            <Skeleton key={i} className="h-[72px] rounded-lg" />
           ))}
         </div>
       </div>
@@ -181,46 +194,46 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
   if (cards.length === 0) return null;
 
   return (
-    <div className='mt-10 space-y-2'>
-      <div className='flex items-center justify-between'>
-        <div className='text-muted-foreground flex items-center gap-1.5 text-sm'>
-          <LightbulbIcon className='size-5 text-red-500' fill='currentColor' />
+    <div className="mt-10 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
+          <LightbulbIcon className="size-5 text-red-500" fill="currentColor" />
           <span>이런 질문을 시도해 보세요</span>
         </div>
         {totalPages > 1 && (
           <Button
-            variant='ghost'
-            size='sm'
-            className='text-muted-foreground h-7 gap-1 text-xs'
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground h-7 gap-1 text-xs"
             onClick={handleShuffle}
           >
-            <RefreshCwIcon className='size-4' />
+            <RefreshCwIcon className="size-4" />
             전환
           </Button>
         )}
       </div>
 
-      <div className='overflow-hidden'>
-        <AnimatePresence mode='popLayout' initial={false}>
+      <div className="overflow-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={page}
-            className='grid grid-cols-2 gap-2'
+            className="grid grid-cols-2 gap-2"
             initial={{ x: direction * 10, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: direction * -10, opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
           >
             {visibleCards.map((card) => (
               <Button
                 key={card.title}
-                variant='ghost'
-                className='group border-border hover:bg-accent relative h-full w-full overflow-hidden flex-col items-start justify-start rounded-lg border p-3 text-left whitespace-normal transition-colors'
+                variant="ghost"
+                className="group border-border hover:bg-accent relative h-full w-full overflow-hidden flex-col items-start justify-start rounded-lg border p-3 text-left whitespace-normal transition-colors"
                 onClick={() => onSelect?.(card.description)}
               >
-                <CornerRightUp className='text-muted-foreground absolute top-2.5 right-2.5 size-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
-                <div className='min-w-0 w-full'>
-                  <p className='text-sm font-semibold truncate'>{card.title}</p>
-                  <p className='text-muted-foreground mt-1 line-clamp-2 break-all text-xs/6'>
+                <CornerRightUp className="text-muted-foreground absolute top-2.5 right-2.5 size-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="min-w-0 w-full">
+                  <p className="text-sm font-semibold truncate">{card.title}</p>
+                  <p className="text-muted-foreground mt-1 line-clamp-2 break-all text-xs/6">
                     {card.description}
                   </p>
                 </div>

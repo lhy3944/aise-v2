@@ -27,7 +27,7 @@ ALLOWED_ORIGINS = [o.strip() for o in _origins_env.split(",") if o.strip()]
 # 개발 환경: 모든 localhost/내부IP의 3000 포트를 허용
 _ORIGIN_REGEX = os.getenv(
     "CORS_ORIGIN_REGEX",
-    r"^https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$",
+    r"^https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+|[\w-]+\.devbanjang\.cloud)(:\d+)?$",
 )
 
 CORS_CONFIG = {

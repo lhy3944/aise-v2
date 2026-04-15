@@ -53,9 +53,9 @@ const REQUIREMENTS_BLOCK_RE =
 const SUGGESTIONS_BLOCK_RE =
   /```[\w]*\s*\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]\s*```|\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/g;
 
-// [SOURCES] 블록 — 출처 추적
+// [SOURCES] 블록 — 출처 추적 (닫는 태그 없이 끝나는 경우도 매칭)
 const SOURCES_BLOCK_RE =
-  /```[\w]*\s*\[SOURCES\]\s*([\s\S]*?)\s*\[\/SOURCES\]\s*```|\[SOURCES\]\s*([\s\S]*?)\s*\[\/SOURCES\]/g;
+  /```[\w]*\s*\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]\s*```|\[\/SOURCES\])|\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]|$)/g;
 
 interface ParsedBlocks {
   clarifyItems: QuestionData[];

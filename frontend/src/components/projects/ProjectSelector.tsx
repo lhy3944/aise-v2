@@ -1,26 +1,33 @@
-'use client';
+"use client";
 
-import { Modal } from '@/components/overlay/Modal';
-import { ProjectCreateForm, ProjectCreateFormActions } from '@/components/projects/ProjectCreateForm';
-import { Button } from '@/components/ui/button';
+import { Modal } from "@/components/overlay/Modal";
+import {
+  ProjectCreateForm,
+  ProjectCreateFormActions,
+} from "@/components/projects/ProjectCreateForm";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ApiError } from '@/lib/api';
-import { showToast } from '@/lib/toast';
-import { cn } from '@/lib/utils';
-import { projectService } from '@/services/project-service';
-import { useProjectStore } from '@/stores/project-store';
-import type { Project, ProjectCreate } from '@/types/project';
-import { Box, Check, ChevronsUpDown, Plus, Settings } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ApiError } from "@/lib/api";
+import { showToast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { projectService } from "@/services/project-service";
+import { useProjectStore } from "@/stores/project-store";
+import type { Project, ProjectCreate } from "@/types/project";
+import { Box, Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface ProjectSelectorProps {
   collapsed?: boolean;
@@ -65,7 +72,8 @@ export function ProjectSelector({ collapsed = false }: ProjectSelectorProps) {
       setCreateOpen(false);
       showToast.success(`${project.name} 프로젝트가 생성되었습니다.`);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : '프로젝트 생성에 실패했습니다.';
+      const msg =
+        err instanceof ApiError ? err.message : "프로젝트 생성에 실패했습니다.";
       showToast.error(msg);
     } finally {
       setCreating(false);
@@ -84,24 +92,24 @@ export function ProjectSelector({ collapsed = false }: ProjectSelectorProps) {
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant='ghost'
-                  size='icon'
+                  variant="ghost"
+                  size="icon"
                   className={cn(
-                    'h-9 w-9',
+                    "h-9 w-9",
                     currentProject
-                      ? 'text-accent-primary'
-                      : 'text-icon-default hover:text-icon-active',
+                      ? "text-accent-primary"
+                      : "text-icon-default hover:text-icon-active",
                   )}
                 >
-                  <Box className='size-5' />
+                  <Box className="size-5" />
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side='right'>
-              {currentProject ? currentProject.name : '프로젝트 선택'}
+            <TooltipContent side="right">
+              {currentProject ? currentProject.name : "프로젝트 선택"}
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent side='right' align='start' className='w-52'>
+          <DropdownMenuContent side="right" align="start" className="w-52">
             <ProjectDropdownItems
               projects={projects}
               currentProject={currentProject}
@@ -126,30 +134,30 @@ export function ProjectSelector({ collapsed = false }: ProjectSelectorProps) {
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'border-line-primary hover:bg-canvas-surface flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors',
-              open && 'bg-canvas-surface',
+              "border-line-primary hover:bg-canvas-surface flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors",
+              open && "bg-canvas-surface",
             )}
           >
             <Box
               className={cn(
-                'size-4 shrink-0',
-                currentProject ? 'text-accent-primary' : 'text-fg-muted',
+                "size-4 shrink-0",
+                currentProject ? "text-accent-primary" : "text-fg-muted",
               )}
             />
             <span
               className={cn(
-                'flex-1 truncate text-xs font-medium',
-                currentProject ? 'text-fg-primary' : 'text-fg-muted',
+                "flex-1 truncate text-xs font-medium",
+                currentProject ? "text-fg-primary" : "text-fg-muted",
               )}
             >
-              {currentProject?.name ?? '프로젝트 선택'}
+              {currentProject?.name ?? "프로젝트 선택"}
             </span>
-            <ChevronsUpDown className='text-fg-muted size-3.5 shrink-0' />
+            <ChevronsUpDown className="text-fg-muted size-3.5 shrink-0" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align='start'
-          style={{ minWidth: 'var(--radix-dropdown-menu-trigger-width)' }}
+          align="start"
+          style={{ minWidth: "var(--radix-dropdown-menu-trigger-width)" }}
         >
           <ProjectDropdownItems
             projects={projects}
@@ -184,9 +192,14 @@ function ProjectDropdownItems({
 
   if (projects.length === 0) {
     return (
-      <div className='px-3 py-4 text-center'>
-        <Button variant='ghost' size='sm' className='w-full gap-1.5 text-xs' onClick={onOpenCreate}>
-          <Plus className='size-3' />
+      <div className="px-3 py-4 text-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full gap-1.5 text-xs"
+          onClick={onOpenCreate}
+        >
+          <Plus className="size-3" fill="currentColor" />
           프로젝트 생성
         </Button>
       </div>
@@ -195,35 +208,43 @@ function ProjectDropdownItems({
 
   return (
     <>
-      <ScrollArea className='max-h-48'>
+      <ScrollArea className="max-h-48">
         {projects.map((project) => {
           const isSelected = currentProject?.project_id === project.project_id;
           return (
             <DropdownMenuItem
               key={project.project_id}
               onClick={() => onSelect(project)}
-              className={cn('gap-2 text-xs', isSelected && 'text-accent-primary')}
+              className={cn(
+                "gap-2 text-xs",
+                isSelected && "text-accent-primary",
+              )}
             >
-              <Check className={cn('size-3 shrink-0', isSelected ? 'opacity-100' : 'opacity-0')} />
-              <span className='flex-1 truncate'>{project.name}</span>
+              <Check
+                className={cn(
+                  "size-3 shrink-0",
+                  isSelected ? "opacity-100" : "opacity-0",
+                )}
+              />
+              <span className="flex-1 truncate">{project.name}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   router.push(`/projects/${project.project_id}`);
                 }}
-                className='text-fg-muted hover:text-fg-primary -mr-1 flex size-5 shrink-0 items-center justify-center rounded transition-colors'
+                className="text-fg-muted hover:text-fg-primary -mr-1 flex size-5 shrink-0 items-center justify-center rounded transition-colors"
               >
-                <Settings className='size-3' />
+                <Settings className="size-4" />
               </button>
             </DropdownMenuItem>
           );
         })}
       </ScrollArea>
       <DropdownMenuSeparator />
-      <div className='flex items-center justify-center gap-1'>
-        <Button variant='ghost' size='sm' className='w-full gap-1.5 text-xs' onClick={onOpenCreate}>
-          <Plus className='size-3' />
-          프로젝트 생성
+      <div className="flex items-center justify-center gap-1">
+        <Button variant="outline" className="w-full" onClick={onOpenCreate}>
+          <Plus className="size-4" />
+          <span className="text-xs">프로젝트 생성</span>
         </Button>
       </div>
     </>
@@ -245,10 +266,15 @@ function CreateProjectDialog({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title='프로젝트 생성'
-      description='프로젝트 정보를 입력하고 사용할 모듈을 선택하세요.'
-      size='lg'
-      footer={<ProjectCreateFormActions onCancel={() => onOpenChange(false)} isLoading={isLoading} />}
+      title="프로젝트 생성"
+      description="프로젝트 정보를 입력하고 사용할 모듈을 선택하세요."
+      size="lg"
+      footer={
+        <ProjectCreateFormActions
+          onCancel={() => onOpenChange(false)}
+          isLoading={isLoading}
+        />
+      }
     >
       <ProjectCreateForm onSubmit={onSubmit} />
     </Modal>
