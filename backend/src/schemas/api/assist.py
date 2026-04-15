@@ -1,4 +1,5 @@
 from typing import Literal
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -20,7 +21,7 @@ class RefineResponse(BaseModel):
 
 class SuggestRequest(BaseModel):
     """보완 제안 요청"""
-    requirement_ids: list[str] = Field(description="대상 요구사항 ID 목록")
+    requirement_ids: list[uuid.UUID] = Field(description="대상 요구사항 ID 목록")
 
 
 class Suggestion(BaseModel):

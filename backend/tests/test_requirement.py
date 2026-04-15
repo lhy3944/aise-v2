@@ -111,6 +111,21 @@ async def test_update_requirement(client):
 
 
 @pytest.mark.asyncio
+async def test_update_requirement_section_id_empty_string_to_null(client):
+    """PUT /requirements/{id} section_id='' -> 200, section_id=null (프론트 호환)"""
+    project_id = await create_test_project(client)
+    req = await create_test_requirement(client, project_id)
+    requirement_id = req["requirement_id"]
+
+    resp = await client.put(
+        f"/api/v1/projects/{project_id}/requirements/{requirement_id}",
+        json={"section_id": ""},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["section_id"] is None
+
+
+@pytest.mark.asyncio
 async def test_delete_requirement(client):
     """DELETE /requirements/{id} -> 204"""
     project_id = await create_test_project(client)
@@ -168,6 +183,21 @@ async def test_update_selection(client):
     assert selected[req1["requirement_id"]] is True
     assert selected[req2["requirement_id"]] is True
     assert selected[req3["requirement_id"]] is False
+
+
+@pytest.mark.asyncio
+async def test_update_selection_invalid_uuid_returns_422(client):
+    """PUT /requirements/selection invalid requirement_id -> 422"""
+    project_id = await create_test_project(client)
+
+    resp = await client.put(
+        f"/api/v1/projects/{project_id}/requirements/selection",
+        json={
+            "requirement_ids": ["not-a-uuid"],
+            "is_selected": True,
+        },
+    )
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -307,6 +337,51 @@ async def test_reorder_partial(client):
     )
     assert resp.status_code == 200
     assert resp.json()["updated_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_reorder_partial_non_prefix_keeps_consistent_order(client):
+    """부분 reorder가 앞부분이 아니어도 전체 order_index를 일관되게 재정렬한다."""
+    project_id = await create_test_project(client)
+
+    req1 = await create_test_requirement(client, project_id, original_text="A")
+    req2 = await create_test_requirement(client, project_id, original_text="B")
+    req3 = await create_test_requirement(client, project_id, original_text="C")
+
+    resp = await client.put(
+        f"/api/v1/projects/{project_id}/requirements/reorder",
+        json={
+            "ordered_ids": [
+                req3["requirement_id"],
+                req1["requirement_id"],
+            ]
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["updated_count"] == 3
+
+    list_resp = await client.get(f"/api/v1/projects/{project_id}/requirements")
+    assert list_resp.status_code == 200
+    reqs = list_resp.json()["requirements"]
+    assert [r["requirement_id"] for r in reqs] == [
+        req3["requirement_id"],
+        req1["requirement_id"],
+        req2["requirement_id"],
+    ]
+    assert [r["order_index"] for r in reqs] == [0, 1, 2]
+
+
+@pytest.mark.asyncio
+async def test_reorder_invalid_uuid_returns_422(client):
+    """PUT /requirements/reorder invalid requirement_id -> 422"""
+    project_id = await create_test_project(client)
+    await create_test_requirement(client, project_id, original_text="A")
+
+    resp = await client.put(
+        f"/api/v1/projects/{project_id}/requirements/reorder",
+        json={"ordered_ids": ["not-a-uuid"]},
+    )
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio

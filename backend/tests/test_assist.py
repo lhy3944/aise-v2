@@ -173,6 +173,20 @@ async def test_suggest_invalid_json(client, mock_llm):
     assert resp.status_code == 502
 
 
+@pytest.mark.asyncio
+async def test_suggest_invalid_uuid_returns_422(client, mock_llm):
+    """유효하지 않은 UUID 형식의 requirement_id -- 422 검증 에러."""
+    project_id = await create_project(client)
+
+    resp = await client.post(
+        f"/api/v1/projects/{project_id}/assist/suggest",
+        json={"requirement_ids": ["not-a-uuid"]},
+    )
+
+    assert resp.status_code == 422
+    mock_llm.assert_not_awaited()
+
+
 # ---------------------------------------------------------------------------
 # Tests: /assist/chat
 # ---------------------------------------------------------------------------

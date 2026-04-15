@@ -21,6 +21,11 @@ TestSession = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 # 테이블 정리 순서 (FK 의존성 고려)
 CLEANUP_TABLES = [
+    "session_messages",
+    "sessions",
+    "srs_sections",
+    "srs_documents",
+    "records",
     "knowledge_chunks",
     "knowledge_documents",
     "requirement_reviews",
@@ -37,8 +42,13 @@ async def _cleanup_db():
     """테스트 후 모든 테이블 데이터를 삭제한다."""
     async with AsyncSession(engine) as cleanup_session:
         async with cleanup_session.begin():
+            existing_tables_result = await cleanup_session.execute(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+            )
+            existing_tables = {row[0] for row in existing_tables_result.all()}
             for table in CLEANUP_TABLES:
-                await cleanup_session.execute(text(f"DELETE FROM {table}"))
+                if table in existing_tables:
+                    await cleanup_session.execute(text(f"DELETE FROM {table}"))
 
 
 @pytest_asyncio.fixture

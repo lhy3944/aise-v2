@@ -70,7 +70,7 @@ def _parse_review_response(parsed: dict, review_id: str) -> ReviewResponse:
 
 
 async def review_requirements(
-    requirement_ids: list[str],
+    requirement_ids: list[uuid.UUID],
     project_id: uuid.UUID,
     db: AsyncSession,
 ) -> ReviewResponse:
@@ -79,15 +79,10 @@ async def review_requirements(
 
     # 전체 리뷰 분기: requirement_ids가 비어있으면 프로젝트 전체 조회
     if requirement_ids:
-        try:
-            uuids = [uuid.UUID(rid) for rid in requirement_ids]
-        except ValueError:
-            raise AppException(status_code=400, detail="유효하지 않은 requirement_id가 포함되어 있습니다.")
-
         stmt = (
             select(Requirement)
             .where(Requirement.project_id == project_id)
-            .where(Requirement.id.in_(uuids))
+            .where(Requirement.id.in_(requirement_ids))
         )
         result = await db.execute(stmt)
         rows = result.scalars().all()
@@ -95,7 +90,7 @@ async def review_requirements(
         if not rows:
             raise AppException(status_code=404, detail="해당하는 요구사항을 찾을 수 없습니다.")
 
-        found_ids = {str(r.id) for r in rows}
+        found_ids = {r.id for r in rows}
         not_found = [rid for rid in requirement_ids if rid not in found_ids]
         if not_found:
             logger.warning(f"조회되지 않은 requirement_id: {not_found}")

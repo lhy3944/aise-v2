@@ -20,6 +20,7 @@ from src.schemas.api.requirement import (
 from src.services.llm_svc import chat_completion
 from src.utils.db import get_or_404
 from src.utils.json_parser import parse_llm_json
+from src.utils.reorder import build_reordered_ids
 
 
 def _to_response(section: RequirementSection) -> SectionResponse:
@@ -51,20 +52,28 @@ async def _ensure_default_sections(db: AsyncSession, project_id: uuid.UUID) -> N
     from src.models.requirement import DEFAULT_SECTIONS
 
     result = await db.execute(
-        select(func.count()).where(
+        select(RequirementSection.type).where(
             RequirementSection.project_id == project_id,
             RequirementSection.is_default == True,  # noqa: E712
         )
     )
-    default_count = result.scalar() or 0
-    if default_count > 0:
+    existing_default_types = {row[0] for row in result.all()}
+    missing_defaults = [
+        section_def
+        for section_def in DEFAULT_SECTIONS
+        if section_def["type"] not in existing_default_types
+    ]
+
+    if not missing_defaults:
         return
 
-    for sec_def in DEFAULT_SECTIONS:
+    for sec_def in missing_defaults:
         section = RequirementSection(project_id=project_id, **sec_def)
         db.add(section)
     await db.commit()
-    logger.info(f"기본 섹션 자동 생성: project_id={project_id}")
+    logger.info(
+        f"기본 섹션 자동 보강: project_id={project_id}, added={len(missing_defaults)}"
+    )
 
 
 async def get_sections(
@@ -191,25 +200,20 @@ async def reorder_sections(
     if not data.ordered_ids:
         return 0
 
-    seen: set[str] = set()
-    unique_ids: list[str] = []
-    for sid in data.ordered_ids:
-        if sid not in seen:
-            seen.add(sid)
-            unique_ids.append(sid)
-
-    section_uuids = [uuid.UUID(sid) for sid in unique_ids]
-
-    stmt = select(RequirementSection).where(
-        RequirementSection.project_id == project_id,
-        RequirementSection.id.in_(section_uuids),
+    stmt = (
+        select(RequirementSection)
+        .where(RequirementSection.project_id == project_id)
+        .order_by(RequirementSection.order_index.asc())
     )
     result = await db.execute(stmt)
-    sections = {str(s.id): s for s in result.scalars().all()}
+    section_rows = result.scalars().all()
+    sections = {section.id: section for section in section_rows}
+    current_ids = [section.id for section in section_rows]
+    reordered_ids = build_reordered_ids(data.ordered_ids, current_ids)
 
     now = datetime.now(timezone.utc)
     updated = 0
-    for idx, sid in enumerate(unique_ids):
+    for idx, sid in enumerate(reordered_ids):
         section = sections.get(sid)
         if section and section.order_index != idx:
             section.order_index = idx

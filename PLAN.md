@@ -415,6 +415,27 @@
 
 ---
 
+## 품질 리팩토링 (2026-04-16)
+
+- [x] Record API 입력 타입 정리 (UUID) + 잘못된 ID 422 조기 검증
+- [x] Record 서비스 리팩토링 (섹션 소속 검증, 일괄 승인 채번/순번 배치 계산)
+- [x] Agent/Knowledge 스키마 mutable 기본값 제거 (`default_factory` 적용)
+- [x] Record/Agent 테스트 추가 + 테스트 DB cleanup 로직 안정화
+- [x] Requirement/Section API 입력 타입 정리 (UUID) + 잘못된 ID 422 조기 검증
+- [x] Requirement `section_id=""` 하위 호환 유지 (`None` 정규화 validator)
+- [x] Requirement/Section reorder·selection 서비스 UUID 처리 리팩토링
+- [x] Requirement/Section 테스트 보강 + 전체 테스트 재검증
+- [x] Requirement/Section/Record 부분 reorder 시 전체 order_index 일관성 보장 (충돌 방지)
+- [x] Record source_document 프로젝트 소속 검증 추가 (교차 프로젝트 참조 차단)
+- [x] Record 라우터 정적 경로(`/reorder`) 우선 매칭 버그 수정
+- [x] Record approve 경로의 source_document 교차 프로젝트 참조 차단 검증 추가
+- [x] 기본 섹션 보장 로직 개선 (부분 유실 시 누락 기본 섹션만 자동 복구)
+- [x] Assist/Review 요청 ID 타입(UUID) 정규화 + invalid UUID 422 검증 일원화
+- [x] Glossary source_document 프로젝트 소속 검증 추가 (create/approve)
+- [x] Session 생성 시 프로젝트 존재 검증 추가
+
+---
+
 ## 성능 최적화 백로그
 
 ### 채팅 메시지 가상화 (Virtualization)

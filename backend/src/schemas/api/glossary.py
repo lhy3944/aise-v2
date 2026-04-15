@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +12,7 @@ class GlossaryCreate(BaseModel):
     synonyms: list[str] = Field(default_factory=list, description="동의어")
     abbreviations: list[str] = Field(default_factory=list, description="약어")
     section_tags: list[str] = Field(default_factory=list, description="관련 섹션 태그")
-    source_document_id: str | None = Field(default=None, description="출처 문서 ID")
+    source_document_id: uuid.UUID | None = Field(default=None, description="출처 문서 ID")
 
 
 class GlossaryUpdate(BaseModel):

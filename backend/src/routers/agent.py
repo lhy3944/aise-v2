@@ -1,7 +1,5 @@
 """Agent Chat API 라우터"""
 
-import uuid
-
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
@@ -24,10 +22,8 @@ async def agent_chat(body: AgentChatRequest):
     - data: {"type": "done"} -- 스트리밍 완료
     - data: {"type": "error", "content": "..."} -- 에러
     """
-    session_id = uuid.UUID(body.session_id)
-
     return StreamingResponse(
-        agent_svc.stream_chat(session_id, body.message),
+        agent_svc.stream_chat(body.session_id, body.message),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

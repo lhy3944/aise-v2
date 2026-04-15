@@ -51,6 +51,27 @@ def _to_response(item: GlossaryItem) -> GlossaryResponse:
     )
 
 
+async def _load_documents_by_ids(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    document_ids: set[uuid.UUID],
+) -> dict[uuid.UUID, KnowledgeDocument]:
+    if not document_ids:
+        return {}
+
+    stmt = select(KnowledgeDocument).where(
+        KnowledgeDocument.project_id == project_id,
+        KnowledgeDocument.id.in_(document_ids),
+    )
+    result = await db.execute(stmt)
+    documents = {doc.id: doc for doc in result.scalars().all()}
+    missing_ids = document_ids - set(documents.keys())
+    if missing_ids:
+        raise AppException(400, "유효하지 않은 지식 문서 ID가 포함되어 있습니다.")
+
+    return documents
+
+
 async def list_glossary(db: AsyncSession, project_id: uuid.UUID) -> GlossaryListResponse:
     """프로젝트의 용어 목록 조회"""
     result = await db.execute(
@@ -73,6 +94,9 @@ async def create_glossary(
         error_msg="프로젝트를 찾을 수 없습니다.",
     )
 
+    if data.source_document_id:
+        await _load_documents_by_ids(db, project_id, {data.source_document_id})
+
     item = GlossaryItem(
         project_id=project_id,
         term=data.term,
@@ -81,7 +105,7 @@ async def create_glossary(
         synonyms=data.synonyms or [],
         abbreviations=data.abbreviations or [],
         section_tags=data.section_tags or [],
-        source_document_id=uuid.UUID(data.source_document_id) if data.source_document_id else None,
+        source_document_id=data.source_document_id,
         is_approved=True,
     )
     db.add(item)
@@ -238,6 +262,11 @@ async def approve_glossary(
     """추출된 용어 후보 일괄 승인 저장"""
     logger.info(f"Glossary 승인: project_id={project_id}, count={len(data.items)}")
 
+    source_document_ids = {
+        item.source_document_id for item in data.items if item.source_document_id is not None
+    }
+    await _load_documents_by_ids(db, project_id, source_document_ids)
+
     created_items = []
     for item_data in data.items:
         item = GlossaryItem(
@@ -248,7 +277,7 @@ async def approve_glossary(
             synonyms=item_data.synonyms or [],
             abbreviations=item_data.abbreviations or [],
             section_tags=item_data.section_tags or [],
-            source_document_id=uuid.UUID(item_data.source_document_id) if item_data.source_document_id else None,
+            source_document_id=item_data.source_document_id,
             is_auto_extracted=True,
             is_approved=True,
         )

@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Literal
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +12,7 @@ from pydantic import BaseModel, Field
 
 class ReviewRequest(BaseModel):
     """요구사항 Review 요청"""
-    requirement_ids: list[str] = Field(default_factory=list, description="리뷰 대상 요구사항 ID 목록 (빈 배열이면 전체 리뷰)")
+    requirement_ids: list[uuid.UUID] = Field(default_factory=list, description="리뷰 대상 요구사항 ID 목록 (빈 배열이면 전체 리뷰)")
 
 
 class ReviewSuggestion(BaseModel):  # v2 예정

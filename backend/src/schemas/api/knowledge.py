@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # 문서 상태 타입
@@ -45,7 +45,7 @@ class KnowledgeDocumentPreviewResponse(BaseModel):
 
 class KnowledgeChatRequest(BaseModel):
     message: str
-    history: list[dict] = []  # [{"role": "user"|"assistant", "content": "..."}]
+    history: list[dict] = Field(default_factory=list)  # [{"role": "user"|"assistant", "content": "..."}]
     top_k: int = 5
 
 

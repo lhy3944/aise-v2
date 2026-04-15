@@ -14,7 +14,7 @@
 | 요구사항 CRUD | Done | Requirement CRUD + 일괄 선택/해제 + 버전 저장 + 넘버링(FR-001) + 순서 변경 + 테이블 뷰 |
 | Glossary CRUD | Done | Glossary CRUD + LLM 자동 생성 API 구현 완료 |
 | AI 어시스트 | Done | refine + suggest + chat(자연스러운 대화체 + 요청 시 추출 + 체크박스 반영) |
-| 테스트 인프라 | Done | pytest 56개 (Project/Settings/Requirement/Glossary/Assist/Review) |
+| 테스트 인프라 | Done | pytest 86개 (83 passed, 3 skipped: Session 테이블 미구축 환경) |
 | 요구사항 Review | Done | Review API + 프롬프트 + 테스트 6개 구현 완료 |
 | 요구사항 섹션(그룹핑) | Done | Section CRUD API + 프론트 UI (접기/펼치기, 드래그, 섹션 간 이동) |
 | Knowledge Repository | Done | Backend: pgvector + MinIO + RAG Chat API. Frontend: API 연동 완료 (업로드/토글/미리보기/재처리) |
@@ -25,8 +25,93 @@
 | LLM Provider | Done | LLM_PROVIDER 환경변수로 OpenAI/Azure 자동 전환 |
 | 채팅 UI | Done | Message 컴포넌트 재설계, Tool Call UI, Function Calling 연동 |
 | 다중 세션 + URL 라우팅 | Done | Session/Message DB 모델, CRUD API, /agent/[sessionId] 라우팅, 세션별 독립 스트리밍 |
+| 백엔드 품질 리팩토링 | Done | Record/Agent 입력 검증 강화, Record 승인 성능 최적화, 테스트 보강 |
 
 ## 작업 로그
+
+### 2026-04-16 (백엔드 리팩토링 2차: Requirement/Section 타입 안정화)
+- **Requirement/Section API 입력 타입 정리**:
+  - `RequirementSelectionUpdate.requirement_ids`, `RequirementReorderRequest.ordered_ids`를 UUID 배열로 변경
+  - `SectionReorderRequest.ordered_ids`를 UUID 배열로 변경
+  - 잘못된 ID 입력이 서비스 레벨 500이 아니라 요청 검증 단계(422)에서 차단되도록 정리
+- **Requirement `section_id` 하위 호환 유지**:
+  - `RequirementCreate/RequirementUpdate.section_id`를 UUID 타입으로 변경
+  - 프론트에서 보내는 `section_id: ""`를 `None`으로 정규화하는 validator 추가
+- **서비스 리팩토링**:
+  - `requirement_svc`, `section_svc`에서 수동 `uuid.UUID(...)` 변환 제거
+  - reorder/selection 로직을 UUID 타입 기반으로 단순화
+- **테스트 보강**:
+  - 기존 `tests/test_requirement.py`에 3개 케이스 추가
+    - `section_id=''` 업데이트 호환
+    - selection invalid UUID 422
+    - reorder invalid UUID 422
+  - 신규 `tests/test_section.py` 추가 (기본 섹션 자동 생성, reorder invalid UUID 422)
+  - 검증 결과: `uv run pytest tests/` → **72 passed**
+
+### 2026-04-16 (백엔드 리팩토링 3차: reorder 일관성 + Record 참조 무결성)
+- **reorder 공통 안정화**:
+  - `src/utils/reorder.py` 추가 (`build_reordered_ids`)로 부분 reorder를 전체 순서로 안전 확장
+  - `requirement_svc`, `section_svc`, `record_svc`의 reorder를 공통 규칙으로 정리
+  - 효과: 부분 reorder가 앞부분이 아니어도 `order_index` 충돌 없이 0..N-1 연속성 보장
+- **Record 참조 무결성 강화**:
+  - `record_svc`에 source document 프로젝트 소속 검증 추가
+  - create/approve에서 교차 프로젝트 `source_document_id` 참조를 400으로 차단
+- **Record 라우터 버그 수정**:
+  - `/records/reorder`가 `/{record_id}`에 가려져 422가 발생하던 경로 매칭 문제 수정
+  - 정적 경로(`/reorder`)를 동적 경로(`/{record_id}`)보다 먼저 선언
+- **테스트 보강**:
+  - `tests/test_requirement.py`: 부분 reorder 비선두 케이스 추가
+  - `tests/test_section.py`: 부분 reorder 비선두 케이스 추가
+  - `tests/test_record.py`: 부분 reorder 비선두/invalid UUID/create·approve 교차 프로젝트 source document 차단 케이스 추가
+  - 검증 결과: `uv run pytest tests/` → **78 passed**
+
+### 2026-04-16 (백엔드 리팩토링 4차: 기본 섹션 복구 안정성)
+- **기본 섹션 보장 로직 개선**:
+  - `section_svc._ensure_default_sections()`를 "기본 섹션 존재 여부(count>0)" 기준에서
+    "기본 섹션 타입별 누락 여부" 기준으로 변경
+  - 부분 유실 상태(예: 기본 5종 중 일부 삭제)에서도 누락된 기본 섹션만 자동 보강
+  - 반복 조회 시 중복 생성 없이 안정적으로 유지
+- **테스트 보강**:
+  - `tests/test_section.py`
+    - 기본 섹션 중복 생성 방지(반복 조회) 검증
+    - 기본 섹션 일부 삭제 후 자동 복구 검증
+  - 검증 결과: `uv run pytest tests/` → **80 passed**
+
+### 2026-04-16 (백엔드 리팩토링 5차: UUID 일관성 + Glossary/Session 무결성)
+- **Assist/Review 입력 검증 일원화**:
+  - `SuggestRequest.requirement_ids`, `ReviewRequest.requirement_ids`를 UUID 배열로 변경
+  - 서비스의 수동 UUID 파싱 제거
+  - invalid UUID는 400(비즈니스 에러) 대신 422(요청 검증 에러)로 일관 처리
+- **Glossary 참조 무결성 강화**:
+  - `GlossaryCreate.source_document_id`를 UUID 타입으로 변경
+  - create/approve에서 source document의 프로젝트 소속 검증 추가 (교차 프로젝트 참조 차단)
+- **Session 생성 안정성 강화**:
+  - `SessionCreate.project_id`를 UUID 타입으로 변경
+  - 세션 생성 전 프로젝트 존재 여부 검증 추가(없으면 404)
+- **테스트 보강**:
+  - `tests/test_assist.py`: suggest invalid UUID 422 케이스 추가
+  - `tests/test_review.py`: invalid UUID 기대값 422로 정렬
+  - `tests/test_glossary.py`: create/approve 교차 프로젝트 source document 차단 케이스 추가
+  - 신규 `tests/test_session.py` 추가 (세션 생성/검증 시나리오)
+    - 현재 테스트 DB에 sessions 테이블이 없는 환경을 고려해 해당 경우 skip 처리
+  - 검증 결과: `uv run pytest tests/` → **83 passed, 3 skipped**
+
+### 2026-04-16 (백엔드 리팩토링: Record/Agent 안정성 + 테스트 보강)
+- **Record API/스키마 타입 정리**:
+  - `RecordCreate/RecordUpdate/RecordReorderRequest`의 ID 필드를 UUID 타입으로 변경
+  - `/records` 조회/추출의 `section_id` 쿼리를 UUID로 변경하여 잘못된 입력을 422로 조기 차단
+- **Record 서비스 리팩토링**:
+  - 섹션 검증 헬퍼 추가: 다른 프로젝트 섹션 ID 참조 시 400으로 명확히 실패
+  - `approve_records()` 최적화: 항목별 반복 조회 제거, display_id/order_index를 배치 계산
+  - display_id 접두사/시퀀스 계산 로직을 헬퍼 함수로 분리해 중복 축소
+- **Agent/Knowledge 스키마 안정화**:
+  - `AgentChatRequest.session_id`를 UUID 타입으로 변경, 라우터 수동 UUID 파싱 제거
+  - `AgentChatRequest.attachments`, `KnowledgeChatRequest.history`에 `default_factory` 적용 (mutable 기본값 제거)
+- **테스트 보강**:
+  - 신규: `tests/test_record.py` (UUID 검증, 교차 프로젝트 섹션 차단, 승인 채번 연속성)
+  - 신규: `tests/test_agent.py` (잘못된 session_id 422)
+  - `tests/conftest.py` cleanup 개선: 실제 존재하는 테이블만 삭제하도록 변경
+  - 검증 결과: `uv run pytest tests/` → **67 passed**
 
 ### 2026-04-07 (다중 세션 + URL 라우팅)
 - **Backend 세션 모델**:

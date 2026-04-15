@@ -227,7 +227,7 @@ async def test_review_no_issues(client, mock_llm):
 
 @pytest.mark.asyncio
 async def test_review_invalid_uuid(client, mock_llm):
-    """유효하지 않은 UUID 형식의 requirement_id -- 400 에러."""
+    """유효하지 않은 UUID 형식의 requirement_id -- 422 검증 에러."""
     project_id = await create_project(client)
 
     resp = await client.post(
@@ -235,7 +235,7 @@ async def test_review_invalid_uuid(client, mock_llm):
         json={"requirement_ids": ["not-a-uuid"]},
     )
 
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     mock_llm.assert_not_awaited()
 
 

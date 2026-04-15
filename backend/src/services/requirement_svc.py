@@ -20,6 +20,7 @@ from src.schemas.api.requirement import (
     RequirementReorderRequest,
 )
 from src.utils.db import get_or_404
+from src.utils.reorder import build_reordered_ids
 
 # 타입별 display_id 접두사
 _TYPE_PREFIX = {
@@ -147,7 +148,7 @@ async def create_requirement(
         error_msg="프로젝트를 찾을 수 없습니다.",
     )
 
-    section_uuid = uuid.UUID(data.section_id) if data.section_id else None
+    section_uuid = data.section_id
     if section_uuid:
         await _validate_section(db, project_id, section_uuid, data.type.value)
 
@@ -185,13 +186,12 @@ async def update_requirement(
     )
 
     update_fields = data.model_dump(exclude_unset=True)
-    # section_id: 빈 문자열 → None (미분류), UUID 문자열 → UUID 변환 + 검증
+    # section_id: None(미분류) 또는 UUID + 검증
     if "section_id" in update_fields:
         sid = update_fields.pop("section_id")
-        if sid:
-            section_uuid = uuid.UUID(sid)
-            await _validate_section(db, project_id, section_uuid, requirement.type)
-            requirement.section_id = section_uuid
+        if sid is not None:
+            await _validate_section(db, project_id, sid, requirement.type)
+            requirement.section_id = sid
         else:
             requirement.section_id = None
     for field, value in update_fields.items():
@@ -230,11 +230,9 @@ async def update_selection(
     data: RequirementSelectionUpdate,
 ) -> int:
     """요구사항 일괄 선택/해제. 업데이트된 건수를 반환."""
-    requirement_uuids = [uuid.UUID(rid) for rid in data.requirement_ids]
-
     stmt = select(Requirement).where(
         Requirement.project_id == project_id,
-        Requirement.id.in_(requirement_uuids),
+        Requirement.id.in_(data.requirement_ids),
     )
     result = await db.execute(stmt)
     requirements = result.scalars().all()
@@ -262,26 +260,20 @@ async def reorder_requirements(
     if not data.ordered_ids:
         return 0
 
-    # 중복 ID 제거
-    seen: set[str] = set()
-    unique_ids: list[str] = []
-    for rid in data.ordered_ids:
-        if rid not in seen:
-            seen.add(rid)
-            unique_ids.append(rid)
-
-    requirement_uuids = [uuid.UUID(rid) for rid in unique_ids]
-
-    stmt = select(Requirement).where(
-        Requirement.project_id == project_id,
-        Requirement.id.in_(requirement_uuids),
+    stmt = (
+        select(Requirement)
+        .where(Requirement.project_id == project_id)
+        .order_by(Requirement.order_index.asc())
     )
     result = await db.execute(stmt)
-    requirements = {str(r.id): r for r in result.scalars().all()}
+    requirement_rows = result.scalars().all()
+    requirements = {row.id: row for row in requirement_rows}
+    current_ids = [row.id for row in requirement_rows]
+    reordered_ids = build_reordered_ids(data.ordered_ids, current_ids)
 
     now = datetime.now(timezone.utc)
     updated = 0
-    for idx, rid in enumerate(unique_ids):
+    for idx, rid in enumerate(reordered_ids):
         req = requirements.get(rid)
         if req and req.order_index != idx:
             req.order_index = idx

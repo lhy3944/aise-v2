@@ -1,6 +1,8 @@
 """Agent Chat API 스키마"""
 
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel, Field
 
 
 class AgentChatMessage(BaseModel):
@@ -11,6 +13,6 @@ class AgentChatMessage(BaseModel):
 
 
 class AgentChatRequest(BaseModel):
-    session_id: str
+    session_id: uuid.UUID
     message: str
-    attachments: list[dict] = []  # [{filename, content_type, ...}]
+    attachments: list[dict] = Field(default_factory=list)  # [{filename, content_type, ...}]
