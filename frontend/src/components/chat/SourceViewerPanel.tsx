@@ -1,10 +1,8 @@
 "use client";
 
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
 import { useEffect, useRef, useState } from "react";
-import { Streamdown } from "streamdown";
-import "streamdown/styles.css";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api";
@@ -13,8 +11,6 @@ import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { FileText, X } from "lucide-react";
 import "@/components/ui/ai-elements/css/markdown.css";
-
-const sourcePlugins = { cjk, code };
 
 interface ChunkPreview {
   document_name: string;
@@ -141,14 +137,8 @@ export function SourceViewerPanel() {
 
 function ChunkContent({ content }: { content: string }) {
   return (
-    <div className="markdown-body text-fg-primary text-sm">
-      <Streamdown
-        plugins={sourcePlugins}
-        isAnimating={false}
-        className="w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-      >
-        {content}
-      </Streamdown>
+    <div className="source-markdown text-fg-primary text-sm">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 }

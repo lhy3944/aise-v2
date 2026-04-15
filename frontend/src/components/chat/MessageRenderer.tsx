@@ -16,7 +16,7 @@ import { ToolCall } from '@/components/ui/ai-elements/tool-call';
 import { Spinner } from '@/components/ui/spinner';
 import { usePanelStore } from '@/stores/panel-store';
 import type { ChatMessage } from '@/stores/chat-store';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 interface MessageRendererProps {
   messages: ChatMessage[];
@@ -160,28 +160,65 @@ function MessageItem({
   const displayContent = parsed.cleanContent;
 
   const openSourceViewer = usePanelStore((s) => s.openSourceViewer);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  // 인라인 [N] 출처 번호를 클릭 가능한 마크다운 링크로 변환
-  const processedContent = useMemo(() => {
-    if (!displayContent || parsed.sources.length === 0) return displayContent;
-    const sourceRefs = new Set(parsed.sources.map((s) => s.ref));
-    return displayContent.replace(/\[(\d+)\]/g, (match, num) => {
-      const ref = parseInt(num);
-      if (sourceRefs.has(ref)) {
-        return `[\\[${ref}\\]](#citation-${ref})`;
-      }
-      return match;
+  // 렌더 후 DOM에서 [N] 텍스트를 클릭 가능한 span으로 래핑
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el || parsed.sources.length === 0) return;
+
+    const sourceMap = new Map(parsed.sources.map((s) => [s.ref, s]));
+
+    // 이전 래핑 복원 (멱등성 보장)
+    el.querySelectorAll('.citation-inline').forEach((span) => {
+      span.replaceWith(document.createTextNode(span.textContent || ''));
     });
+    el.normalize();
+
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    let n: Node | null;
+    while ((n = walker.nextNode())) {
+      if (/\[\d+\]/.test(n.textContent || '')) {
+        if ((n as Text).parentElement?.closest('pre, code')) continue;
+        nodes.push(n as Text);
+      }
+    }
+
+    for (const textNode of nodes) {
+      const text = textNode.textContent || '';
+      const frag = document.createDocumentFragment();
+      let lastIdx = 0;
+      let hasMatch = false;
+
+      for (const m of text.matchAll(/\[(\d+)\]/g)) {
+        const ref = parseInt(m[1]);
+        if (!sourceMap.has(ref)) continue;
+        hasMatch = true;
+        if (m.index > lastIdx) {
+          frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
+        }
+        const span = document.createElement('span');
+        span.textContent = m[0];
+        span.className = 'citation-inline';
+        span.dataset.citationRef = String(ref);
+        frag.appendChild(span);
+        lastIdx = m.index + m[0].length;
+      }
+
+      if (!hasMatch) continue;
+      if (lastIdx < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+      }
+      textNode.parentNode?.replaceChild(frag, textNode);
+    }
   }, [displayContent, parsed.sources]);
 
   const handleCitationClick = useCallback(
     (e: React.MouseEvent) => {
-      const anchor = (e.target as HTMLElement).closest('a[href^="#citation-"]');
-      if (!anchor) return;
-      e.preventDefault();
-      const refStr = anchor.getAttribute('href')?.replace('#citation-', '');
-      if (!refStr) return;
-      const refNum = parseInt(refStr);
+      const span = (e.target as HTMLElement).closest<HTMLElement>('[data-citation-ref]');
+      if (!span) return;
+      const refNum = parseInt(span.dataset.citationRef || '');
       const source = parsed.sources.find((s) => s.ref === refNum);
       if (source) {
         openSourceViewer({
@@ -214,9 +251,9 @@ function MessageItem({
 
             {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
             {displayContent && (
-              <div className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
+              <div ref={contentRef} className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
                 <MessageResponse streaming={showCursor && !!displayContent} className='w-full'>
-                  {processedContent}
+                  {displayContent}
                 </MessageResponse>
               </div>
             )}
