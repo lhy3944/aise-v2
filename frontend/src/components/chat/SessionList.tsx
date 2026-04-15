@@ -25,7 +25,11 @@ function SessionListSkeleton() {
   );
 }
 
-export function SessionList() {
+interface SessionListProps {
+  onSessionSelect?: () => void;
+}
+
+export function SessionList({ onSessionSelect }: SessionListProps) {
   const router = useRouter();
   const params = useParams();
   const activeSessionId = params?.sessionId as string | undefined;
@@ -97,7 +101,7 @@ export function SessionList() {
               key={session.id}
               session={session}
               isActive={session.id === activeSessionId}
-              onClick={() => router.push(`/agent/${session.id}`)}
+              onClick={() => { router.push(`/agent/${session.id}`); onSessionSelect?.(); }}
               onDelete={() => handleDelete(session.id)}
               onRename={(title) => handleRename(session.id, title)}
             />

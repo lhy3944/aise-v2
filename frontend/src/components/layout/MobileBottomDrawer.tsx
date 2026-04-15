@@ -76,7 +76,7 @@ export function MobileBottomDrawer() {
           </DrawerHeader>
 
           <div className='flex h-[50vh] overflow-hidden px-2 py-3'>
-            <SessionList />
+            <SessionList onSessionSelect={() => setOpen(false)} />
           </div>
 
           <div className='border-line-primary flex items-center justify-center gap-6 border-t px-4 py-3'>
