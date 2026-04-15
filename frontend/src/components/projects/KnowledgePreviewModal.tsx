@@ -12,6 +12,8 @@ import type { KnowledgeDocument, KnowledgeDocumentFileType } from '@/types/proje
 import { FileText, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import '@/components/ui/ai-elements/css/markdown.css';
 
 interface KnowledgePreviewModalProps {
   document: KnowledgeDocument | null;
@@ -99,8 +101,8 @@ export function KnowledgePreviewModal({
               </TabsTrigger>
             </TabsList>
             <TabsContent value='rendered' className='min-h-0 flex-1 overflow-y-auto p-4'>
-              <div className='prose prose-sm dark:prose-invert max-w-none'>
-                <ReactMarkdown>{previewText}</ReactMarkdown>
+              <div className='source-markdown text-fg-primary text-sm'>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewText}</ReactMarkdown>
               </div>
             </TabsContent>
             <TabsContent value='raw' className='min-h-0 flex-1 overflow-y-auto p-4'>
