@@ -214,13 +214,13 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
               <Button
                 key={card.title}
                 variant='ghost'
-                className='group border-border hover:bg-accent relative h-full w-full flex-col items-start justify-start rounded-lg border p-3 text-left whitespace-normal transition-colors'
+                className='group border-border hover:bg-accent relative h-full w-full overflow-hidden flex-col items-start justify-start rounded-lg border p-3 text-left whitespace-normal transition-colors'
                 onClick={() => onSelect?.(card.description)}
               >
                 <CornerRightUp className='text-muted-foreground absolute top-2.5 right-2.5 size-3.5 opacity-0 transition-opacity group-hover:opacity-100' />
-                <div>
-                  <p className='text-sm font-semibold'>{card.title}</p>
-                  <p className='text-muted-foreground mt-1 line-clamp-2 text-xs/6'>
+                <div className='min-w-0 w-full'>
+                  <p className='text-sm font-semibold truncate'>{card.title}</p>
+                  <p className='text-muted-foreground mt-1 line-clamp-2 break-all text-xs/6'>
                     {card.description}
                   </p>
                 </div>
