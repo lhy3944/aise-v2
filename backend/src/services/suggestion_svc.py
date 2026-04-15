@@ -79,15 +79,20 @@ def invalidate_cache(project_id: uuid.UUID) -> None:
 async def _gather_project_context(
     db: AsyncSession, project_id: uuid.UUID,
 ) -> dict:
-    """프로젝트 현황 요약"""
-    # 문서 수
+    """프로젝트 현황 요약 (fingerprint 재료 포함)"""
+    # 문서 수 + 최신 변경 시점
     doc_result = await db.execute(
-        select(func.count(KnowledgeDocument.id)).where(
+        select(
+            func.count(KnowledgeDocument.id),
+            func.max(KnowledgeDocument.updated_at),
+        ).where(
             KnowledgeDocument.project_id == project_id,
             KnowledgeDocument.status == "completed",
         )
     )
-    doc_count = doc_result.scalar() or 0
+    doc_row = doc_result.one()
+    doc_count = doc_row[0] or 0
+    doc_latest = str(doc_row[1]) if doc_row[1] else ""
 
     # 문서 이름 목록
     doc_names_result = await db.execute(
@@ -107,7 +112,7 @@ async def _gather_project_context(
     )
     sections = [{"name": n, "type": t} for n, t in section_result.all()]
 
-    # 레코드 현황
+    # 레코드 현황 + 최신 변경 시점
     record_result = await db.execute(
         select(Record.status, func.count(Record.id)).where(
             Record.project_id == project_id,
@@ -115,20 +120,35 @@ async def _gather_project_context(
     )
     record_stats = {status: count for status, count in record_result.all()}
 
-    # 용어 수
+    record_latest_result = await db.execute(
+        select(func.max(Record.updated_at)).where(
+            Record.project_id == project_id,
+        )
+    )
+    record_latest = str(record_latest_result.scalar() or "")
+
+    # 용어 수 + 최신 변경 시점
     glossary_result = await db.execute(
-        select(func.count(GlossaryItem.id)).where(
+        select(
+            func.count(GlossaryItem.id),
+            func.max(GlossaryItem.updated_at),
+        ).where(
             GlossaryItem.project_id == project_id,
         )
     )
-    glossary_count = glossary_result.scalar() or 0
+    glossary_row = glossary_result.one()
+    glossary_count = glossary_row[0] or 0
+    glossary_latest = str(glossary_row[1]) if glossary_row[1] else ""
 
     return {
         "document_count": doc_count,
         "document_names": doc_names,
+        "document_latest": doc_latest,
         "sections": sections,
         "record_stats": record_stats,
+        "record_latest": record_latest,
         "glossary_count": glossary_count,
+        "glossary_latest": glossary_latest,
     }
 
 

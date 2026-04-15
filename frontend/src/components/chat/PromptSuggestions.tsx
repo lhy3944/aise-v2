@@ -165,7 +165,7 @@ export function PromptSuggestions({ rows = 2, onSelect }: PromptSuggestionsProps
         <div className='flex items-center justify-between'>
           <div className='text-muted-foreground flex items-center gap-1.5 text-sm'>
             <LightbulbIcon className='size-5 text-red-500' fill='currentColor' />
-            <span>프로젝트에 최적화된 질문을 준비하고 있습니다...</span>
+            <span>질문을 준비하는 중...</span>
           </div>
           <Skeleton className='h-7 w-16 rounded-lg' />
         </div>
