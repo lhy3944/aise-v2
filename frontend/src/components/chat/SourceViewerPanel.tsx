@@ -27,16 +27,24 @@ export function SourceViewerPanel() {
   const [preview, setPreview] = useState<ChunkPreview | null>(null);
   const [fetchKey, setFetchKey] = useState<string | null>(null);
   const targetRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   // data가 바뀌면 fetchKey를 갱신하여 loading 파생
   const currentKey = data ? `${data.documentId}:${data.chunkIndex}` : null;
   const loading = currentKey !== null && currentKey !== fetchKey;
 
-  // 타겟 청크로 자동 스크롤
+  // 타겟 청크로 자동 스크롤 (ScrollArea viewport 내에서만)
   useEffect(() => {
-    if (!preview || !targetRef.current) return;
+    if (!preview || !targetRef.current || !viewportRef.current) return;
     const raf = requestAnimationFrame(() => {
-      targetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const viewport = viewportRef.current;
+      const target = targetRef.current;
+      if (!viewport || !target) return;
+      const targetRect = target.getBoundingClientRect();
+      const viewportRect = viewport.getBoundingClientRect();
+      const scrollTo =
+        targetRect.top - viewportRect.top + viewport.scrollTop - viewport.clientHeight / 2 + target.clientHeight / 2;
+      viewport.scrollTo({ top: Math.max(0, scrollTo), behavior: "smooth" });
     });
     return () => cancelAnimationFrame(raf);
   }, [fetchKey, preview]);
@@ -94,7 +102,7 @@ export function SourceViewerPanel() {
       </div>
 
       {/* 본문 */}
-      <ScrollArea className="flex-1 h-full">
+      <ScrollArea viewportRef={viewportRef} className="flex-1 h-full">
         <div className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">

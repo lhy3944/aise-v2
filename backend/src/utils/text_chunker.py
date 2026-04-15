@@ -18,19 +18,22 @@ def _token_count(text: str) -> int:
     return len(_get_encoding().encode(text))
 
 
-def _split_by_separators(text: str, separators: list[str]) -> list[str]:
-    """첫 번째로 매칭되는 구분자로 분할한다. 모두 실패하면 단어 단위로 분할."""
+def _split_by_separators(text: str, separators: list[str]) -> tuple[list[str], str]:
+    """첫 번째로 매칭되는 구분자로 분할한다. 모두 실패하면 단어 단위로 분할.
+
+    Returns:
+        (분할된 파트 리스트, 사용된 구분자)
+    """
     for sep in separators:
         parts = text.split(sep)
         if len(parts) > 1:
-            # 구분자를 각 파트 뒤에 다시 붙여준다 (마지막 제외)
             result = []
-            for i, part in enumerate(parts):
+            for part in parts:
                 if part.strip():
                     result.append(part.strip())
-            return result
+            return result, sep
     # fallback: 공백으로 분할
-    return text.split()
+    return text.split(), " "
 
 
 def chunk_text(
@@ -63,7 +66,7 @@ def chunk_text(
         return [text]
 
     separators = ["\n\n", "\n", ". ", "! ", "? "]
-    segments = _split_by_separators(text, separators)
+    segments, join_sep = _split_by_separators(text, separators)
 
     chunks: list[str] = []
     current_parts: list[str] = []
@@ -76,7 +79,7 @@ def chunk_text(
         if seg_tokens > max_tokens:
             # 현재 버퍼가 있으면 먼저 flush
             if current_parts:
-                chunks.append(" ".join(current_parts))
+                chunks.append(join_sep.join(current_parts))
                 current_parts = []
                 current_tokens = 0
             # 단어 단위로 강제 분할
@@ -107,7 +110,7 @@ def chunk_text(
             continue
 
         if current_tokens + seg_tokens > max_tokens and current_parts:
-            chunks.append(" ".join(current_parts))
+            chunks.append(join_sep.join(current_parts))
             # 오버랩: 마지막 부분 유지
             overlap_parts = []
             overlap_t = 0
@@ -124,6 +127,6 @@ def chunk_text(
         current_tokens += seg_tokens
 
     if current_parts:
-        chunks.append(" ".join(current_parts))
+        chunks.append(join_sep.join(current_parts))
 
     return chunks
