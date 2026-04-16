@@ -98,33 +98,16 @@ export const MessageResponse = memo(
   function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
     const { resolvedTheme } = useTheme();
     const plugins = resolvedTheme === 'dark' ? pluginsDark : pluginsLight;
-
     if (!content && !streaming) return null;
 
     return (
       <div className={cn('markdown-body text-fg-primary overflow-hidden text-sm', className)}>
         {content ? (
           <Streamdown
+            mode={streaming ? 'streaming' : 'static'}
+            parseIncompleteMarkdown={!!streaming}
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
             plugins={plugins}
-            animated={{
-              animation: 'fadeIn',
-              duration: 200,              
-              easing: 'ease-out',
-            }}
-            // mermaid={{
-            //   config: {
-            //     theme: 'dark',
-            //     themeVariables: {
-            //       primaryColor: '#ff6b6b',
-            //       primaryTextColor: '#fff',
-            //       primaryBorderColor: '#ff6b6b',
-            //       lineColor: '#f5f5f5',
-            //       secondaryColor: '#4ecdc4',
-            //       tertiaryColor: '#45b7d1',
-            //     },
-            //   },
-            // }}
             mermaid={{
               config: {
                 themeVariables: {
@@ -134,7 +117,8 @@ export const MessageResponse = memo(
                 look: 'classic',
               },
             }}
-            isAnimating={streaming}
+            isAnimating={!!streaming}
+            animated={false}
             controls={{
               code: { copy: true, download: true },
               table: { fullscreen: true, copy: true, download: true },

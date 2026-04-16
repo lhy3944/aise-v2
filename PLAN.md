@@ -463,3 +463,9 @@
 - [ ] SRS 버전 간 diff 표시 방식
 - [ ] 프로젝트 준비도 최소 기준 수치 (문서 N개 이상 등)
 - [ ] 지식 문서 중복 업로드 정책 (덮어쓰기 vs 버전 구분) — 우선 덮어쓰기 확인으로 구현
+
+## Last hotfix (2026-04-17)
+
+- [x] Frontend chat streaming hotfix: keep Streamdown active during streaming, enable incomplete-markdown parsing, and batch token flush via requestAnimationFrame to prevent reverse/out-of-order rendering artifacts.
+- [x] Code block horizontal scrollbar UX: keep horizontal scrolling but show scrollbar only on hover/focus for chat markdown and source markdown.
+- [x] Code block scrollbar behavior tuned: keep fixed horizontal scrollbar height and fade thumb in/out on hover/focus (no layout jump).

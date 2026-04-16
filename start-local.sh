@@ -8,7 +8,7 @@ set -e
 export PATH="$HOME/.local/bin:$PATH"
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKEND_PORT=9999
+BACKEND_PORT=8081
 FRONTEND_PORT=3009
 
 # 색상

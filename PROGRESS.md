@@ -406,3 +406,12 @@
 - CLAUDE.md 작성 (MVP 범위, 데이터 모델, 디렉토리 구조 정의)
 - PLAN.md / PROGRESS.md 생성
 - Backend 보일러플레이트 확인 완료 (Python 3.14, FastAPI)
+
+### 2026-04-17 (Frontend streaming hotfix)
+- Fixed root cause of stream rendering artifacts in agent chat.
+- `MessageResponse` now always uses `Streamdown` during streaming with `mode="streaming"` and `parseIncompleteMarkdown` enabled, so incomplete markdown is rendered progressively.
+- Removed block-level animation (`animated=false`) while keeping stream state (`isAnimating`) to avoid visual reflow that looked like parallel/reverse rendering.
+- `useChatStream` now buffers incoming token chunks per session and flushes them in requestAnimationFrame order, then flushes remaining buffer on done/error/stop/unmount for deterministic append order.
+- Verified with `npm run build` in `frontend` (success).
+- Improved code block scrollbar UX: horizontal scrollbar in markdown code blocks is now hidden by default and shown only on hover/focus (`markdown-body` + `source-markdown` pre blocks).
+- Refined code block scrollbar UX to fixed-height style: scrollbar track space stays stable while thumb appears with smooth color transition on hover/focus.
