@@ -34,6 +34,7 @@ export function Modal({
   footer,
   size = 'md',
   showCloseButton = true,
+  stickyFooter = true,
   onClose,
 }: ModalProps) {
   const handleOpenChange = (next: boolean) => {
@@ -45,8 +46,7 @@ export function Modal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={cn('flex flex-col gap-0 p-0', SIZE_CLASSES[size])}
-        showCloseButton={showCloseButton}        
-        autoFocus
+        showCloseButton={showCloseButton}
         onPointerDownOutside={(e) => {
           if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) {
             e.preventDefault();
@@ -66,10 +66,24 @@ export function Modal({
           </DialogHeader>
         )}
 
-        <div className='flex-1 overflow-y-auto px-6 py-5'>{children}</div>
-
-        {footer && (
-          <DialogFooter className='border-line-primary border-t px-6 py-4'>{footer}</DialogFooter>
+        {stickyFooter ? (
+          <>
+            <div className='flex-1 overflow-y-auto px-6 py-5'>{children}</div>
+            {footer && (
+              <DialogFooter className='border-line-primary border-t px-6 py-4'>
+                {footer}
+              </DialogFooter>
+            )}
+          </>
+        ) : (
+          <div className='flex-1 overflow-y-auto px-6 py-5'>
+            {children}
+            {footer && (
+              <div className='flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end'>
+                {footer}
+              </div>
+            )}
+          </div>
         )}
       </DialogContent>
     </Dialog>

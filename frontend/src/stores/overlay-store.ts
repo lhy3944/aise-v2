@@ -26,6 +26,7 @@ export interface ModalOptions {
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
+  stickyFooter?: boolean;
   onClose?: () => void;
 }
 

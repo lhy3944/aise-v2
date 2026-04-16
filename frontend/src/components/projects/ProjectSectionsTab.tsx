@@ -415,6 +415,7 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
       overlay.modal({
         title: '섹션 추가',
         size: 'md',
+        stickyFooter: false,
         content: (
           <SectionForm
             mode='add'
@@ -472,6 +473,7 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
       overlay.modal({
         title: '섹션 편집',
         size: 'md',
+        stickyFooter: false,
         content: (
           <SectionForm
             mode='edit'
