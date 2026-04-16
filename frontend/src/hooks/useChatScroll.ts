@@ -1,13 +1,11 @@
 'use client';
 
+import type { ChatMessage } from '@/stores/chat-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const BOTTOM_THRESHOLD = 80;
 
-/**
- * 채팅 스크롤 영역의 위치 추적 + 자동 스크롤 관리
- */
-export function useChatScroll(messages: unknown[]) {
+export function useChatScroll(messages: ChatMessage[]) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -18,7 +16,6 @@ export function useChatScroll(messages: unknown[]) {
     setIsAtBottom(distanceFromBottom <= BOTTOM_THRESHOLD);
   }, []);
 
-  // 스크롤 이벤트 리스너
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -26,15 +23,23 @@ export function useChatScroll(messages: unknown[]) {
     return () => el.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // 사용자가 하단에 있을 때만 자동 스크롤
+  const hasCurrentTurn =
+    messages.length >= 2 &&
+    messages[messages.length - 2]?.role === 'user' &&
+    messages[messages.length - 1]?.role === 'assistant';
+
   useEffect(() => {
+    if (hasCurrentTurn) return;
     if (isAtBottom && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isAtBottom]);
+  }, [messages, isAtBottom, hasCurrentTurn]);
 
   const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
   }, []);
 
   return { scrollRef, isAtBottom, scrollToBottom };

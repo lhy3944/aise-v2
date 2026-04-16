@@ -469,3 +469,22 @@
 - [x] Frontend chat streaming hotfix: keep Streamdown active during streaming, enable incomplete-markdown parsing, and batch token flush via requestAnimationFrame to prevent reverse/out-of-order rendering artifacts.
 - [x] Code block horizontal scrollbar UX: keep horizontal scrolling but show scrollbar only on hover/focus for chat markdown and source markdown.
 - [x] Code block scrollbar behavior tuned: keep fixed horizontal scrollbar height and fade thumb in/out on hover/focus (no layout jump).
+- [x] Markdown visual refresh: added 3 style presets (`docs`, `github`, `dense`) and set docs preset as default for chat + source markdown renderers.
+- [x] Added markdown theme preset setting with persistent storage (docs/github/dense), and applied transparent inner background style for code blocks.
+- [x] Fixed markdown preset card clipping/alignment and code-block header alignment; removed inner code-block border.
+- [x] Polished markdown preset card visual consistency with theme cards and refined code-block header separator/alignment with no shell shadow.
+
+- [x] Added chat font-size preference (small/medium/large) and applied it to user/assistant messages in agent chat.
+- [x] Refined code-block header layout: full-width bottom separator line, improved vertical alignment (language/actions), and increased Y padding.
+
+- [x] Replaced assistant pre-response spinner with Wave Dots loading indicator.
+- [x] Unified markdown outer borders (table/mermaid/code-block) with shared shell border tokens for consistent look.
+- [x] Applied proportional markdown typography scaling (base + heading hierarchy) based on chat font-size preference.
+
+- [x] Removed markdown table wrapper border layer (wrapper shell) while keeping table outer border style.
+
+- [x] Moved streaming indicator to right edge of assistant message (replace Streamdown trailing caret with custom Wave Dots).
+- [x] Restored current-turn top anchoring by preventing bottom auto-scroll override while latest user+assistant turn is active.
+- [x] Enforced markdown table wrapper shell border removal with stronger selectors and Streamdown style override order.
+
+- [x] Aligned code-block header language/actions on the same line by overriding Streamdown action wrapper positioning (absolute top row).

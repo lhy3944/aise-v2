@@ -193,6 +193,7 @@
   border-radius: 0.75rem;
   overflow: hidden;
   max-width: 100%;
+  position: relative;
 }
 
 /* 코드블록 액션 버튼: border 제거 */
@@ -201,14 +202,66 @@
   box-shadow: none !important;
 }
 
+/* 코드블럭 헤더 정렬 */
+.markdown-body [data-streamdown='code-block-header'] {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 0.75rem;
+  padding-right: 4.75rem;
+  line-height: 1.2;
+}
+
+.markdown-body [data-streamdown='code-block'] > div:has(> [data-streamdown='code-block-actions']) {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0;
+  right: 0;
+  height: 2.5rem !important;
+  margin: 0 !important;
+  padding: 0 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  border-bottom: 1px solid var(--md-code-shell-border, var(--color-line-primary));
+  margin-top: 0 !important;
+  z-index: 2;
+}
+
+.markdown-body [data-streamdown='code-block-actions'] {
+  position: static;
+  transform: none;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
 /* ── 테이블 ── */
 
 .markdown-body [data-streamdown='table-wrapper'] {
   border: none !important;
+  outline: none !important;
   background: transparent !important;
+  box-shadow: none !important;
   border-radius: 0 !important;
+  padding: 0 !important;
   max-width: 100%;
   overflow-x: auto;
+}
+
+.markdown-body :is(
+    [data-streamdown='table-block'],
+    [data-streamdown='table-container'],
+    [data-streamdown='table-shell']
+  ) {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
 }
 
 .markdown-body [data-streamdown='table'] {
@@ -216,8 +269,8 @@
   max-width: 100%;
   border-spacing: 0;
   border-collapse: separate;
-  border: 1px solid var(--color-line-primary);
-  border-radius: 6px;
+  border: 1px solid var(--md-shell-border, var(--md-code-shell-border, var(--color-line-primary)));
+  border-radius: var(--md-shell-radius, 12px);
   overflow: hidden;
   font-size: 0.875em;
   table-layout: fixed;
@@ -226,7 +279,7 @@
 .markdown-body [data-streamdown='table-header-cell'],
 .markdown-body [data-streamdown='table-cell'] {
   padding: 0.5em 0.75em;
-  border-bottom: 1px solid var(--color-line-primary);
+  border-bottom: 1px solid var(--md-table-border, var(--color-line-primary));
   text-align: left;
 }
 
@@ -347,9 +400,10 @@
 /* Table */
 .source-markdown table {
   width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--color-line-primary);
-  border-radius: 6px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--md-shell-border, var(--md-code-shell-border, var(--color-line-primary)));
+  border-radius: var(--md-shell-radius, 12px);
   overflow: hidden;
   font-size: 0.875em;
   margin-bottom: 1em;
@@ -358,8 +412,17 @@
 .source-markdown th,
 .source-markdown td {
   padding: 0.5em 0.75em;
-  border: 1px solid var(--color-line-primary);
+  border-bottom: 1px solid var(--md-table-border, var(--color-line-primary));
+  border-right: 1px solid var(--md-table-border, var(--color-line-primary));
   text-align: left;
+}
+
+.source-markdown tr:last-child td {
+  border-bottom: none;
+}
+
+.source-markdown :is(th, td):last-child {
+  border-right: none;
 }
 
 .source-markdown th {
@@ -444,3 +507,219 @@
 
 /* Images */
 .source-markdown img { max-width: 100%; border-radius: 6px; }
+
+/* --------------------------------------------------------------------------
+   Markdown theme presets
+   - markdown-theme-docs: default docs-like (current default)
+   - markdown-theme-github: neutral GitHub-like
+   - markdown-theme-dense: compact table/report focused
+   -------------------------------------------------------------------------- */
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) {
+  --md-font-size: 0.96rem;
+  --md-line-height: 1.72;
+  --md-chat-scale: 1;
+  --md-heading-weight: 700;
+  --md-heading-track: -0.01em;
+  --md-heading-color: var(--color-fg-primary);
+  --md-heading-2-border: var(--color-line-primary);
+  --md-paragraph-color: color-mix(in srgb, var(--color-fg-primary) 94%, white 6%);
+  --md-link-color: color-mix(in srgb, var(--color-accent-primary) 88%, white 12%);
+  --md-link-hover: color-mix(in srgb, var(--color-accent-primary) 100%, white 0%);
+  --md-quote-border: color-mix(in srgb, var(--color-accent-primary) 70%, var(--color-line-primary) 30%);
+  --md-quote-bg: color-mix(in srgb, var(--color-canvas-surface) 68%, transparent);
+  --md-quote-color: var(--color-fg-secondary);
+  --md-inline-code-bg: color-mix(in srgb, var(--color-canvas-surface) 84%, transparent);
+  --md-inline-code-border: color-mix(in srgb, var(--color-line-primary) 70%, transparent);
+  --md-inline-code-color: color-mix(in srgb, var(--color-fg-primary) 96%, white 4%);
+  --md-code-shell-bg: color-mix(in srgb, var(--color-canvas-surface) 64%, transparent);
+  --md-code-shell-border: color-mix(in srgb, var(--color-line-primary) 80%, transparent);
+  --md-shell-border: var(--md-code-shell-border);
+  --md-shell-radius: 12px;
+  --md-code-inner-bg: transparent;
+  --md-code-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+  --md-table-border: color-mix(in srgb, var(--color-line-primary) 86%, transparent);
+  --md-table-header-bg: color-mix(in srgb, var(--color-canvas-surface) 92%, transparent);
+  --md-table-row-even: color-mix(in srgb, var(--color-canvas-surface) 42%, transparent);
+  --md-table-row-hover: color-mix(in srgb, var(--color-canvas-surface) 68%, transparent);
+}
+
+.markdown-theme-github {
+  --md-font-size: 0.95rem;
+  --md-line-height: 1.66;
+  --md-heading-weight: 600;
+  --md-heading-track: 0;
+  --md-quote-border: color-mix(in srgb, var(--color-line-primary) 92%, transparent);
+  --md-quote-bg: transparent;
+  --md-inline-code-bg: color-mix(in srgb, var(--color-canvas-surface) 86%, transparent);
+  --md-inline-code-border: color-mix(in srgb, var(--color-line-primary) 92%, transparent);
+  --md-code-shell-bg: color-mix(in srgb, var(--color-canvas-surface) 72%, transparent);
+  --md-code-shell-border: color-mix(in srgb, var(--color-line-primary) 92%, transparent);
+  --md-code-inner-bg: transparent;
+  --md-code-shadow: none;
+}
+
+.markdown-theme-dense {
+  --md-font-size: 0.9rem;
+  --md-line-height: 1.58;
+  --md-heading-weight: 650;
+  --md-inline-code-bg: color-mix(in srgb, var(--color-canvas-surface) 88%, transparent);
+  --md-inline-code-border: color-mix(in srgb, var(--color-line-primary) 84%, transparent);
+  --md-table-header-bg: color-mix(in srgb, var(--color-canvas-surface) 96%, transparent);
+}
+
+.chat-font-small {
+  --md-chat-scale: 0.9;
+}
+
+.chat-font-medium {
+  --md-chat-scale: 1;
+}
+
+.chat-font-large {
+  --md-chat-scale: 1.1;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) {
+  font-size: calc(var(--md-font-size) * var(--md-chat-scale, 1));
+  line-height: var(--md-line-height);
+  color: var(--md-paragraph-color);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(h1, h2, h3, h4),
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) [data-streamdown^='heading-'] {
+  color: var(--md-heading-color);
+  font-weight: var(--md-heading-weight);
+  letter-spacing: var(--md-heading-track);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(h1, [data-streamdown='heading-1']) {
+  font-size: 1.68em;
+  margin-top: 1.7em;
+  margin-bottom: 0.8em;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(h2, [data-streamdown='heading-2']) {
+  font-size: 1.34em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--md-heading-2-border);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(h3, [data-streamdown='heading-3']) {
+  font-size: 1.12em;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(h4, [data-streamdown='heading-4']) {
+  font-size: 1.03em;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(a, [data-streamdown='link']) {
+  color: var(--md-link-color);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--md-link-color) 44%, transparent);
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(a, [data-streamdown='link']):hover {
+  color: var(--md-link-hover);
+  text-decoration-color: color-mix(in srgb, var(--md-link-hover) 82%, transparent);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(blockquote, [data-streamdown='blockquote']) {
+  background: var(--md-quote-bg);
+  border-left: 3px solid var(--md-quote-border);
+  color: var(--md-quote-color);
+  border-radius: 0 10px 10px 0;
+  padding: 0.5em 1em;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(code:not(pre code), [data-streamdown='inline-code']) {
+  background: var(--md-inline-code-bg);
+  border: 1px solid var(--md-inline-code-border);
+  color: var(--md-inline-code-color);
+  border-radius: 7px;
+  padding: 0.14em 0.38em;
+  font-size: 0.86em;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  [data-streamdown='code-block'] {
+  border: 1px solid var(--md-shell-border);
+  background: var(--md-code-shell-bg);
+  box-shadow: none;
+  border-radius: var(--md-shell-radius);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) [data-streamdown='code-block'] {
+  border-radius: var(--md-shell-radius);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  [data-streamdown='mermaid-block'] {
+  border: 1px solid var(--md-shell-border);
+  border-radius: var(--md-shell-radius);
+  background: var(--md-code-shell-bg);
+  box-shadow: none;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(pre, [data-streamdown='code-block-body']) {
+  border: none !important;
+  background: var(--md-code-inner-bg) !important;
+  box-shadow: none;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  [data-streamdown='code-block-body'] pre {
+  background: transparent !important;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(table, [data-streamdown='table']) {
+  table-layout: auto;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--md-shell-border);
+  border-radius: var(--md-shell-radius);
+  overflow: hidden;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(th, [data-streamdown='table-header-cell']) {
+  background: var(--md-table-header-bg);
+  font-weight: 650;
+  color: var(--md-heading-color);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) :is(th, td),
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is([data-streamdown='table-header-cell'], [data-streamdown='table-cell']) {
+  border-color: var(--md-table-border);
+  vertical-align: top;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(tr:nth-child(even), [data-streamdown='table-row']:nth-child(even)) {
+  background: var(--md-table-row-even);
+}
+
+:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense)
+  :is(tr:hover, [data-streamdown='table-row']:hover) {
+  background: var(--md-table-row-hover);
+}
+
+.markdown-theme-dense :is(td, th) {
+  padding: 0.42em 0.56em;
+}
+
+.markdown-theme-dense :is([data-streamdown='table-cell'], [data-streamdown='table-header-cell']) {
+  padding: 0.4em 0.56em;
+}

@@ -11,9 +11,8 @@ import {
   MessageContent,
   MessageResponse,
 } from '@/components/ui/ai-elements/message';
-import { Shimmer } from '@/components/ui/ai-elements/shimmer';
 import { ToolCall } from '@/components/ui/ai-elements/tool-call';
-import { Spinner } from '@/components/ui/spinner';
+import { WaveDots } from '@/components/ui/ai-elements/wave-dots';
 import { usePanelStore } from '@/stores/panel-store';
 import type { ChatMessage } from '@/stores/chat-store';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -34,27 +33,18 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   search_records: '레코드 검색',
 };
 
-/* ── 구조화 블록 파싱 ── */
-
 interface RequirementData {
   type: string;
   text: string;
   reason: string;
 }
 
-// [CLARIFY] 블록 — 코드펜스 래핑 및 직접 사용 모두 지원
 const CLARIFY_BLOCK_RE =
   /```[\w]*\s*\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]\s*```|\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]/g;
-
-// [REQUIREMENTS] 블록 — 동일 패턴
 const REQUIREMENTS_BLOCK_RE =
   /```[\w]*\s*\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]\s*```|\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]/g;
-
-// [SUGGESTIONS] 블록 — 후속 질문 제안
 const SUGGESTIONS_BLOCK_RE =
   /```[\w]*\s*\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]\s*```|\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/g;
-
-// [SOURCES] 블록 — 출처 추적 (닫는 태그 없이 끝나는 경우도 매칭)
 const SOURCES_BLOCK_RE =
   /```[\w]*\s*\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]\s*```|\[\/SOURCES\])|\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]|$)/g;
 
@@ -73,7 +63,6 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
   const sources: SourceData[] = [];
   let cleanContent = content;
 
-  // CLARIFY 블록 파싱
   for (const match of content.matchAll(CLARIFY_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -84,12 +73,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         clarifyItems.push(parsed as QuestionData);
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // REQUIREMENTS 블록 파싱
   for (const match of content.matchAll(REQUIREMENTS_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -98,12 +86,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         requirementItems.push(...(parsed as RequirementData[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // SUGGESTIONS 블록 파싱
   for (const match of content.matchAll(SUGGESTIONS_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -112,12 +99,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         suggestions.push(...(parsed as string[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // SOURCES 블록 파싱
   for (const match of content.matchAll(SOURCES_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -126,15 +112,19 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         sources.push(...(parsed as SourceData[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  return { clarifyItems, requirementItems, suggestions, sources, cleanContent: cleanContent.trim() };
+  return {
+    clarifyItems,
+    requirementItems,
+    suggestions,
+    sources,
+    cleanContent: cleanContent.trim(),
+  };
 }
-
-/* ── Message Item ── */
 
 function MessageItem({
   message,
@@ -148,28 +138,31 @@ function MessageItem({
   onSendMessage?: (text: string) => void;
 }) {
   const isUser = message.role === 'user';
-  const showCursor = isLast && isStreaming && !isUser;
+  const showStreamingIndicator = isLast && isStreaming && !isUser;
 
-  // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
   const parsed = useMemo(() => {
-    if (isUser || (isLast && isStreaming))
-      return { clarifyItems: [], requirementItems: [], suggestions: [], sources: [], cleanContent: message.content };
+    if (isUser || showStreamingIndicator) {
+      return {
+        clarifyItems: [],
+        requirementItems: [],
+        suggestions: [],
+        sources: [],
+        cleanContent: message.content,
+      };
+    }
     return parseStructuredBlocks(message.content);
-  }, [message.content, isUser, isLast, isStreaming]);
+  }, [message.content, isUser, showStreamingIndicator]);
 
   const displayContent = parsed.cleanContent;
-
   const openSourceViewer = usePanelStore((s) => s.openSourceViewer);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // 렌더 후 DOM에서 [N] 텍스트를 클릭 가능한 span으로 래핑
   useEffect(() => {
     const el = contentRef.current;
     if (!el || parsed.sources.length === 0) return;
 
     const sourceMap = new Map(parsed.sources.map((s) => [s.ref, s]));
 
-    // 이전 래핑 복원 (멱등성 보장)
     el.querySelectorAll('.citation-inline').forEach((span) => {
       span.replaceWith(document.createTextNode(span.textContent || ''));
     });
@@ -178,6 +171,7 @@ function MessageItem({
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
     let n: Node | null;
+
     while ((n = walker.nextNode())) {
       if (/\[\d+\]/.test(n.textContent || '')) {
         if ((n as Text).parentElement?.closest('pre, code')) continue;
@@ -192,21 +186,24 @@ function MessageItem({
       let hasMatch = false;
 
       for (const m of text.matchAll(/\[(\d+)\]/g)) {
-        const ref = parseInt(m[1]);
+        const ref = parseInt(m[1], 10);
         if (!sourceMap.has(ref)) continue;
         hasMatch = true;
-        if (m.index > lastIdx) {
+
+        if ((m.index ?? 0) > lastIdx) {
           frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
         }
+
         const span = document.createElement('span');
         span.textContent = m[0];
         span.className = 'citation-inline';
         span.dataset.citationRef = String(ref);
         frag.appendChild(span);
-        lastIdx = m.index + m[0].length;
+        lastIdx = (m.index ?? 0) + m[0].length;
       }
 
       if (!hasMatch) continue;
+
       if (lastIdx < text.length) {
         frag.appendChild(document.createTextNode(text.slice(lastIdx)));
       }
@@ -218,7 +215,8 @@ function MessageItem({
     (e: React.MouseEvent) => {
       const span = (e.target as HTMLElement).closest<HTMLElement>('[data-citation-ref]');
       if (!span) return;
-      const refNum = parseInt(span.dataset.citationRef || '');
+
+      const refNum = parseInt(span.dataset.citationRef || '', 10);
       const source = parsed.sources.find((s) => s.ref === refNum);
       if (source) {
         openSourceViewer({
@@ -230,7 +228,7 @@ function MessageItem({
         });
       }
     },
-    [parsed.sources, openSourceViewer],
+    [openSourceViewer, parsed.sources],
   );
 
   return (
@@ -240,26 +238,18 @@ function MessageItem({
           <MessageBubble>{message.content}</MessageBubble>
         ) : (
           <>
-            {/* 스트림 응답 대기 중 shimmer */}
-            {showCursor && !message.content && (
-              <div className='flex items-center gap-2'>
-                <Spinner className='size-4' />
-                <Shimmer className='text-sm' duration={1.5} spread={1.5}>
-                  응답을 생성하고 있습니다...
-                </Shimmer>
-              </div>
-            )}
-
-            {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
             {displayContent && (
-              <div ref={contentRef} className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
-                <MessageResponse streaming={showCursor && !!displayContent} className='w-full'>
+              <div
+                ref={contentRef}
+                className='w-full min-w-0'
+                onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}
+              >
+                <MessageResponse streaming={showStreamingIndicator && !!displayContent} className='w-full'>
                   {displayContent}
                 </MessageResponse>
               </div>
             )}
 
-            {/* Tool Calls */}
             {message.toolCalls && message.toolCalls.length > 0 && (
               <div className='w-full min-w-0'>
                 {message.toolCalls.map((tc, i) => (
@@ -275,33 +265,32 @@ function MessageItem({
               </div>
             )}
 
-            {/* REQUIREMENTS 요구사항 카드 */}
             {parsed.requirementItems.length > 0 && (
               <ExtractedRequirements
                 requirements={parsed.requirementItems}
                 onAccept={() => {
-                  // TODO: 수락된 요구사항을 레코드 스토어에 반영
+                  // TODO: accepted requirements should be reflected in record state
                 }}
               />
             )}
 
-            {/* CLARIFY 질문지 — 마지막 메시지에서만 표시 (제출 후 새 메시지 추가되면 자동 소멸) */}
             {isLast && parsed.clarifyItems.length > 0 && onSendMessage && (
               <Questionnaire questions={parsed.clarifyItems} onSubmit={onSendMessage} />
             )}
 
-            {/* SOURCES 출처 링크 */}
-            {parsed.sources.length > 0 && (
-              <SourceReference sources={parsed.sources} />
-            )}
+            {parsed.sources.length > 0 && <SourceReference sources={parsed.sources} />}
 
-            {/* SUGGESTIONS 추천 질문 — 마지막 메시지에서만 표시 */}
             {isLast && parsed.suggestions.length > 0 && onSendMessage && (
               <SuggestionChips suggestions={parsed.suggestions} onSelect={onSendMessage} />
             )}
 
-            {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
-            {!showCursor && displayContent && <MessageActions content={displayContent} />}
+            {showStreamingIndicator && (
+              <div className='flex w-full justify-end pr-1'>
+                <WaveDots className='text-fg-muted' />
+              </div>
+            )}
+
+            {!showStreamingIndicator && displayContent && <MessageActions content={displayContent} />}
           </>
         )}
       </MessageContent>

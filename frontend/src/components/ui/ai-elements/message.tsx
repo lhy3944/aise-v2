@@ -1,7 +1,14 @@
 'use client';
 
+import 'streamdown/styles.css';
 import '@/components/ui/ai-elements/css/markdown.css';
+import {
+  getChatFontScaleClassName,
+  getChatFontSizeClassName,
+} from '@/config/chat-font-size';
+import { getMarkdownThemeClassName } from '@/config/markdown-theme';
 import { cn } from '@/lib/utils';
+import { useUiPreferenceStore } from '@/stores/ui-preference-store';
 import { cjk } from '@streamdown/cjk';
 import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
@@ -10,7 +17,6 @@ import { Bot, Check, Copy, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { type ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
-import 'streamdown/styles.css';
 
 // ── Message Container ──
 
@@ -98,10 +104,21 @@ export const MessageResponse = memo(
   function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
     const { resolvedTheme } = useTheme();
     const plugins = resolvedTheme === 'dark' ? pluginsDark : pluginsLight;
+    const markdownTheme = useUiPreferenceStore((s) => s.markdownTheme);
+    const chatFontSize = useUiPreferenceStore((s) => s.chatFontSize);
+    const markdownThemeClass = getMarkdownThemeClassName(markdownTheme);
+    const chatFontScaleClass = getChatFontScaleClassName(chatFontSize);
     if (!content && !streaming) return null;
 
     return (
-      <div className={cn('markdown-body text-fg-primary overflow-hidden text-sm', className)}>
+      <div
+        className={cn(
+          'markdown-body text-fg-primary overflow-hidden',
+          markdownThemeClass,
+          chatFontScaleClass,
+          className,
+        )}
+      >
         {content ? (
           <Streamdown
             mode={streaming ? 'streaming' : 'static'}
@@ -117,7 +134,7 @@ export const MessageResponse = memo(
                 look: 'classic',
               },
             }}
-            isAnimating={!!streaming}
+            isAnimating={false}
             animated={false}
             controls={{
               code: { copy: true, download: true },
@@ -145,10 +162,14 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ children, className }: MessageBubbleProps) {
+  const chatFontSize = useUiPreferenceStore((s) => s.chatFontSize);
+  const chatFontSizeClass = getChatFontSizeClassName(chatFontSize);
+
   return (
     <div
       className={cn(
-        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
+        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 leading-relaxed whitespace-pre-wrap',
+        chatFontSizeClass,
         className,
       )}
     >
