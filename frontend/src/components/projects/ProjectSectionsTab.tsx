@@ -2,14 +2,6 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -308,11 +300,6 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
   const isMobile = useIsMobile();
   const invalidateReadiness = useReadinessStore((s) => s.invalidate);
 
-  /* ─── Mobile Drawer state ─── */
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
-  const [editingSection, setEditingSection] = useState<Section | null>(null);
-
   const fetchSections = useCallback(async () => {
     try {
       const res = await sectionService.list(projectId);
@@ -400,59 +387,47 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
     [projectId, overlay, invalidateReadiness],
   );
 
-  /* ─── Add / Edit Section (shared submit handler) ─── */
+  /* ─── Add Section ─── */
 
-  const handleFormSubmit = useCallback(
+  const handleAddSubmit = useCallback(
     async (data: { name: string; type: string; description: string; outputFormatHint: string }) => {
-      if (drawerMode === 'add') {
-        const createData: SectionCreate = {
-          name: data.name,
-          type: data.type || 'other',
-          description: data.description || null,
-          output_format_hint: data.outputFormatHint || null,
-        };
-        try {
-          const created = await sectionService.create(projectId, createData);
-          setSections((prev) => [...prev, created]);
-          invalidateReadiness();
-          setDrawerOpen(false);
-          setAdding(false);
-        } catch {
-          // 글로벌 핸들링
-        }
-      } else if (editingSection) {
-        const updateData: SectionUpdate = {
-          name: data.name || null,
-          description: data.description || null,
-          output_format_hint: data.outputFormatHint || null,
-        };
-        try {
-          const updated = await sectionService.update(
-            projectId,
-            editingSection.section_id,
-            updateData,
-          );
-          setSections((prev) =>
-            prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
-          );
-          setDrawerOpen(false);
-        } catch {
-          // 글로벌 핸들링
-        }
+      const createData: SectionCreate = {
+        name: data.name,
+        type: data.type || 'other',
+        description: data.description || null,
+        output_format_hint: data.outputFormatHint || null,
+      };
+      try {
+        const created = await sectionService.create(projectId, createData);
+        setSections((prev) => [...prev, created]);
+        invalidateReadiness();
+        overlay.closeModal();
+        setAdding(false);
+      } catch {
+        // 글로벌 핸들링
       }
     },
-    [drawerMode, editingSection, projectId, invalidateReadiness],
+    [projectId, invalidateReadiness, overlay],
   );
 
   const handleAddClick = useCallback(() => {
     if (isMobile) {
-      setDrawerMode('add');
-      setEditingSection(null);
-      setDrawerOpen(true);
+      overlay.modal({
+        title: '섹션 추가',
+        size: 'md',
+        stickyFooter: false,
+        content: (
+          <SectionForm
+            mode='add'
+            onSubmit={handleAddSubmit}
+          />
+        ),
+        footer: <SectionFormActions mode='add' onCancel={() => overlay.closeModal()} />,
+      });
     } else {
       setAdding(true);
     }
-  }, [isMobile]);
+  }, [isMobile, overlay, handleAddSubmit]);
 
   const handleInlineAdd = useCallback(
     async (name: string, type: string) => {
@@ -473,53 +448,48 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
 
   const handleEdit = useCallback(
     (section: Section) => {
-      if (isMobile) {
-        setDrawerMode('edit');
-        setEditingSection(section);
-        setDrawerOpen(true);
-      } else {
-        const handleEditSubmit = async (data: {
-          name: string;
-          type: string;
-          description: string;
-          outputFormatHint: string;
-        }) => {
-          const updateData: SectionUpdate = {
-            name: data.name || null,
-            description: data.description || null,
-            output_format_hint: data.outputFormatHint || null,
-          };
-          try {
-            const updated = await sectionService.update(projectId, section.section_id, updateData);
-            setSections((prev) =>
-              prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
-            );
-            overlay.closeModal();
-          } catch {
-            // 글로벌 핸들링
-          }
+      const handleEditSubmit = async (data: {
+        name: string;
+        type: string;
+        description: string;
+        outputFormatHint: string;
+      }) => {
+        const updateData: SectionUpdate = {
+          name: data.name || null,
+          description: data.description || null,
+          output_format_hint: data.outputFormatHint || null,
         };
+        try {
+          const updated = await sectionService.update(projectId, section.section_id, updateData);
+          setSections((prev) =>
+            prev.map((s) => (s.section_id === updated.section_id ? updated : s)),
+          );
+          overlay.closeModal();
+        } catch {
+          // 글로벌 핸들링
+        }
+      };
 
-        overlay.modal({
-          title: '섹션 편집',
-          size: 'md',
-          content: (
-            <SectionForm
-              mode='edit'
-              initial={{
-                name: section.name,
-                type: section.type,
-                description: section.description ?? '',
-                outputFormatHint: section.output_format_hint ?? '',
-              }}
-              onSubmit={handleEditSubmit}
-            />
-          ),
-          footer: <SectionFormActions mode='edit' onCancel={() => overlay.closeModal()} />,
-        });
-      }
+      overlay.modal({
+        title: '섹션 편집',
+        size: 'md',
+        stickyFooter: false,
+        content: (
+          <SectionForm
+            mode='edit'
+            initial={{
+              name: section.name,
+              type: section.type,
+              description: section.description ?? '',
+              outputFormatHint: section.output_format_hint ?? '',
+            }}
+            onSubmit={handleEditSubmit}
+          />
+        ),
+        footer: <SectionFormActions mode='edit' onCancel={() => overlay.closeModal()} />,
+      });
     },
-    [isMobile, projectId, overlay],
+    [projectId, overlay],
   );
 
   if (loading) {
@@ -570,46 +540,6 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           </SortableContext>
         </DndContext>
       </div>
-
-      {/* ── Mobile: Bottom Drawer for Add/Edit ── */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen} repositionInputs={false}>
-        <DrawerContent>
-          <DrawerHeader className='border-line-primary border-b text-left'>
-            <DrawerTitle className='text-fg-primary text-base font-semibold'>
-              {drawerMode === 'add' ? '섹션 추가' : '섹션 편집'}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className='px-4 py-4'>
-            <SectionForm
-              key={editingSection?.section_id ?? drawerMode}
-              mode={drawerMode}
-              initial={
-                editingSection
-                  ? {
-                      name: editingSection.name,
-                      type: editingSection.type,
-                      description: editingSection.description ?? '',
-                      outputFormatHint: editingSection.output_format_hint ?? '',
-                    }
-                  : undefined
-              }
-              onSubmit={handleFormSubmit}
-            />
-          </div>
-          <DrawerFooter className='border-line-primary border-t'>
-            <div className='flex justify-end gap-2'>
-              <DrawerClose asChild>
-                <Button variant='outline' size='sm'>
-                  취소
-                </Button>
-              </DrawerClose>
-              <Button size='sm' type='submit' form={SECTION_FORM_ID}>
-                {drawerMode === 'add' ? '추가' : '저장'}
-              </Button>
-            </div>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
     </div>
   );
 }
