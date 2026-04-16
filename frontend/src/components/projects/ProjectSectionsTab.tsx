@@ -38,6 +38,8 @@ interface ProjectSectionsTabProps {
 
 /* ─── Section Add/Edit Form (used inside modal) ─── */
 
+const SECTION_FORM_ID = 'section-form';
+
 interface SectionFormProps {
   mode: 'add' | 'edit';
   initial?: { name: string; type: string; description: string; outputFormatHint: string };
@@ -47,16 +49,16 @@ interface SectionFormProps {
     description: string;
     outputFormatHint: string;
   }) => void;
-  onCancel: () => void;
 }
 
-function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
+function SectionForm({ mode, initial, onSubmit }: SectionFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [type, setType] = useState(initial?.type ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [outputFormatHint, setOutputFormatHint] = useState(initial?.outputFormatHint ?? '');
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!name.trim()) return;
     onSubmit({
       name: name.trim(),
@@ -67,7 +69,7 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
   };
 
   return (
-    <div className='flex flex-col gap-4'>
+    <form id={SECTION_FORM_ID} onSubmit={handleSubmit} className='flex flex-col gap-4' noValidate>
       <div className='flex flex-col gap-1.5'>
         <Label htmlFor='section-name'>
           섹션 이름 <span className='text-destructive'>*</span>
@@ -78,7 +80,6 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
       </div>
       {mode === 'add' && (
@@ -89,7 +90,6 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
             placeholder='예: other'
             value={type}
             onChange={(e) => setType(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           />
           <p className='text-fg-muted text-xs'>비워두면 &quot;other&quot;로 설정됩니다.</p>
         </div>
@@ -111,17 +111,27 @@ function SectionForm({ mode, initial, onSubmit, onCancel }: SectionFormProps) {
           placeholder='예: 표 형태, 번호 목록 등'
           value={outputFormatHint}
           onChange={(e) => setOutputFormatHint(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
       </div>
-      <div className='flex justify-end gap-2 pt-2'>
-        <Button variant='ghost' size='sm' onClick={onCancel}>
-          취소
-        </Button>
-        <Button size='sm' onClick={handleSubmit} disabled={!name.trim()}>
-          {mode === 'add' ? '추가' : '저장'}
-        </Button>
-      </div>
+    </form>
+  );
+}
+
+function SectionFormActions({
+  mode,
+  onCancel,
+}: {
+  mode: 'add' | 'edit';
+  onCancel: () => void;
+}) {
+  return (
+    <div className='flex justify-end gap-2'>
+      <Button variant='outline' size='sm' onClick={onCancel}>
+        취소
+      </Button>
+      <Button size='sm' type='submit' form={SECTION_FORM_ID}>
+        {mode === 'add' ? '추가' : '저장'}
+      </Button>
     </div>
   );
 }
@@ -409,9 +419,9 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
           <SectionForm
             mode='add'
             onSubmit={handleAddSubmit}
-            onCancel={() => overlay.closeModal()}
           />
         ),
+        footer: <SectionFormActions mode='add' onCancel={() => overlay.closeModal()} />,
       });
     } else {
       setAdding(true);
@@ -472,9 +482,9 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
               outputFormatHint: section.output_format_hint ?? '',
             }}
             onSubmit={handleEditSubmit}
-            onCancel={() => overlay.closeModal()}
           />
         ),
+        footer: <SectionFormActions mode='edit' onCancel={() => overlay.closeModal()} />,
       });
     },
     [projectId, overlay],

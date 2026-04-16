@@ -1,8 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -67,8 +69,8 @@ export function KnowledgePreviewModal({
 
   return (
     <Dialog open={!!doc} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='flex max-h-[80vh] flex-col sm:max-w-4xl'>
-        <DialogHeader>
+      <DialogContent className='flex flex-col gap-0 p-0 sm:max-w-4xl'>
+        <DialogHeader className='border-line-primary border-b px-6 py-4'>
           <div className='flex items-center gap-3'>
             <div className='bg-canvas-surface flex size-8 items-center justify-center rounded-md'>
               <FileText className='text-fg-muted size-4' />
@@ -92,58 +94,66 @@ export function KnowledgePreviewModal({
           </div>
         </DialogHeader>
 
-        {loading ? (
-          <div className='flex items-center justify-center py-12'>
-            <Loader2 className='text-fg-muted size-6 animate-spin' />
-          </div>
-        ) : canRender ? (
-          <Tabs
-            defaultValue={defaultTab}
-            className='flex min-h-0 flex-1 flex-col'
-          >
-            <TabsList
-              variant='line'
-              className='border-line-subtle w-full justify-start border-b'
+        <div className='flex min-h-0 flex-1 flex-col'>
+          {loading ? (
+            <div className='flex items-center justify-center py-12'>
+              <Loader2 className='text-fg-muted size-6 animate-spin' />
+            </div>
+          ) : canRender ? (
+            <Tabs
+              defaultValue={defaultTab}
+              className='flex min-h-0 flex-1 flex-col'
             >
-              <TabsTrigger
+              <TabsList
+                variant='line'
+                className='border-line-subtle w-full shrink-0 justify-start border-b px-6'
+              >
+                <TabsTrigger
+                  value='rendered'
+                  className='data-[state=active]:text-accent-primary after:bg-accent-primary'
+                >
+                  렌더링
+                </TabsTrigger>
+                <TabsTrigger
+                  value='raw'
+                  className='data-[state=active]:text-accent-primary after:bg-accent-primary'
+                >
+                  원문
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent
                 value='rendered'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary'
+                className='min-h-0 flex-1 overflow-y-auto px-6 py-4'
               >
-                렌더링
-              </TabsTrigger>
-              <TabsTrigger
+                <div className='source-markdown text-fg-primary text-sm'>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {previewText}
+                  </ReactMarkdown>
+                </div>
+              </TabsContent>
+              <TabsContent
                 value='raw'
-                className='data-[state=active]:text-accent-primary after:bg-accent-primary'
+                className='min-h-0 flex-1 overflow-y-auto px-6 py-4'
               >
-                원문
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent
-              value='rendered'
-              className='min-h-0 flex-1 overflow-y-auto p-4'
-            >
-              <div className='source-markdown text-fg-primary text-sm'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <pre className='text-fg-secondary whitespace-pre-wrap text-xs leading-relaxed'>
                   {previewText}
-                </ReactMarkdown>
-              </div>
-            </TabsContent>
-            <TabsContent
-              value='raw'
-              className='min-h-0 flex-1 overflow-y-auto p-4'
-            >
+                </pre>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
               <pre className='text-fg-secondary whitespace-pre-wrap text-xs leading-relaxed'>
                 {previewText}
               </pre>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className='min-h-0 flex-1 overflow-y-auto rounded-lg border p-4'>
-            <pre className='text-fg-secondary whitespace-pre-wrap text-xs leading-relaxed'>
-              {previewText}
-            </pre>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className='border-line-primary border-t px-6 py-4'>
+          <Button variant='outline' onClick={onClose}>
+            닫기
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

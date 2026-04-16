@@ -137,7 +137,7 @@ export function LabsDialog({ open, onOpenChange }: LabsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className='flex h-[80vh] w-[90vw] max-w-[1200px] flex-col gap-0 overflow-hidden p-0 sm:w-[90vw] sm:max-w-[1200px] md:w-[80vw] lg:w-full'
+        className='flex h-[80vh] max-h-[calc(100dvh-7.5rem)] w-[90vw] max-w-[1200px] flex-col gap-0 overflow-hidden p-0 sm:w-[90vw] sm:max-w-[1200px] md:w-[80vw] lg:w-full'
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader className='px-6 pt-6 pb-4 text-left'>

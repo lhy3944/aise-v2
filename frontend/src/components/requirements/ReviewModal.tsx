@@ -3,10 +3,12 @@
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Copy, Lightbulb, ShieldCheck } from 'lucide-react';
 import type {
@@ -79,7 +81,7 @@ function IssueCard({ issue }: { issue: ReviewIssue }) {
 
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 px-6 py-4">
       {/* Header skeleton */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-6 w-40" />
@@ -124,27 +126,17 @@ export function ReviewModal({
 }: ReviewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-row items-center justify-between gap-4">
-          <DialogTitle>요구사항 리뷰 결과</DialogTitle>
-        </DialogHeader>
-        {isLoading ? (
-          <LoadingSkeleton />
-        ) : !reviewData ? (
-          <div className="py-12 text-center text-sm text-fg-muted">
-            리뷰 데이터가 없습니다
-          </div>
-        ) : (
-          <>
-            {/* Summary Badges */}
-            <div className="flex items-center gap-2">
+      <DialogContent className="max-w-2xl flex flex-col gap-0 p-0">
+        <DialogHeader className="border-line-primary border-b px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <DialogTitle>요구사항 리뷰 결과</DialogTitle>
+            {reviewData && (
               <div className="flex items-center gap-2">
                 {reviewData.summary.ready_for_next ? (
                   <Badge className="bg-green-100 text-green-700 border border-green-200">
                     다음 단계 진행 가능
                   </Badge>
                 ) : (
-                  /* v1에서는 항상 true, v2에서 활성화 예정 */
                   <Badge className="bg-orange-100 text-orange-700 border border-orange-200">
                     충돌 해결 권장
                   </Badge>
@@ -168,24 +160,30 @@ export function ReviewModal({
                   </Badge>
                 )}
               </div>
-            </div>
+            )}
+          </div>
+        </DialogHeader>
 
-            {/* Issue List */}
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              {reviewData.issues.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <div className="flex flex-col gap-3 pb-2">
-                  {reviewData.issues.map((issue) => (
-                    <IssueCard key={issue.issue_id} issue={issue} />
-                  ))}
-                </div>
-              )}
-            </div>
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : !reviewData ? (
+          <div className="py-12 text-center text-sm text-fg-muted">
+            리뷰 데이터가 없습니다
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+            {reviewData.issues.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reviewData.issues.map((issue) => (
+                  <IssueCard key={issue.issue_id} issue={issue} />
+                ))}
+              </div>
+            )}
 
-            {/* Feedback */}
             {reviewData.summary.feedback && (
-              <div className="rounded-md border border-line-subtle bg-muted/30 p-3 shrink-0">
+              <div className="rounded-md border border-line-subtle bg-muted/30 p-3 mt-4">
                 <span className="text-xs font-medium text-fg-muted">
                   종합 피드백
                 </span>
@@ -194,8 +192,14 @@ export function ReviewModal({
                 </p>
               </div>
             )}
-          </>
+          </div>
         )}
+
+        <DialogFooter className="border-line-primary border-t px-6 py-4">
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
+            닫기
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
