@@ -1,10 +1,8 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -70,9 +68,9 @@ export function KnowledgePreviewModal({
   return (
     <Dialog open={!!doc} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className='flex flex-col gap-0 p-0 sm:max-w-4xl'>
-        <DialogHeader className='border-line-primary border-b px-6 py-4'>
+        <DialogHeader className='border-line-primary border-b px-6 py-4 pr-12'>
           <div className='flex items-center gap-3'>
-            <div className='bg-canvas-surface flex size-8 items-center justify-center rounded-md'>
+            <div className='bg-canvas-surface flex size-8 shrink-0 items-center justify-center rounded-md'>
               <FileText className='text-fg-muted size-4' />
             </div>
             <div className='min-w-0 flex-1'>
@@ -148,12 +146,6 @@ export function KnowledgePreviewModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className='border-line-primary border-t px-6 py-4'>
-          <Button variant='outline' onClick={onClose}>
-            닫기
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
