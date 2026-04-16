@@ -3,9 +3,18 @@
 import { KnowledgePreviewModal } from '@/components/projects/KnowledgePreviewModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useOverlay } from '@/hooks/useOverlay';
 import { cn } from '@/lib/utils';
 import { knowledgeService } from '@/services/knowledge-service';
@@ -33,7 +42,11 @@ import { Textarea } from '../ui/textarea';
 
 type KnowledgeInputMode = 'file' | 'text';
 
-const INPUT_MODES: { value: KnowledgeInputMode; label: string; icon: typeof Upload }[] = [
+const INPUT_MODES: {
+  value: KnowledgeInputMode;
+  label: string;
+  icon: typeof Upload;
+}[] = [
   { value: 'file', label: '첨부 파일', icon: Upload },
   { value: 'text', label: '텍스트 입력', icon: Text },
 ];
@@ -59,7 +72,11 @@ const STATUS_CONFIG: Record<
   { icon: typeof FileText; label: string; color: string }
 > = {
   pending: { icon: Clock, label: '대기', color: 'text-gray-500' },
-  processing: { icon: Loader2, label: '분석중', color: 'text-amber-600 dark:text-amber-400' },
+  processing: {
+    icon: Loader2,
+    label: '분석중',
+    color: 'text-amber-600 dark:text-amber-400',
+  },
   completed: {
     icon: Check,
     label: '완료',
@@ -79,12 +96,16 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(
+    null,
+  );
   const [inputMode, setInputMode] = useState<KnowledgeInputMode>('file');
   const [textContent, setTextContent] = useState('');
   const [textFormat, setTextFormat] = useState<'txt' | 'md'>('txt');
   const [textSubmitting, setTextSubmitting] = useState(false);
-  const projectName = useProjectStore((s) => s.currentProject?.name ?? 'project');
+  const projectName = useProjectStore(
+    (s) => s.currentProject?.name ?? 'project',
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const overlay = useOverlay();
   const invalidateReadiness = useReadinessStore((s) => s.invalidate);
@@ -187,9 +208,15 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const handleToggle = useCallback(
     async (doc: KnowledgeDocument) => {
       try {
-        const updated = await knowledgeService.toggle(projectId, doc.document_id, !doc.is_active);
+        const updated = await knowledgeService.toggle(
+          projectId,
+          doc.document_id,
+          !doc.is_active,
+        );
         setDocuments((prev) =>
-          prev.map((d) => (d.document_id === updated.document_id ? updated : d)),
+          prev.map((d) =>
+            d.document_id === updated.document_id ? updated : d,
+          ),
         );
         invalidateReadiness();
       } catch {
@@ -204,9 +231,14 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     async (e: React.MouseEvent, doc: KnowledgeDocument) => {
       e.stopPropagation();
       try {
-        const updated = await knowledgeService.reprocess(projectId, doc.document_id);
+        const updated = await knowledgeService.reprocess(
+          projectId,
+          doc.document_id,
+        );
         setDocuments((prev) =>
-          prev.map((d) => (d.document_id === updated.document_id ? updated : d)),
+          prev.map((d) =>
+            d.document_id === updated.document_id ? updated : d,
+          ),
         );
       } catch {
         // 글로벌 핸들링
@@ -227,7 +259,9 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
         onConfirm: async () => {
           try {
             await knowledgeService.delete(projectId, doc.document_id);
-            setDocuments((prev) => prev.filter((d) => d.document_id !== doc.document_id));
+            setDocuments((prev) =>
+              prev.filter((d) => d.document_id !== doc.document_id),
+            );
             invalidateReadiness();
           } catch {
             // 글로벌 핸들링
@@ -249,7 +283,13 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
 
     setTextSubmitting(true);
     try {
-      await knowledgeService.uploadText(projectId, title, trimmedContent, false, textFormat);
+      await knowledgeService.uploadText(
+        projectId,
+        title,
+        trimmedContent,
+        false,
+        textFormat,
+      );
       await fetchDocuments();
       invalidateReadiness();
       setTextContent('');
@@ -258,7 +298,14 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     } finally {
       setTextSubmitting(false);
     }
-  }, [projectId, projectName, textContent, textFormat, fetchDocuments, invalidateReadiness]);
+  }, [
+    projectId,
+    projectName,
+    textContent,
+    textFormat,
+    fetchDocuments,
+    invalidateReadiness,
+  ]);
 
   // 카드 클릭 → 미리보기 모달
   const handleCardClick = useCallback((doc: KnowledgeDocument) => {
@@ -276,8 +323,8 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
       {/* Info Banner */}
       <div className='bg-primary/5 border-primary/20 rounded-lg border p-4'>
         <p className='text-sm'>
-          프로젝트에 관련 문서(PRD, 기술 스펙 등)를 업로드하면 에이전트가 분석하여 레코드를 추출하고
-          SRS를 생성합니다.
+          프로젝트에 관련 문서(PRD, 기술 스펙 등)를 업로드하면 에이전트가
+          분석하여 레코드를 추출하고 SRS를 생성합니다.
         </p>
       </div>
 
@@ -327,7 +374,9 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
               )}
             </div>
             <p className='text-fg-primary text-sm font-medium'>
-              {uploading ? '업로드 중...' : '파일을 드래그하거나 클릭하여 업로드'}
+              {uploading
+                ? '업로드 중...'
+                : '파일을 드래그하거나 클릭하여 업로드'}
             </p>
             <p className='text-fg-muted mt-1 text-xs'>TXT, PDF, MD</p>
             <input
@@ -353,33 +402,26 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
             />
             <div className='flex items-center justify-between'>
               <p className='text-fg-muted text-xs'>
-                {textContent.length > 0 && `${textContent.length.toLocaleString()}자`}
+                {textContent.length > 0 &&
+                  `${textContent.length.toLocaleString()}자`}
               </p>
               <div className='flex items-center gap-2'>
-                <div className='border-line-primary flex rounded-md border text-xs'>
-                  <button
-                    onClick={() => setTextFormat('txt')}
-                    className={cn(
-                      'px-2.5 py-1 transition-colors',
-                      textFormat === 'txt'
-                        ? 'bg-canvas-surface text-fg-primary'
-                        : 'text-fg-muted hover:text-fg-secondary',
-                    )}
-                  >
+                <ToggleGroup
+                  type='single'
+                  value={textFormat}
+                  onValueChange={(v) => {
+                    if (v) setTextFormat(v as 'txt' | 'md');
+                  }}
+                  variant='outline'
+                  size='sm'
+                >
+                  <ToggleGroupItem value='txt' className='text-xs'>
                     텍스트
-                  </button>
-                  <button
-                    onClick={() => setTextFormat('md')}
-                    className={cn(
-                      'border-line-primary border-l px-2.5 py-1 transition-colors',
-                      textFormat === 'md'
-                        ? 'bg-canvas-surface text-fg-primary'
-                        : 'text-fg-muted hover:text-fg-secondary',
-                    )}
-                  >
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value='md' className='text-xs'>
                     마크다운
-                  </button>
-                </div>
+                  </ToggleGroupItem>
+                </ToggleGroup>
                 <Button
                   onClick={handleTextSubmit}
                   disabled={!textContent.trim() || textSubmitting}
@@ -401,7 +443,9 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
       {/* Document List */}
       {documents.length > 0 && (
         <div className='flex flex-col gap-2'>
-          <h3 className='text-fg-primary text-sm font-semibold'>문서 {documents.length}개</h3>
+          <h3 className='text-fg-primary text-sm font-semibold'>
+            문서 {documents.length}개
+          </h3>
           <div className='border-line-primary divide-line-primary divide-y rounded-lg border'>
             {documents.map((doc) => {
               const fileType = doc.file_type as KnowledgeDocumentFileType;
@@ -422,7 +466,8 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                   <div
                     className={cn(
                       'flex size-9 shrink-0 items-center justify-center rounded-md',
-                      FILE_TYPE_COLOR[fileType] ?? 'bg-gray-500/10 text-gray-600',
+                      FILE_TYPE_COLOR[fileType] ??
+                        'bg-gray-500/10 text-gray-600',
                     )}
                   >
                     <Icon className='size-4' />
@@ -430,10 +475,14 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
 
                   {/* Name + size */}
                   <div className='min-w-0 flex-1'>
-                    <p className='text-fg-primary truncate text-sm font-medium'>{doc.name}</p>
+                    <p className='text-fg-primary truncate text-sm font-medium'>
+                      {doc.name}
+                    </p>
                     <div className='text-fg-muted flex items-center gap-2 text-xs'>
                       <span>{formatFileSize(doc.size_bytes)}</span>
-                      {doc.status === 'completed' && <span>· {doc.chunk_count}개 청크</span>}
+                      {doc.status === 'completed' && (
+                        <span>· {doc.chunk_count}개 청크</span>
+                      )}
                     </div>
                   </div>
 
@@ -453,17 +502,27 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                         </Badge>
                       </HoverCardTrigger>
                       <HoverCardContent className='w-72 text-sm'>
-                        <p className='text-fg-muted mb-1 text-xs font-medium'>오류 메시지</p>
-                        <p className='text-xs wrap-break-word text-red-500'>{doc.error_message}</p>
+                        <p className='text-fg-muted mb-1 text-xs font-medium'>
+                          오류 메시지
+                        </p>
+                        <p className='text-xs wrap-break-word text-red-500'>
+                          {doc.error_message}
+                        </p>
                       </HoverCardContent>
                     </HoverCard>
                   ) : (
                     <Badge
                       variant='outline'
-                      className={cn('shrink-0 px-2 text-xs [&>svg]:size-4', statusConfig.color)}
+                      className={cn(
+                        'shrink-0 px-2 text-xs [&>svg]:size-4',
+                        statusConfig.color,
+                      )}
                     >
                       <StatusIcon
-                        className={cn('', doc.status === 'processing' && 'animate-spin')}
+                        className={cn(
+                          '',
+                          doc.status === 'processing' && 'animate-spin',
+                        )}
                       />
                       {statusConfig.label}
                     </Badge>
@@ -523,7 +582,9 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
           <div className='bg-canvas-surface mb-4 flex size-16 items-center justify-center rounded-full'>
             <FileText className='text-fg-muted size-6' />
           </div>
-          <p className='text-fg-primary text-sm font-medium'>아직 업로드된 문서가 없습니다</p>
+          <p className='text-fg-primary text-sm font-medium'>
+            아직 업로드된 문서가 없습니다
+          </p>
           <p className='text-fg-muted mt-1 text-sm'>
             위 영역에 파일을 드래그하거나 클릭하여 업로드하세요
           </p>

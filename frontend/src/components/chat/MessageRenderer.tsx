@@ -1,8 +1,14 @@
 'use client';
 
 import { ExtractedRequirements } from '@/components/chat/ExtractedRequirements';
-import { Questionnaire, type QuestionData } from '@/components/chat/Questionnaire';
-import { SourceReference, type SourceData } from '@/components/chat/SourceReference';
+import {
+  Questionnaire,
+  type QuestionData,
+} from '@/components/chat/Questionnaire';
+import {
+  SourceReference,
+  type SourceData,
+} from '@/components/chat/SourceReference';
 import { SuggestionChips } from '@/components/chat/SuggestionChips';
 import {
   Message,
@@ -130,7 +136,13 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  return { clarifyItems, requirementItems, suggestions, sources, cleanContent: cleanContent.trim() };
+  return {
+    clarifyItems,
+    requirementItems,
+    suggestions,
+    sources,
+    cleanContent: cleanContent.trim(),
+  };
 }
 
 /* ── Message Item ── */
@@ -141,191 +153,245 @@ interface MessageItemProps {
   onSendMessage?: (text: string) => void;
 }
 
-const MessageItem = memo(function MessageItem({
-  message,
-  isLast,
-  onSendMessage,
-}: MessageItemProps) {
-  const isUser = message.role === 'user';
-  const showCursor = !isUser && message.status === 'streaming';
+const MessageItem = memo(
+  function MessageItem({ message, isLast, onSendMessage }: MessageItemProps) {
+    const isUser = message.role === 'user';
+    const showCursor = !isUser && message.status === 'streaming';
 
-  // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
-  const parsed = useMemo(() => {
-    if (isUser || message.status === 'streaming')
-      return { clarifyItems: [], requirementItems: [], suggestions: [], sources: [], cleanContent: message.content };
-    return parseStructuredBlocks(message.content);
-  }, [message.content, message.status, isUser]);
+    // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
+    const parsed = useMemo(() => {
+      if (isUser || message.status === 'streaming')
+        return {
+          clarifyItems: [],
+          requirementItems: [],
+          suggestions: [],
+          sources: [],
+          cleanContent: message.content,
+        };
+      return parseStructuredBlocks(message.content);
+    }, [message.content, message.status, isUser]);
 
-  const displayContent = parsed.cleanContent;
+    const displayContent = parsed.cleanContent;
 
-  const openSourceViewer = usePanelStore((s) => s.openSourceViewer);
-  const contentRef = useRef<HTMLDivElement>(null);
+    const openSourceViewer = usePanelStore((s) => s.openSourceViewer);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-  // 렌더 후 DOM에서 [N] 텍스트를 클릭 가능한 span으로 래핑
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el || parsed.sources.length === 0) return;
+    // 렌더 후 DOM에서 [N] 텍스트를 클릭 가능한 span으로 래핑
+    useEffect(() => {
+      const el = contentRef.current;
+      if (!el || parsed.sources.length === 0) return;
 
-    const sourceMap = new Map(parsed.sources.map((s) => [s.ref, s]));
+      const sourceMap = new Map(parsed.sources.map((s) => [s.ref, s]));
 
-    // 이전 래핑 복원 (멱등성 보장)
-    el.querySelectorAll('.citation-inline').forEach((span) => {
-      span.replaceWith(document.createTextNode(span.textContent || ''));
-    });
-    el.normalize();
+      // 이전 래핑 복원 (멱등성 보장)
+      el.querySelectorAll('.citation-inline').forEach((span) => {
+        span.replaceWith(document.createTextNode(span.textContent || ''));
+      });
+      el.normalize();
 
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    const nodes: Text[] = [];
-    let n: Node | null;
-    while ((n = walker.nextNode())) {
-      if (/\[\d+\]/.test(n.textContent || '')) {
-        if ((n as Text).parentElement?.closest('pre, code')) continue;
-        nodes.push(n as Text);
-      }
-    }
-
-    for (const textNode of nodes) {
-      const text = textNode.textContent || '';
-      const frag = document.createDocumentFragment();
-      let lastIdx = 0;
-      let hasMatch = false;
-
-      for (const m of text.matchAll(/\[(\d+)\]/g)) {
-        const ref = parseInt(m[1]);
-        if (!sourceMap.has(ref)) continue;
-        hasMatch = true;
-        if (m.index > lastIdx) {
-          frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const nodes: Text[] = [];
+      let n: Node | null;
+      while ((n = walker.nextNode())) {
+        if (/\[\d+\]/.test(n.textContent || '')) {
+          if ((n as Text).parentElement?.closest('pre, code')) continue;
+          nodes.push(n as Text);
         }
-        const span = document.createElement('span');
-        span.textContent = m[0];
-        span.className = 'citation-inline';
-        span.dataset.citationRef = String(ref);
-        frag.appendChild(span);
-        lastIdx = m.index + m[0].length;
       }
 
-      if (!hasMatch) continue;
-      if (lastIdx < text.length) {
-        frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+      for (const textNode of nodes) {
+        const text = textNode.textContent || '';
+        const frag = document.createDocumentFragment();
+        let lastIdx = 0;
+        let hasMatch = false;
+
+        for (const m of text.matchAll(/\[(\d+)\]/g)) {
+          const ref = parseInt(m[1]);
+          if (!sourceMap.has(ref)) continue;
+          hasMatch = true;
+          if (m.index > lastIdx) {
+            frag.appendChild(
+              document.createTextNode(text.slice(lastIdx, m.index)),
+            );
+          }
+          const span = document.createElement('span');
+          span.textContent = m[0];
+          span.className = 'citation-inline';
+          span.dataset.citationRef = String(ref);
+          frag.appendChild(span);
+          lastIdx = m.index + m[0].length;
+        }
+
+        if (!hasMatch) continue;
+        if (lastIdx < text.length) {
+          frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+        }
+        textNode.parentNode?.replaceChild(frag, textNode);
       }
-      textNode.parentNode?.replaceChild(frag, textNode);
-    }
-  }, [displayContent, parsed.sources]);
+    }, [displayContent, parsed.sources]);
 
-  const handleCitationClick = useCallback(
-    (e: React.MouseEvent) => {
-      const span = (e.target as HTMLElement).closest<HTMLElement>('[data-citation-ref]');
-      if (!span) return;
-      const refNum = parseInt(span.dataset.citationRef || '');
-      const source = parsed.sources.find((s) => s.ref === refNum);
-      if (source) {
-        openSourceViewer({
-          documentId: source.document_id,
-          documentName: source.document_name,
-          chunkIndex: source.chunk_index,
-          refNumber: source.ref,
-          fileType: source.file_type,
-        });
-      }
-    },
-    [parsed.sources, openSourceViewer],
-  );
+    const handleCitationClick = useCallback(
+      (e: React.MouseEvent) => {
+        const span = (e.target as HTMLElement).closest<HTMLElement>(
+          '[data-citation-ref]',
+        );
+        if (!span) return;
+        const refNum = parseInt(span.dataset.citationRef || '');
+        const source = parsed.sources.find((s) => s.ref === refNum);
+        if (source) {
+          openSourceViewer({
+            documentId: source.document_id,
+            documentName: source.document_name,
+            chunkIndex: source.chunk_index,
+            refNumber: source.ref,
+            fileType: source.file_type,
+          });
+        }
+      },
+      [parsed.sources, openSourceViewer],
+    );
 
-  return (
-    <Message from={message.role}>
-      <MessageContent from={message.role}>
-        {isUser ? (
-          <MessageBubble>{message.content}</MessageBubble>
-        ) : (
-          <>
-            {/* 스트림 응답 대기 중 shimmer */}
-            {showCursor && !message.content && (
-              <div className='flex items-center gap-2'>
-                <Spinner className='size-4' />
-                <Shimmer className='text-sm' duration={1.5} spread={1.5}>
-                  응답을 생성하고 있습니다...
-                </Shimmer>
-              </div>
-            )}
+    return (
+      <Message from={message.role}>
+        <MessageContent from={message.role}>
+          {isUser ? (
+            <MessageBubble>{message.content}</MessageBubble>
+          ) : (
+            <>
+              {/* 스트림 응답 대기 중 shimmer */}
+              {showCursor && !message.content && (
+                <div className='flex items-center gap-2'>
+                  <Spinner className='size-4' />
+                  <Shimmer className='text-sm' duration={1.5} spread={1.5}>
+                    응답을 생성하고 있습니다...
+                  </Shimmer>
+                </div>
+              )}
 
-            {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
-            {displayContent && (
-              <div ref={contentRef} className='w-full min-w-0' onClick={parsed.sources.length > 0 ? handleCitationClick : undefined}>
-                <MessageResponse streaming={message.status === 'streaming' && !!displayContent} className='w-full'>
-                  {displayContent}
-                </MessageResponse>
-              </div>
-            )}
+              {/* 텍스트 응답 (마크다운) — 인라인 출처 클릭 지원 */}
+              {displayContent && (
+                <div
+                  ref={contentRef}
+                  className='w-full min-w-0'
+                  onClick={
+                    parsed.sources.length > 0 ? handleCitationClick : undefined
+                  }
+                >
+                  <MessageResponse
+                    streaming={
+                      message.status === 'streaming' && !!displayContent
+                    }
+                    className='w-full'
+                  >
+                    {displayContent}
+                  </MessageResponse>
+                </div>
+              )}
 
-            {/* Tool Calls */}
-            {message.toolCalls && message.toolCalls.length > 0 && (
-              <div className='w-full min-w-0'>
-                {message.toolCalls.map((tc, i) => (
-                  <ToolCall
-                    key={`${tc.name}-${i}`}
-                    name={TOOL_DISPLAY_NAMES[tc.name] ?? tc.name}
-                    state={tc.state}
-                    input={Object.keys(tc.arguments).length > 0 ? tc.arguments : undefined}
-                    output={tc.result}
-                    error={tc.error}
+              {/* Tool Calls */}
+              {message.toolCalls && message.toolCalls.length > 0 && (
+                <div className='w-full min-w-0'>
+                  {message.toolCalls.map((tc, i) => (
+                    <ToolCall
+                      key={`${tc.name}-${i}`}
+                      name={TOOL_DISPLAY_NAMES[tc.name] ?? tc.name}
+                      state={tc.state}
+                      input={
+                        Object.keys(tc.arguments).length > 0
+                          ? tc.arguments
+                          : undefined
+                      }
+                      output={tc.result}
+                      error={tc.error}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* REQUIREMENTS 요구사항 카드 */}
+              {parsed.requirementItems.length > 0 && (
+                <ExtractedRequirements
+                  requirements={parsed.requirementItems}
+                  onAccept={() => {
+                    // TODO: 수락된 요구사항을 레코드 스토어에 반영
+                  }}
+                />
+              )}
+
+              {/* CLARIFY 질문지 — 마지막 메시지에서만 표시 (제출 후 새 메시지 추가되면 자동 소멸) */}
+              {isLast && parsed.clarifyItems.length > 0 && onSendMessage && (
+                <Questionnaire
+                  questions={parsed.clarifyItems}
+                  onSubmit={onSendMessage}
+                />
+              )}
+
+              {/* SOURCES 출처 링크 */}
+              {parsed.sources.length > 0 && (
+                <div className='w-full min-w-0'>
+                  <SourceReference sources={parsed.sources} />
+                </div>
+              )}
+
+              {/* SUGGESTIONS 추천 질문 — 마지막 메시지에서만 표시 */}
+              {isLast && parsed.suggestions.length > 0 && onSendMessage && (
+                <div className='w-full min-w-0'>
+                  <SuggestionChips
+                    suggestions={parsed.suggestions}
+                    onSelect={onSendMessage}
                   />
-                ))}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* REQUIREMENTS 요구사항 카드 */}
-            {parsed.requirementItems.length > 0 && (
-              <ExtractedRequirements
-                requirements={parsed.requirementItems}
-                onAccept={() => {
-                  // TODO: 수락된 요구사항을 레코드 스토어에 반영
-                }}
-              />
-            )}
-
-            {/* CLARIFY 질문지 — 마지막 메시지에서만 표시 (제출 후 새 메시지 추가되면 자동 소멸) */}
-            {isLast && parsed.clarifyItems.length > 0 && onSendMessage && (
-              <Questionnaire questions={parsed.clarifyItems} onSubmit={onSendMessage} />
-            )}
-
-            {/* SOURCES 출처 링크 */}
-            {parsed.sources.length > 0 && (
-              <SourceReference sources={parsed.sources} />
-            )}
-
-            {/* SUGGESTIONS 추천 질문 — 마지막 메시지에서만 표시 */}
-            {isLast && parsed.suggestions.length > 0 && onSendMessage && (
-              <SuggestionChips suggestions={parsed.suggestions} onSelect={onSendMessage} />
-            )}
-
-            {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
-            {!showCursor && displayContent && <MessageActions content={displayContent} />}
-          </>
-        )}
-      </MessageContent>
-    </Message>
-  );
-}, (prev, next) =>
-  prev.message === next.message &&
-  prev.isLast === next.isLast &&
-  prev.onSendMessage === next.onSendMessage,
+              {/* 액션 (복사 등) — 스트리밍 아닐 때만 */}
+              {!showCursor && displayContent && (
+                <MessageActions content={displayContent} />
+              )}
+            </>
+          )}
+        </MessageContent>
+      </Message>
+    );
+  },
+  (prev, next) =>
+    prev.message === next.message &&
+    prev.isLast === next.isLast &&
+    prev.onSendMessage === next.onSendMessage,
 );
 
-export function MessageRenderer({ messages, onSendMessage }: MessageRendererProps) {
+export function MessageRenderer({
+  messages,
+  onSendMessage,
+}: MessageRendererProps) {
   if (messages.length === 0) return null;
 
   const lastIndex = messages.length - 1;
 
+  // 메시지를 턴(user + assistant 세트) 단위로 그룹핑
+  const turns: ChatMessage[][] = [];
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      turns.push([msg]);
+    } else if (turns.length > 0) {
+      turns[turns.length - 1].push(msg);
+    } else {
+      turns.push([msg]);
+    }
+  }
+
   return (
-    <div className='flex flex-col gap-6'>
-      {messages.map((msg, i) => (
-        <MessageItem
-          key={msg.id}
-          message={msg}
-          isLast={i === lastIndex}
-          onSendMessage={onSendMessage}
-        />
+    <div className='flex flex-col gap-12'>
+      {turns.map((turn) => (
+        <div key={turn[0].id} className='flex flex-col gap-5'>
+          {turn.map((msg) => (
+            <MessageItem
+              key={msg.id}
+              message={msg}
+              isLast={messages[lastIndex] === msg}
+              onSendMessage={onSendMessage}
+            />
+          ))}
+        </div>
       ))}
     </div>
   );

@@ -8,7 +8,7 @@ set -e
 export PATH="$HOME/.local/bin:$PATH"
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKEND_PORT=9999
+BACKEND_PORT=8082
 FRONTEND_PORT=3009
 
 # 색상
@@ -56,10 +56,11 @@ if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     log "node_modules 없음 — npm install 실행"
     (cd "$ROOT_DIR/frontend" && npm install)
 fi
-log "Frontend 시작 중... (port: $FRONTEND_PORT)"
+log "Frontend 시작 중... (port: $FRONTEND_PORT, backend: $BACKEND_PORT)"
 (
     cd "$ROOT_DIR/frontend"
-    exec npx next dev --hostname 0.0.0.0 --port $FRONTEND_PORT
+    exec env BACKEND_URL="http://localhost:$BACKEND_PORT" \
+        npx next dev --hostname 0.0.0.0 --port $FRONTEND_PORT
 ) 2>&1 &
 FRONTEND_PID=$!
 echo ""

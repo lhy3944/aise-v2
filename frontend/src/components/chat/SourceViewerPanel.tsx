@@ -55,9 +55,13 @@ export function SourceViewerPanel() {
 
   useEffect(() => {
     if (!projectId || !data) return;
-    let cancelled = false;
 
     const key = `${data.documentId}:${data.chunkIndex}`;
+
+    // 같은 청크를 이미 로드했으면 재요청하지 않음
+    if (key === fetchKey) return;
+
+    let cancelled = false;
 
     api
       .get<ChunkPreview>(
@@ -79,7 +83,7 @@ export function SourceViewerPanel() {
     return () => {
       cancelled = true;
     };
-  }, [projectId, data]);
+  }, [projectId, data, fetchKey]);
 
   return (
     <div className="flex h-full flex-col">

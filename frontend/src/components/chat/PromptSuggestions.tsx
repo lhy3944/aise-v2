@@ -168,6 +168,11 @@ export function PromptSuggestions({
     };
   }, [startTimer]);
 
+  // 프로젝트 미선택이면 표시하지 않음
+  if (!projectId) {
+    return null;
+  }
+
   // 로딩 스켈레톤
   if (loading) {
     return (

@@ -2,31 +2,33 @@
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Forward } from 'lucide-react';
 
 interface SuggestionChipsProps {
   suggestions: string[];
   onSelect: (text: string) => void;
 }
 
-export function SuggestionChips({ suggestions, onSelect }: SuggestionChipsProps) {
+export function SuggestionChips({
+  suggestions,
+  onSelect,
+}: SuggestionChipsProps) {
   if (suggestions.length === 0) return null;
 
   return (
-    <div className='mt-3 flex flex-wrap gap-2'>
+    <div className='mt-3 flex flex-col gap-1.5'>
       {suggestions.map((text, i) => (
         <Button
           key={i}
           variant='outline'
-          size='sm'
           className={cn(
             'border-line-primary text-fg-secondary hover:border-accent-primary hover:text-fg-primary',
-            'h-auto max-w-[300px] gap-1.5 rounded-full px-3 py-1.5 text-left text-xs font-normal',
+            'h-auto w-full justify-start gap-1.5 rounded-md px-6! py-3 text-xs',
           )}
           onClick={() => onSelect(text)}
         >
-          <span className='line-clamp-2'>{text}</span>
-          <ArrowUpRight className='size-3 shrink-0 opacity-50' />
+          <span className='truncate'>{text}</span>
+          <Forward className='size-3 shrink-0 opacity-50' />
         </Button>
       ))}
     </div>

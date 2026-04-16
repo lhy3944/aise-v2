@@ -8,7 +8,14 @@ import { math } from '@streamdown/math';
 import { createMermaidPlugin } from '@streamdown/mermaid';
 import { Bot, Check, Copy, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { type ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Streamdown } from 'streamdown';
 import 'streamdown/styles.css';
 
@@ -54,7 +61,11 @@ export function MessageAvatar({ from, className }: MessageAvatarProps) {
         className,
       )}
     >
-      {from === 'user' ? <User className='size-3.5' /> : <Bot className='size-3.5' />}
+      {from === 'user' ? (
+        <User className='size-3.5' />
+      ) : (
+        <Bot className='size-3.5' />
+      )}
     </div>
   );
 }
@@ -67,12 +78,18 @@ interface MessageContentProps {
   className?: string;
 }
 
-export function MessageContent({ from, children, className }: MessageContentProps) {
+export function MessageContent({
+  from,
+  children,
+  className,
+}: MessageContentProps) {
   return (
     <div
       className={cn(
         'flex flex-col gap-1.5',
-        from === 'user' ? 'max-w-[85%] items-end' : 'min-w-0 w-full items-start',
+        from === 'user'
+          ? 'max-w-[85%] items-end'
+          : 'min-w-0 w-full items-start',
         className,
       )}
     >
@@ -95,23 +112,32 @@ interface MessageResponseProps {
 }
 
 export const MessageResponse = memo(
-  function MessageResponse({ children: content, streaming, className }: MessageResponseProps) {
+  function MessageResponse({
+    children: content,
+    streaming,
+    className,
+  }: MessageResponseProps) {
     const { resolvedTheme } = useTheme();
     const plugins = resolvedTheme === 'dark' ? pluginsDark : pluginsLight;
 
     if (!content && !streaming) return null;
 
     return (
-      <div className={cn('markdown-body text-fg-primary overflow-hidden text-sm', className)}>
+      <div
+        className={cn(
+          'markdown-body text-fg-primary overflow-hidden text-sm',
+          className,
+        )}
+      >
         {content ? (
           <Streamdown
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
             plugins={plugins}
-            animated={{
-              animation: 'fadeIn',
-              duration: 200,              
-              easing: 'ease-out',
-            }}
+            // animated={{
+            //   animation: 'fadeIn',
+            //   duration: 200,
+            //   easing: 'ease-out',
+            // }}
             // mermaid={{
             //   config: {
             //     theme: 'dark',
@@ -138,7 +164,12 @@ export const MessageResponse = memo(
             controls={{
               code: { copy: true, download: true },
               table: { fullscreen: true, copy: true, download: true },
-              mermaid: { fullscreen: true, download: true, copy: true, panZoom: true },
+              mermaid: {
+                fullscreen: true,
+                download: true,
+                copy: true,
+                panZoom: true,
+              },
             }}
           >
             {content}
@@ -150,7 +181,8 @@ export const MessageResponse = memo(
       </div>
     );
   },
-  (prev, next) => prev.children === next.children && prev.streaming === next.streaming,
+  (prev, next) =>
+    prev.children === next.children && prev.streaming === next.streaming,
 );
 
 // ── User Bubble ──
@@ -218,10 +250,17 @@ export function MessageActions({ content, className }: MessageActionsProps) {
     >
       <button
         onClick={handleCopy}
-        className={cn('rounded p-1 transition-colors', 'text-fg-muted hover:text-fg-primary')}
+        className={cn(
+          'rounded p-1 transition-colors',
+          'text-fg-muted hover:text-fg-primary',
+        )}
         aria-label='복사'
       >
-        {copied ? <Check className='size-3.5' /> : <Copy className='size-3.5' />}
+        {copied ? (
+          <Check className='size-3.5' />
+        ) : (
+          <Copy className='size-3.5' />
+        )}
       </button>
     </div>
   );

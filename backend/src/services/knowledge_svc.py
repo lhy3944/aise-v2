@@ -29,6 +29,27 @@ CONTENT_TYPE_MAP = {
 PREVIEW_MAX_CHARS = 3000  # 미리보기 최대 문자 수
 
 
+def _safe_truncate_md(text: str, max_chars: int) -> str:
+    """마크다운 블록 경계에서 안전하게 자른다.
+
+    - max_chars 이전의 마지막 \\n\\n 위치에서 자름
+    - 열린 코드블록(```)이 있으면 닫기
+    """
+    if len(text) <= max_chars:
+        return text
+
+    cut = text.rfind("\n\n", 0, max_chars)
+    if cut == -1:
+        cut = max_chars
+    truncated = text[:cut]
+
+    # 열린 코드블록 닫기
+    if truncated.count("```") % 2 == 1:
+        truncated += "\n```"
+
+    return truncated
+
+
 def _to_response(doc: KnowledgeDocument) -> KnowledgeDocumentResponse:
     """DB 모델 -> 응답 스키마 변환"""
     return KnowledgeDocumentResponse(
@@ -209,8 +230,8 @@ async def get_document_preview(
         .order_by(KnowledgeChunk.chunk_index)
     )
     chunks = result.scalars().all()
-    full_text = "\n".join(chunks)
-    preview_text = full_text[:PREVIEW_MAX_CHARS]
+    full_text = "\n\n".join(chunks)
+    preview_text = _safe_truncate_md(full_text, PREVIEW_MAX_CHARS)
 
     return KnowledgeDocumentPreviewResponse(
         document_id=str(doc.id),

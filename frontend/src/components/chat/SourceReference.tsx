@@ -23,11 +23,15 @@ export function SourceReference({ sources }: SourceReferenceProps) {
 
   if (sources.length === 0) return null;
 
+  // ref 번호 기준 오름차순 정렬 + 중복 제거
+  const sortedSources = [...new Map(sources.map((s) => [s.ref, s])).values()]
+    .sort((a, b) => a.ref - b.ref);
+
   return (
     <div className="mt-2 space-y-1.5">
       <span className="text-fg-muted text-xs">출처</span>
-      <div className="flex flex-wrap items-start gap-1.5">
-        {sources.map((s) => {
+      <div className="grid grid-cols-2 gap-1.5">
+        {sortedSources.map((s) => {
           const isActive =
             sourceViewerData?.documentId === s.document_id &&
             sourceViewerData?.chunkIndex === s.chunk_index;

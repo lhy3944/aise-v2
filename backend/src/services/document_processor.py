@@ -111,10 +111,11 @@ async def process_document(document_id: uuid.UUID) -> None:
             text = parse_document(file_bytes, doc.file_type)
             if not text.strip():
                 raise ValueError("문서에서 텍스트를 추출할 수 없습니다.")
-            logger.debug(f"파싱 완료: {len(text)}자")
+            logger.warning(f"[AISE-GITHUB] 파싱 완료: {len(text)}자, 줄바꿈={text.count(chr(10))}, file_type={doc.file_type}")
 
             # 4. 청킹
             chunks = chunk_text(text, max_tokens=500, overlap_tokens=50, file_type=doc.file_type)
+            logger.warning(f"[AISE-GITHUB] 청킹 완료: {len(chunks)}개, 첫 청크 줄바꿈={chunks[0].count(chr(10)) if chunks else 0}")
             if not chunks:
                 raise ValueError("청킹 결과가 비어 있습니다.")
             logger.debug(f"청킹 완료: {len(chunks)}개 청크")

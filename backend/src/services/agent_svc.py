@@ -574,7 +574,8 @@ async def _fetch_knowledge_chunks(
             for did, dname, ftype in doc_result.all():
                 doc_info_map[did] = (dname, ftype)
 
-        return [
+        # 문서 내 순서(chunk_index)로 정렬하여 ref 번호가 직관적이도록 함
+        results = [
             {
                 "document_id": str(chunk.document_id),
                 "document_name": doc_info_map.get(chunk.document_id, ("Unknown", "txt"))[0],
@@ -584,6 +585,8 @@ async def _fetch_knowledge_chunks(
             }
             for chunk, score in chunks_with_scores
         ]
+        results.sort(key=lambda c: (c["document_name"], c["chunk_index"]))
+        return results
     except Exception as e:
         logger.warning(f"Knowledge 검색 실패 (계속 진행): {e}")
         return []

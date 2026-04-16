@@ -16,9 +16,11 @@ export function MobileRightDrawer() {
   const [open, setOpen] = useState(false);
   const sourceViewerData = usePanelStore((s) => s.sourceViewerData);
 
-  // 출처 버튼 클릭 시 자동 열기/닫기 (render-time conditional setState)
+  const isMobile = usePanelStore((s) => s.isMobile);
+
+  // 출처 버튼 클릭 시 자동 열기/닫기 (모바일에서만 동작)
   const prevSourceDataRef = useRef(sourceViewerData);
-  if (sourceViewerData !== prevSourceDataRef.current) {
+  if (isMobile && sourceViewerData !== prevSourceDataRef.current) {
     if (sourceViewerData !== null && !open) {
       setOpen(true);
     } else if (sourceViewerData === null && prevSourceDataRef.current !== null && open) {

@@ -8,7 +8,10 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { knowledgeService } from '@/services/knowledge-service';
-import type { KnowledgeDocument, KnowledgeDocumentFileType } from '@/types/project';
+import type {
+  KnowledgeDocument,
+  KnowledgeDocumentFileType,
+} from '@/types/project';
 import { FileText, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -43,7 +46,10 @@ export function KnowledgePreviewModal({
     if (!doc) return;
     setLoading(true);
     try {
-      const preview = await knowledgeService.preview(projectId, doc.document_id);
+      const preview = await knowledgeService.preview(
+        projectId,
+        doc.document_id,
+      );
       setPreviewText(preview.preview_text);
       setTotalChars(preview.total_characters);
     } catch {
@@ -61,16 +67,22 @@ export function KnowledgePreviewModal({
 
   return (
     <Dialog open={!!doc} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='flex max-h-[80vh] flex-col sm:max-w-2xl'>
+      <DialogContent className='flex max-h-[80vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
           <div className='flex items-center gap-3'>
             <div className='bg-canvas-surface flex size-8 items-center justify-center rounded-md'>
               <FileText className='text-fg-muted size-4' />
             </div>
             <div className='min-w-0 flex-1'>
-              <DialogTitle className='truncate text-sm'>{doc?.name}</DialogTitle>
+              <DialogTitle className='truncate text-sm'>
+                {doc?.name}
+              </DialogTitle>
               <p className='text-fg-muted text-xs'>
-                {FILE_TYPE_LABEL[(doc?.file_type as KnowledgeDocumentFileType) ?? 'txt']}
+                {
+                  FILE_TYPE_LABEL[
+                    (doc?.file_type as KnowledgeDocumentFileType) ?? 'txt'
+                  ]
+                }
                 {totalChars > 0 && ` · ${totalChars.toLocaleString()}자`}
                 {previewText.length > 0 &&
                   previewText.length < totalChars &&
@@ -85,8 +97,14 @@ export function KnowledgePreviewModal({
             <Loader2 className='text-fg-muted size-6 animate-spin' />
           </div>
         ) : canRender ? (
-          <Tabs defaultValue={defaultTab} className='flex min-h-0 flex-1 flex-col'>
-            <TabsList variant='line' className='border-line-subtle w-full justify-start border-b'>
+          <Tabs
+            defaultValue={defaultTab}
+            className='flex min-h-0 flex-1 flex-col'
+          >
+            <TabsList
+              variant='line'
+              className='border-line-subtle w-full justify-start border-b'
+            >
               <TabsTrigger
                 value='rendered'
                 className='data-[state=active]:text-accent-primary after:bg-accent-primary'
@@ -100,12 +118,20 @@ export function KnowledgePreviewModal({
                 원문
               </TabsTrigger>
             </TabsList>
-            <TabsContent value='rendered' className='min-h-0 flex-1 overflow-y-auto p-4'>
+            <TabsContent
+              value='rendered'
+              className='min-h-0 flex-1 overflow-y-auto p-4'
+            >
               <div className='source-markdown text-fg-primary text-sm'>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewText}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {previewText}
+                </ReactMarkdown>
               </div>
             </TabsContent>
-            <TabsContent value='raw' className='min-h-0 flex-1 overflow-y-auto p-4'>
+            <TabsContent
+              value='raw'
+              className='min-h-0 flex-1 overflow-y-auto p-4'
+            >
               <pre className='text-fg-secondary whitespace-pre-wrap text-xs leading-relaxed'>
                 {previewText}
               </pre>
