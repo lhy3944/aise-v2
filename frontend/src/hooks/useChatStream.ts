@@ -55,6 +55,8 @@ export function useChatStream(sessionId?: string) {
   );
 
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
+  const tokenBufferRef = useRef<Map<string, string>>(new Map());
+  const tokenFlushFrameRef = useRef<Map<string, number>>(new Map());
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
     () => !!sessionId && !useChatStore.getState().sessionMessages[sessionId],
   );
@@ -152,6 +154,45 @@ export function useChatStream(sessionId?: string) {
   // Records 갱신 트리거
   const bumpRefresh = useRecordStore((s) => s.bumpRefresh);
 
+  const clearBufferedTokens = useCallback((sid: string) => {
+    tokenBufferRef.current.delete(sid);
+    const rafId = tokenFlushFrameRef.current.get(sid);
+    if (rafId !== undefined) {
+      cancelAnimationFrame(rafId);
+      tokenFlushFrameRef.current.delete(sid);
+    }
+  }, []);
+
+  const flushBufferedTokens = useCallback(
+    (sid: string) => {
+      const buffered = tokenBufferRef.current.get(sid);
+      if (buffered) {
+        appendToLastAssistant(sid, buffered);
+      }
+      clearBufferedTokens(sid);
+    },
+    [appendToLastAssistant, clearBufferedTokens],
+  );
+
+  const enqueueToken = useCallback(
+    (sid: string, token: string) => {
+      const prev = tokenBufferRef.current.get(sid) ?? '';
+      tokenBufferRef.current.set(sid, prev + token);
+
+      if (tokenFlushFrameRef.current.has(sid)) return;
+
+      const rafId = requestAnimationFrame(() => {
+        tokenFlushFrameRef.current.delete(sid);
+        const buffered = tokenBufferRef.current.get(sid);
+        if (!buffered) return;
+        tokenBufferRef.current.delete(sid);
+        appendToLastAssistant(sid, buffered);
+      });
+      tokenFlushFrameRef.current.set(sid, rafId);
+    },
+    [appendToLastAssistant],
+  );
+
   // Tool call 실행 디스패처
   const executeToolCall = useCallback(
     (sid: string, name: string, _args: Record<string, unknown>) => {
@@ -241,6 +282,7 @@ export function useChatStream(sessionId?: string) {
       };
       addMessage(activeSessionId, assistantMsg);
       setSessionStreaming(activeSessionId, true);
+      clearBufferedTokens(activeSessionId);
 
       const updateLastAssistant = useChatStore.getState().updateLastAssistantMessage;
 
@@ -251,7 +293,7 @@ export function useChatStream(sessionId?: string) {
         },
         {
           onToken: (token) => {
-            appendToLastAssistant(activeSessionId!, token);
+            enqueueToken(activeSessionId!, token);
           },
           onToolCall: (toolCall) => {
             const tc: ToolCallData = {
@@ -269,9 +311,11 @@ export function useChatStream(sessionId?: string) {
             handleToolResult(activeSessionId!, toolResult.name, toolResult.result);
           },
           onDone: () => {
+            flushBufferedTokens(activeSessionId!);
             finishStreaming(activeSessionId!);
           },
           onError: (error) => {
+            flushBufferedTokens(activeSessionId!);
             appendToLastAssistant(activeSessionId!, `\n\n⚠️ ${error}`);
             finishStreaming(activeSessionId!, 'error');
           },
@@ -289,6 +333,7 @@ export function useChatStream(sessionId?: string) {
       appendToLastAssistant,
       setSessionStreaming,
       finishStreaming,
+      flushBufferedTokens,
       executeToolCall,
       handleToolResult,
       router,
@@ -298,21 +343,23 @@ export function useChatStream(sessionId?: string) {
   // 스트리밍 중지
   const stopStreaming = useCallback(() => {
     if (!sessionId) return;
+    flushBufferedTokens(sessionId);
     abortControllersRef.current.get(sessionId)?.();
     abortControllersRef.current.delete(sessionId);
     finishStreaming(sessionId);
-  }, [sessionId, finishStreaming]);
+  }, [sessionId, finishStreaming, flushBufferedTokens]);
 
   // Cleanup on unmount
   useEffect(() => {
     const controllers = abortControllersRef.current;
     return () => {
       if (sessionId) {
+        flushBufferedTokens(sessionId);
         controllers.get(sessionId)?.();
         controllers.delete(sessionId);
       }
     };
-  }, [sessionId]);
+  }, [sessionId, flushBufferedTokens]);
 
   return {
     messages,

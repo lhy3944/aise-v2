@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from loguru import logger
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,6 +26,16 @@ from src.schemas.api.record import (
 )
 from src.services.llm_svc import chat_completion
 from src.utils.json_parser import parse_llm_json
+from src.utils.reorder import build_reordered_ids
+
+DISPLAY_ID_PREFIX_MAP = {
+    "overview": "OVR",
+    "fr": "FR",
+    "qa": "QA",
+    "constraints": "CON",
+    "interfaces": "IF",
+    "other": "OTH",
+}
 
 
 def _to_response(record: Record) -> RecordResponse:
@@ -55,29 +65,52 @@ def _to_response(record: Record) -> RecordResponse:
     )
 
 
+def _display_prefix(section_type: str) -> str:
+    return DISPLAY_ID_PREFIX_MAP.get(section_type, section_type[:3].upper())
+
+
+def _parse_display_sequence(display_id: str, prefix: str) -> int | None:
+    if not display_id.startswith(f"{prefix}-"):
+        return None
+    try:
+        return int(display_id.split("-")[-1])
+    except (ValueError, IndexError):
+        return None
+
+
+def _build_display_counters(display_ids: list[str]) -> dict[str, int]:
+    counters: dict[str, int] = {}
+    prefixes = set(DISPLAY_ID_PREFIX_MAP.values())
+
+    for display_id in display_ids:
+        for prefix in prefixes:
+            seq = _parse_display_sequence(display_id, prefix)
+            if seq is None:
+                continue
+            counters[prefix] = max(counters.get(prefix, 0), seq)
+            break
+
+    return counters
+
+
+def _reserve_display_id(counters: dict[str, int], section_type: str) -> str:
+    prefix = _display_prefix(section_type)
+    next_seq = counters.get(prefix, 0) + 1
+    counters[prefix] = next_seq
+    return f"{prefix}-{next_seq:03d}"
+
+
 async def _next_display_id(db: AsyncSession, project_id: uuid.UUID, section_type: str) -> str:
     """섹션 타입 기반 display_id 자동 생성 (예: FR-001)"""
-    prefix_map = {
-        "overview": "OVR", "fr": "FR", "qa": "QA",
-        "constraints": "CON", "interfaces": "IF", "other": "OTH",
-    }
-    prefix = prefix_map.get(section_type, section_type[:3].upper())
+    prefix = _display_prefix(section_type)
 
     result = await db.execute(
         select(Record.display_id)
         .where(Record.project_id == project_id, Record.display_id.like(f"{prefix}-%"))
     )
     existing = result.scalars().all()
-
-    max_num = 0
-    for did in existing:
-        try:
-            num = int(did.split("-")[-1])
-            max_num = max(max_num, num)
-        except (ValueError, IndexError):
-            pass
-
-    return f"{prefix}-{max_num + 1:03d}"
+    counters = _build_display_counters(existing)
+    return _reserve_display_id(counters, section_type)
 
 
 async def _next_order_index(db: AsyncSession, project_id: uuid.UUID) -> int:
@@ -88,21 +121,63 @@ async def _next_order_index(db: AsyncSession, project_id: uuid.UUID) -> int:
     return (max_idx + 1) if max_idx is not None else 0
 
 
-def _record_query(project_id: uuid.UUID, section_id: str | None = None):
+def _record_query(project_id: uuid.UUID, section_id: uuid.UUID | None = None):
     stmt = (
         select(Record)
         .options(selectinload(Record.section), selectinload(Record.source_document))
         .where(Record.project_id == project_id)
     )
     if section_id:
-        stmt = stmt.where(Record.section_id == uuid.UUID(section_id))
+        stmt = stmt.where(Record.section_id == section_id)
     return stmt.order_by(Record.order_index.asc())
+
+
+async def _load_sections_by_ids(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    section_ids: set[uuid.UUID],
+) -> dict[uuid.UUID, RequirementSection]:
+    if not section_ids:
+        return {}
+
+    stmt = select(RequirementSection).where(
+        RequirementSection.project_id == project_id,
+        RequirementSection.id.in_(section_ids),
+    )
+    result = await db.execute(stmt)
+    sections = {section.id: section for section in result.scalars().all()}
+    missing_ids = section_ids - set(sections.keys())
+    if missing_ids:
+        raise AppException(400, "유효하지 않은 섹션 ID가 포함되어 있습니다.")
+
+    return sections
+
+
+async def _load_documents_by_ids(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    document_ids: set[uuid.UUID],
+) -> dict[uuid.UUID, KnowledgeDocument]:
+    if not document_ids:
+        return {}
+
+    stmt = select(KnowledgeDocument).where(
+        KnowledgeDocument.project_id == project_id,
+        KnowledgeDocument.id.in_(document_ids),
+    )
+    result = await db.execute(stmt)
+    documents = {doc.id: doc for doc in result.scalars().all()}
+    missing_ids = document_ids - set(documents.keys())
+    if missing_ids:
+        raise AppException(400, "유효하지 않은 지식 문서 ID가 포함되어 있습니다.")
+
+    return documents
 
 
 # ── CRUD ──
 
 async def list_records(
-    db: AsyncSession, project_id: uuid.UUID, section_id: str | None = None,
+    db: AsyncSession, project_id: uuid.UUID, section_id: uuid.UUID | None = None,
 ) -> RecordListResponse:
     result = await db.execute(_record_query(project_id, section_id))
     records = result.scalars().all()
@@ -114,20 +189,23 @@ async def create_record(
 ) -> RecordResponse:
     # 섹션 타입 조회
     section_type = "other"
+    section_id = data.section_id
+    source_document_id = data.source_document_id
     if data.section_id:
-        sec = await db.get(RequirementSection, uuid.UUID(data.section_id))
-        if sec:
-            section_type = sec.type
+        sections = await _load_sections_by_ids(db, project_id, {data.section_id})
+        section_type = sections[data.section_id].type
+    if source_document_id:
+        await _load_documents_by_ids(db, project_id, {source_document_id})
 
     display_id = await _next_display_id(db, project_id, section_type)
     order_index = await _next_order_index(db, project_id)
 
     record = Record(
         project_id=project_id,
-        section_id=uuid.UUID(data.section_id) if data.section_id else None,
+        section_id=section_id,
         content=data.content,
         display_id=display_id,
-        source_document_id=uuid.UUID(data.source_document_id) if data.source_document_id else None,
+        source_document_id=source_document_id,
         source_location=data.source_location,
         order_index=order_index,
     )
@@ -145,8 +223,8 @@ async def update_record(
         raise AppException(404, "레코드를 찾을 수 없습니다.")
 
     update_data = data.model_dump(exclude_unset=True)
-    if "section_id" in update_data and update_data["section_id"]:
-        update_data["section_id"] = uuid.UUID(update_data["section_id"])
+    if "section_id" in update_data and update_data["section_id"] is not None:
+        await _load_sections_by_ids(db, project_id, {update_data["section_id"]})
     for key, value in update_data.items():
         setattr(record, key, value)
 
@@ -186,17 +264,20 @@ async def reorder_records(
     if not data.ordered_ids:
         return 0
 
-    seen: set[str] = set()
-    unique_ids = [sid for sid in data.ordered_ids if sid not in seen and not seen.add(sid)]
-    record_uuids = [uuid.UUID(sid) for sid in unique_ids]
-
-    stmt = select(Record).where(Record.project_id == project_id, Record.id.in_(record_uuids))
+    stmt = (
+        select(Record)
+        .where(Record.project_id == project_id)
+        .order_by(Record.order_index.asc())
+    )
     result = await db.execute(stmt)
-    records = {str(r.id): r for r in result.scalars().all()}
+    record_rows = result.scalars().all()
+    records = {record.id: record for record in record_rows}
+    current_ids = [record.id for record in record_rows]
+    reordered_ids = build_reordered_ids(data.ordered_ids, current_ids)
 
     now = datetime.now(timezone.utc)
     updated = 0
-    for idx, rid in enumerate(unique_ids):
+    for idx, rid in enumerate(reordered_ids):
         record = records.get(rid)
         if record and record.order_index != idx:
             record.order_index = idx
@@ -210,7 +291,7 @@ async def reorder_records(
 # ── 추출 ──
 
 async def extract_records(
-    db: AsyncSession, project_id: uuid.UUID, section_id: str | None = None,
+    db: AsyncSession, project_id: uuid.UUID, section_id: uuid.UUID | None = None,
 ) -> RecordExtractResponse:
     """지식 문서 기반 레코드 추출 (전체 또는 특정 섹션)"""
     logger.info(f"레코드 추출 시작: project_id={project_id}, section_id={section_id}")
@@ -221,7 +302,7 @@ async def extract_records(
         RequirementSection.is_active == True,  # noqa: E712
     ).order_by(RequirementSection.order_index)
     if section_id:
-        sect_stmt = sect_stmt.where(RequirementSection.id == uuid.UUID(section_id))
+        sect_stmt = sect_stmt.where(RequirementSection.id == section_id)
 
     sections = (await db.execute(sect_stmt)).scalars().all()
     if not sections:
@@ -391,23 +472,39 @@ async def approve_records(
     """추출된 레코드 후보 일괄 승인 저장"""
     logger.info(f"레코드 승인: project_id={project_id}, count={len(data.items)}")
 
+    if not data.items:
+        return RecordListResponse(records=[], total=0)
+
+    section_ids = {item.section_id for item in data.items if item.section_id is not None}
+    sections = await _load_sections_by_ids(db, project_id, section_ids)
+    source_document_ids = {
+        item.source_document_id
+        for item in data.items
+        if item.source_document_id is not None
+    }
+    await _load_documents_by_ids(db, project_id, source_document_ids)
+
+    existing_display_ids = (
+        await db.execute(select(Record.display_id).where(Record.project_id == project_id))
+    ).scalars().all()
+    display_counters = _build_display_counters(existing_display_ids)
+
+    order_index = await _next_order_index(db, project_id)
     created = []
     for item_data in data.items:
-        section_type = "other"
-        if item_data.section_id:
-            sec = await db.get(RequirementSection, uuid.UUID(item_data.section_id))
-            if sec:
-                section_type = sec.type
-
-        display_id = await _next_display_id(db, project_id, section_type)
-        order_index = await _next_order_index(db, project_id)
+        section_type = (
+            sections[item_data.section_id].type
+            if item_data.section_id is not None
+            else "other"
+        )
+        display_id = _reserve_display_id(display_counters, section_type)
 
         record = Record(
             project_id=project_id,
-            section_id=uuid.UUID(item_data.section_id) if item_data.section_id else None,
+            section_id=item_data.section_id,
             content=item_data.content,
             display_id=display_id,
-            source_document_id=uuid.UUID(item_data.source_document_id) if item_data.source_document_id else None,
+            source_document_id=item_data.source_document_id,
             source_location=item_data.source_location,
             status="approved",
             is_auto_extracted=True,
@@ -415,6 +512,7 @@ async def approve_records(
         )
         db.add(record)
         created.append(record)
+        order_index += 1
 
     await db.commit()
 

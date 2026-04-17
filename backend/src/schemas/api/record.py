@@ -1,5 +1,6 @@
 """Record API 스키마"""
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -11,14 +12,14 @@ RecordStatus = Literal["draft", "approved", "excluded"]
 
 class RecordCreate(BaseModel):
     content: str = Field(description="레코드 본문")
-    section_id: str | None = Field(default=None, description="섹션 ID")
-    source_document_id: str | None = Field(default=None)
+    section_id: uuid.UUID | None = Field(default=None, description="섹션 ID")
+    source_document_id: uuid.UUID | None = Field(default=None)
     source_location: str | None = Field(default=None)
 
 
 class RecordUpdate(BaseModel):
     content: str | None = Field(default=None)
-    section_id: str | None = Field(default=None)
+    section_id: uuid.UUID | None = Field(default=None)
 
 
 class RecordStatusUpdate(BaseModel):
@@ -26,7 +27,7 @@ class RecordStatusUpdate(BaseModel):
 
 
 class RecordReorderRequest(BaseModel):
-    ordered_ids: list[str] = Field(description="변경된 순서대로 레코드 ID 배열")
+    ordered_ids: list[uuid.UUID] = Field(description="변경된 순서대로 레코드 ID 배열")
 
 
 class RecordResponse(BaseModel):

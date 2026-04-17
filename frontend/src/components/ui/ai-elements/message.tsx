@@ -1,7 +1,14 @@
 'use client';
 
+import 'streamdown/styles.css';
 import '@/components/ui/ai-elements/css/markdown.css';
+import {
+  getChatFontScaleClassName,
+  getChatFontSizeClassName,
+} from '@/config/chat-font-size';
+import { getMarkdownThemeClassName } from '@/config/markdown-theme';
 import { cn } from '@/lib/utils';
+import { useUiPreferenceStore } from '@/stores/ui-preference-store';
 import { cjk } from '@streamdown/cjk';
 import { code } from '@streamdown/code';
 import { math } from '@streamdown/math';
@@ -17,7 +24,6 @@ import {
   useState,
 } from 'react';
 import { Streamdown } from 'streamdown';
-import 'streamdown/styles.css';
 
 // ── Message Container ──
 
@@ -119,38 +125,27 @@ export const MessageResponse = memo(
   }: MessageResponseProps) {
     const { resolvedTheme } = useTheme();
     const plugins = resolvedTheme === 'dark' ? pluginsDark : pluginsLight;
-
+    const markdownTheme = useUiPreferenceStore((s) => s.markdownTheme);
+    const chatFontSize = useUiPreferenceStore((s) => s.chatFontSize);
+    const markdownThemeClass = getMarkdownThemeClassName(markdownTheme);
+    const chatFontScaleClass = getChatFontScaleClassName(chatFontSize);
     if (!content && !streaming) return null;
 
     return (
       <div
         className={cn(
-          'markdown-body text-fg-primary overflow-hidden text-sm',
+          'markdown-body text-fg-primary overflow-hidden',
+          markdownThemeClass,
+          chatFontScaleClass,
           className,
         )}
       >
         {content ? (
           <Streamdown
+            mode={streaming ? 'streaming' : 'static'}
+            parseIncompleteMarkdown={!!streaming}
             className='w-full **:data-language:w-full [&_svg]:max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
             plugins={plugins}
-            // animated={{
-            //   animation: 'fadeIn',
-            //   duration: 200,
-            //   easing: 'ease-out',
-            // }}
-            // mermaid={{
-            //   config: {
-            //     theme: 'dark',
-            //     themeVariables: {
-            //       primaryColor: '#ff6b6b',
-            //       primaryTextColor: '#fff',
-            //       primaryBorderColor: '#ff6b6b',
-            //       lineColor: '#f5f5f5',
-            //       secondaryColor: '#4ecdc4',
-            //       tertiaryColor: '#45b7d1',
-            //     },
-            //   },
-            // }}
             mermaid={{
               config: {
                 themeVariables: {
@@ -160,7 +155,8 @@ export const MessageResponse = memo(
                 look: 'classic',
               },
             }}
-            isAnimating={streaming}
+            isAnimating={false}
+            animated={false}
             controls={{
               code: { copy: true, download: true },
               table: { fullscreen: true, copy: true, download: true },
@@ -193,10 +189,14 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ children, className }: MessageBubbleProps) {
+  const chatFontSize = useUiPreferenceStore((s) => s.chatFontSize);
+  const chatFontSizeClass = getChatFontSizeClassName(chatFontSize);
+
   return (
     <div
       className={cn(
-        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap',
+        'bg-canvas-surface text-fg-primary rounded-2xl px-4 py-2.5 leading-relaxed whitespace-pre-wrap',
+        chatFontSizeClass,
         className,
       )}
     >

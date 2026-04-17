@@ -5,10 +5,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
+import { getMarkdownThemeClassName } from "@/config/markdown-theme";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
+import { useUiPreferenceStore } from "@/stores/ui-preference-store";
 import { FileText, X } from "lucide-react";
 import "@/components/ui/ai-elements/css/markdown.css";
 
@@ -152,9 +154,12 @@ export function SourceViewerPanel() {
 }
 
 function ChunkContent({ content, isMarkdown }: { content: string; isMarkdown: boolean }) {
+  const markdownTheme = useUiPreferenceStore((s) => s.markdownTheme);
+  const markdownThemeClass = getMarkdownThemeClassName(markdownTheme);
+
   if (isMarkdown) {
     return (
-      <div className="source-markdown text-fg-primary text-sm">
+      <div className={cn("source-markdown text-fg-primary text-sm", markdownThemeClass)}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
     );

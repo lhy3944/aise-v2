@@ -42,24 +42,18 @@ async def refine_requirement(request: RefineRequest) -> RefineResponse:
 
 
 async def suggest_requirements(
-    requirement_ids: list[str],
+    requirement_ids: list[uuid.UUID],
     project_id: uuid.UUID,
     db: AsyncSession,
 ) -> SuggestResponse:
     """기존 요구사항을 분석하여 누락된 요구사항을 제안한다."""
     logger.info(f"Suggest 요청: project_id={project_id}, ids={len(requirement_ids)}개")
 
-    # requirement_ids -> UUID 변환
-    try:
-        uuids = [uuid.UUID(rid) for rid in requirement_ids]
-    except ValueError:
-        raise AppException(status_code=400, detail="유효하지 않은 requirement_id가 포함되어 있습니다.")
-
     # DB에서 요구사항 조회
     stmt = (
         select(Requirement)
         .where(Requirement.project_id == project_id)
-        .where(Requirement.id.in_(uuids))
+        .where(Requirement.id.in_(requirement_ids))
     )
     result = await db.execute(stmt)
     rows = result.scalars().all()
@@ -67,7 +61,7 @@ async def suggest_requirements(
     if not rows:
         raise AppException(status_code=404, detail="해당하는 요구사항을 찾을 수 없습니다.")
 
-    found_ids = {str(r.id) for r in rows}
+    found_ids = {r.id for r in rows}
     missing = [rid for rid in requirement_ids if rid not in found_ids]
     if missing:
         logger.warning(f"조회되지 않은 requirement_id: {missing}")

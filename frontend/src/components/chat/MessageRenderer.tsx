@@ -17,9 +17,8 @@ import {
   MessageContent,
   MessageResponse,
 } from '@/components/ui/ai-elements/message';
-import { Shimmer } from '@/components/ui/ai-elements/shimmer';
 import { ToolCall } from '@/components/ui/ai-elements/tool-call';
-import { Spinner } from '@/components/ui/spinner';
+import { WaveDots } from '@/components/ui/ai-elements/wave-dots';
 import { usePanelStore } from '@/stores/panel-store';
 import type { ChatMessage } from '@/stores/chat-store';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -39,27 +38,18 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   search_records: '레코드 검색',
 };
 
-/* ── 구조화 블록 파싱 ── */
-
 interface RequirementData {
   type: string;
   text: string;
   reason: string;
 }
 
-// [CLARIFY] 블록 — 코드펜스 래핑 및 직접 사용 모두 지원
 const CLARIFY_BLOCK_RE =
   /```[\w]*\s*\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]\s*```|\[CLARIFY\]\s*([\s\S]*?)\s*\[\/CLARIFY\]/g;
-
-// [REQUIREMENTS] 블록 — 동일 패턴
 const REQUIREMENTS_BLOCK_RE =
   /```[\w]*\s*\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]\s*```|\[REQUIREMENTS\]\s*([\s\S]*?)\s*\[\/REQUIREMENTS\]/g;
-
-// [SUGGESTIONS] 블록 — 후속 질문 제안
 const SUGGESTIONS_BLOCK_RE =
   /```[\w]*\s*\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]\s*```|\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/g;
-
-// [SOURCES] 블록 — 출처 추적 (닫는 태그 없이 끝나는 경우도 매칭)
 const SOURCES_BLOCK_RE =
   /```[\w]*\s*\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]\s*```|\[\/SOURCES\])|\[SOURCES\]\s*([\s\S]*?)\s*(?:\[\/SOURCES\]|$)/g;
 
@@ -78,7 +68,6 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
   const sources: SourceData[] = [];
   let cleanContent = content;
 
-  // CLARIFY 블록 파싱
   for (const match of content.matchAll(CLARIFY_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -89,12 +78,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         clarifyItems.push(parsed as QuestionData);
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // REQUIREMENTS 블록 파싱
   for (const match of content.matchAll(REQUIREMENTS_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -103,12 +91,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         requirementItems.push(...(parsed as RequirementData[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // SUGGESTIONS 블록 파싱
   for (const match of content.matchAll(SUGGESTIONS_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -117,12 +104,11 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         suggestions.push(...(parsed as string[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }
 
-  // SOURCES 블록 파싱
   for (const match of content.matchAll(SOURCES_BLOCK_RE)) {
     const jsonStr = match[1] ?? match[2];
     try {
@@ -131,7 +117,7 @@ function parseStructuredBlocks(content: string): ParsedBlocks {
         sources.push(...(parsed as SourceData[]));
       }
     } catch {
-      // JSON 파싱 실패 시 무시
+      // ignore partial JSON while streaming
     }
     cleanContent = cleanContent.replace(match[0], '');
   }

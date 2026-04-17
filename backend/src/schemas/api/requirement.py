@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+import uuid
+
+from pydantic import BaseModel, Field, field_validator
 
 from .common import RequirementType
 
@@ -23,7 +25,7 @@ class SectionUpdate(BaseModel):
 
 class SectionReorderRequest(BaseModel):
     """섹션 순서 변경 요청"""
-    ordered_ids: list[str] = Field(description="변경된 순서대로 섹션 ID 배열")
+    ordered_ids: list[uuid.UUID] = Field(description="변경된 순서대로 섹션 ID 배열")
 
 
 class SectionResponse(BaseModel):
@@ -52,7 +54,14 @@ class RequirementCreate(BaseModel):
     """요구사항 생성 요청"""
     type: RequirementType = Field(description="요구사항 유형")
     original_text: str = Field(description="사용자 입력 원문")
-    section_id: str | None = Field(default=None, description="소속 섹션 ID (미분류 시 null)")
+    section_id: uuid.UUID | None = Field(default=None, description="소속 섹션 ID (미분류 시 null)")
+
+    @field_validator("section_id", mode="before")
+    @classmethod
+    def normalize_section_id(cls, value: object) -> object:
+        if value == "":
+            return None
+        return value
 
 
 class RequirementUpdate(BaseModel):
@@ -60,7 +69,14 @@ class RequirementUpdate(BaseModel):
     original_text: str | None = Field(default=None, description="원문")
     refined_text: str | None = Field(default=None, description="정제된 문장")
     is_selected: bool | None = Field(default=None, description="선택 여부")
-    section_id: str | None = Field(default=None, description="소속 섹션 ID (미분류 시 빈 문자열)")
+    section_id: uuid.UUID | None = Field(default=None, description="소속 섹션 ID (미분류 시 null)")
+
+    @field_validator("section_id", mode="before")
+    @classmethod
+    def normalize_section_id(cls, value: object) -> object:
+        if value == "":
+            return None
+        return value
 
 
 class RequirementResponse(BaseModel):
@@ -85,13 +101,13 @@ class RequirementListResponse(BaseModel):
 
 class RequirementSelectionUpdate(BaseModel):
     """요구사항 일괄 선택/해제"""
-    requirement_ids: list[str] = Field(description="대상 요구사항 ID 목록")
+    requirement_ids: list[uuid.UUID] = Field(description="대상 요구사항 ID 목록")
     is_selected: bool = Field(description="선택 여부")
 
 
 class RequirementReorderRequest(BaseModel):
     """요구사항 순서 변경 요청"""
-    ordered_ids: list[str] = Field(description="변경된 순서대로 요구사항 ID 배열")
+    ordered_ids: list[uuid.UUID] = Field(description="변경된 순서대로 요구사항 ID 배열")
 
 
 class RequirementSaveResponse(BaseModel):

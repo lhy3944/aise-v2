@@ -7,6 +7,7 @@ from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.models.project import Project
 from src.models.session import Session, SessionMessage
 from src.schemas.api.session import (
     SessionCreate,
@@ -42,8 +43,13 @@ def _to_message_response(msg: SessionMessage) -> SessionMessageResponse:
 
 async def create_session(db: AsyncSession, data: SessionCreate) -> SessionResponse:
     """세션 생성"""
+    await get_or_404(
+        db, Project, Project.id == data.project_id,
+        error_msg="프로젝트를 찾을 수 없습니다.",
+    )
+
     session = Session(
-        project_id=uuid.UUID(data.project_id),
+        project_id=data.project_id,
         title=data.title or "새 대화",
     )
     db.add(session)

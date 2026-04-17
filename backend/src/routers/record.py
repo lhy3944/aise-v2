@@ -27,7 +27,7 @@ router = APIRouter(
 @router.get("", response_model=RecordListResponse)
 async def list_records(
     project_id: uuid.UUID,
-    section_id: str | None = Query(default=None, description="섹션 필터"),
+    section_id: uuid.UUID | None = Query(default=None, description="섹션 필터"),
     db: AsyncSession = Depends(get_db),
 ):
     return await record_svc.list_records(db, project_id, section_id)
@@ -40,6 +40,16 @@ async def create_record(
     db: AsyncSession = Depends(get_db),
 ):
     return await record_svc.create_record(db, project_id, body)
+
+
+@router.put("/reorder", response_model=dict)
+async def reorder_records(
+    project_id: uuid.UUID,
+    body: RecordReorderRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    updated = await record_svc.reorder_records(db, project_id, body)
+    return {"updated_count": updated}
 
 
 @router.put("/{record_id}", response_model=RecordResponse)
@@ -71,20 +81,10 @@ async def delete_record(
     await record_svc.delete_record(db, project_id, record_id)
 
 
-@router.put("/reorder", response_model=dict)
-async def reorder_records(
-    project_id: uuid.UUID,
-    body: RecordReorderRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    updated = await record_svc.reorder_records(db, project_id, body)
-    return {"updated_count": updated}
-
-
 @router.post("/extract", response_model=RecordExtractResponse)
 async def extract_records(
     project_id: uuid.UUID,
-    section_id: str | None = Query(default=None, description="특정 섹션만 추출"),
+    section_id: uuid.UUID | None = Query(default=None, description="특정 섹션만 추출"),
     db: AsyncSession = Depends(get_db),
 ):
     """지식 문서 기반 레코드 추출 (전체 또는 특정 섹션)"""
