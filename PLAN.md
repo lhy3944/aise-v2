@@ -490,6 +490,7 @@
 - [x] Aligned code-block header language/actions on the same line by overriding Streamdown action wrapper positioning (absolute top row).
 - [x] Mobile streaming UX hotfix: keep optimistic session state during `/agent -> /agent/[sessionId]` handoff so first-turn streaming stays visible without waiting for route hydration.
 - [x] Mobile/new-session loading guard: show full-page loading only when there are no messages and no active stream, preventing spinner from masking token-by-token rendering.
+- [x] Mobile token-drain hotfix: replace single-frame token flush with time-sliced drain (small chunk append loop) so coalesced SSE chunks still render progressively on mobile.
 
 ## 2026-04-18 추가 작업: 백엔드 리팩토링 분석/하네스 설계
 - [x] backend/src 전 파일/함수 인벤토리 재점검

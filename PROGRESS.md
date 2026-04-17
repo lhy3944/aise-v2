@@ -459,6 +459,8 @@
 - Cleared `isCreatingSession` immediately after session creation succeeds, preventing loading spinner lock on slower mobile navigation.
 - Added loading-state fallback release: when cached/streamed messages arrive while `isLoadingMessages` is true, loading mode exits immediately.
 - Updated `ChatArea` loading condition to show full-screen spinner only when there are no messages and no active stream.
+- Reworked token append pipeline from single `requestAnimationFrame` flush to time-sliced drain with small append chunks (`scheduleTokenDrain` + `requestFinishAfterDrain`), so mobile/coalesced SSE payloads still render progressively.
+- Updated stream completion semantics to finish only after buffered text drains, preventing end-of-stream jumps.
 - Verified with `npm run build` in `frontend` (success).
 
 ### 2026-04-18 (백엔드 전수 분석 + 리팩토링 리뷰 문서화)
