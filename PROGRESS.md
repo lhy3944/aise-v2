@@ -461,6 +461,8 @@
 - Updated `ChatArea` loading condition to show full-screen spinner only when there are no messages and no active stream.
 - Reworked token append pipeline from single `requestAnimationFrame` flush to time-sliced drain with small append chunks (`scheduleTokenDrain` + `requestFinishAfterDrain`), so mobile/coalesced SSE payloads still render progressively.
 - Updated stream completion semantics to finish only after buffered text drains, preventing end-of-stream jumps.
+- Fixed desktop scroll-follow regression by limiting "current turn top anchoring" behavior to mobile only in `useChatScroll`.
+- Tuned mobile scroll behavior to conditionally follow streaming when the user is near bottom (`shouldPinCurrentTurn = isMobile && hasCurrentTurn && !isAtBottom`).
 - Verified with `npm run build` in `frontend` (success).
 
 ### 2026-04-18 (백엔드 전수 분석 + 리팩토링 리뷰 문서화)
