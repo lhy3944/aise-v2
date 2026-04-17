@@ -452,3 +452,22 @@
 
 - Adjusted markdown code-block header layout so language label and action buttons share one horizontal row; overrode Streamdown sticky/negative-margin action wrapper behavior with explicit top-row positioning.
 - Verified with frontend production build: npm run build (success).
+
+### 2026-04-18 (Mobile streaming UX hotfix)
+- Fixed first-turn mobile streaming visibility during new-session creation by introducing an optimistic `pendingSessionId` in `useChatStream`.
+- Updated chat state selectors (`messages`, `isStreaming`) to use `activeSessionId = sessionId ?? pendingSessionId`, so tokens continue rendering while route transition is in progress.
+- Cleared `isCreatingSession` immediately after session creation succeeds, preventing loading spinner lock on slower mobile navigation.
+- Added loading-state fallback release: when cached/streamed messages arrive while `isLoadingMessages` is true, loading mode exits immediately.
+- Updated `ChatArea` loading condition to show full-screen spinner only when there are no messages and no active stream.
+- Verified with `npm run build` in `frontend` (success).
+
+### 2026-04-18 (백엔드 전수 분석 + 리팩토링 리뷰 문서화)
+- `backend/src` 전체 파일/함수 인벤토리 재분석 완료 (엔트리/모델/라우터/서비스/프롬프트/유틸).
+- 핵심 서비스(`agent_svc`, `record_svc`, `requirement_svc`, `rag_svc`, `llm_svc`, `srs_svc`) 라인 단위 리스크 점검.
+- 테스트 재실행: `cd backend && uv run pytest tests/` -> `93 passed, 3 skipped` 확인.
+- `REFECTORING.md`를 최신 분석 기준으로 확장 업데이트:
+  - 백엔드 구조/기능 맵
+  - P0/P1 리팩토링 이슈(근거 라인 포함)
+  - Agent Harness/Structured Output/Tool Gateway 설계안
+  - 다음 세션 TODO 순서/실행 커맨드/시작 프롬프트
+- 외부 리서치 근거 링크(공식 문서 위주) 최신화.

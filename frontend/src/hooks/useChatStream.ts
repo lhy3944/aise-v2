@@ -39,6 +39,10 @@ export function useChatStream(sessionId?: string) {
   const router = useRouter();
   const setRightPanelPreset = usePanelStore((s) => s.setRightPanelPreset);
   const currentProject = useProjectStore((s) => s.currentProject);
+  const [pendingSessionId, setPendingSessionId] = useState<string | undefined>(
+    sessionId,
+  );
+  const activeSessionId = sessionId ?? pendingSessionId;
 
   const setInputValue = useChatStore((s) => s.setInputValue);
   const addMessage = useChatStore((s) => s.addMessage);
@@ -48,29 +52,47 @@ export function useChatStream(sessionId?: string) {
   const finishStreaming = useChatStore((s) => s.finishStreaming);
 
   const messages = useChatStore(
-    (s) => (sessionId ? s.sessionMessages[sessionId] : undefined) ?? EMPTY_MESSAGES,
+    (s) =>
+      (activeSessionId ? s.sessionMessages[activeSessionId] : undefined) ??
+      EMPTY_MESSAGES,
   );
   const isStreaming = useChatStore((s) =>
-    sessionId ? s.streamingSessionIds.has(sessionId) : false,
+    activeSessionId ? s.streamingSessionIds.has(activeSessionId) : false,
   );
 
   const abortControllersRef = useRef<Map<string, () => void>>(new Map());
   const tokenBufferRef = useRef<Map<string, string>>(new Map());
   const tokenFlushFrameRef = useRef<Map<string, number>>(new Map());
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(
-    () => !!sessionId && !useChatStore.getState().sessionMessages[sessionId],
+    () =>
+      !!activeSessionId &&
+      !useChatStore.getState().sessionMessages[activeSessionId],
   );
   const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // sessionId 변경 시 로딩 상태 동기화
-  const prevSessionIdRef = useRef(sessionId);
-  if (prevSessionIdRef.current !== sessionId) {
-    prevSessionIdRef.current = sessionId;
-    const needsLoading = !!sessionId && !useChatStore.getState().sessionMessages[sessionId];
+  useEffect(() => {
+    if (sessionId) {
+      setPendingSessionId(sessionId);
+    }
+  }, [sessionId]);
+
+  const prevSessionIdRef = useRef(activeSessionId);
+  if (prevSessionIdRef.current !== activeSessionId) {
+    prevSessionIdRef.current = activeSessionId;
+    const needsLoading =
+      !!activeSessionId &&
+      !useChatStore.getState().sessionMessages[activeSessionId];
     if (needsLoading !== isLoadingMessages) {
       setIsLoadingMessages(needsLoading);
     }
   }
+
+  useEffect(() => {
+    if (isLoadingMessages && messages.length > 0) {
+      setIsLoadingMessages(false);
+    }
+  }, [isLoadingMessages, messages.length]);
 
   // Record store
   const setExtracting = useRecordStore((s) => s.setExtracting);
@@ -80,13 +102,13 @@ export function useChatStream(sessionId?: string) {
 
   // 세션 메시지 로드
   useEffect(() => {
-    if (!sessionId) return;
-    const cached = useChatStore.getState().sessionMessages[sessionId];
+    if (!activeSessionId) return;
+    const cached = useChatStore.getState().sessionMessages[activeSessionId];
     if (cached) return;
 
     let cancelled = false;
     sessionService
-      .get(sessionId)
+      .get(activeSessionId)
       .then((detail) => {
         if (cancelled) return;
         const msgs: ChatMessage[] = detail.messages.map((m) => ({
@@ -101,7 +123,7 @@ export function useChatStream(sessionId?: string) {
           toolData: m.tool_data ? { type: 'requirements' as const, data: m.tool_data } : undefined,
           createdAt: m.created_at,
         }));
-        setMessages(sessionId, msgs);
+        setMessages(activeSessionId, msgs);
         setIsLoadingMessages(false);
       })
       .catch(() => {
@@ -111,7 +133,7 @@ export function useChatStream(sessionId?: string) {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, setMessages]);
+  }, [activeSessionId, setMessages]);
 
   // 레코드 추출 실행 (SSE 스트리밍)
   const triggerExtractRecords = useCallback(
@@ -243,21 +265,23 @@ export function useChatStream(sessionId?: string) {
 
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || !currentProject || (sessionId && isStreaming)) return;
+      if (!text.trim() || !currentProject || isStreaming) return;
 
-      let activeSessionId = sessionId;
+      let targetSessionId = activeSessionId;
 
       // 세션이 없으면 서버에서 생성 → URL 변경
-      if (!activeSessionId) {
+      if (!targetSessionId) {
         setIsCreatingSession(true);
         try {
           const newSession = await sessionService.create(
             currentProject.project_id,
             text.slice(0, 40),
           );
-          activeSessionId = newSession.id;
+          targetSessionId = newSession.id;
+          setPendingSessionId(targetSessionId);
           useChatStore.getState().bumpSessionListNonce();
-          router.replace(`/agent/${activeSessionId}`);
+          router.replace(`/agent/${targetSessionId}`);
+          setIsCreatingSession(false);
         } catch {
           setIsCreatingSession(false);
           return;
@@ -271,7 +295,7 @@ export function useChatStream(sessionId?: string) {
         content: text,
         createdAt: new Date().toISOString(),
       };
-      addMessage(activeSessionId, userMsg);
+      addMessage(targetSessionId, userMsg);
       setInputValue('');
 
       // 빈 assistant 메시지 추가 (스트리밍용)
@@ -282,20 +306,20 @@ export function useChatStream(sessionId?: string) {
         status: 'streaming',
         createdAt: new Date().toISOString(),
       };
-      addMessage(activeSessionId, assistantMsg);
-      setSessionStreaming(activeSessionId, true);
-      clearBufferedTokens(activeSessionId);
+      addMessage(targetSessionId, assistantMsg);
+      setSessionStreaming(targetSessionId, true);
+      clearBufferedTokens(targetSessionId);
 
       const updateLastAssistant = useChatStore.getState().updateLastAssistantMessage;
 
       const abort = streamAgentChat(
         {
-          session_id: activeSessionId,
+          session_id: targetSessionId,
           message: text,
         },
         {
           onToken: (token) => {
-            enqueueToken(activeSessionId!, token);
+            enqueueToken(targetSessionId, token);
           },
           onToolCall: (toolCall) => {
             const tc: ToolCallData = {
@@ -303,32 +327,32 @@ export function useChatStream(sessionId?: string) {
               arguments: toolCall.arguments,
               state: 'running',
             };
-            updateLastAssistant(activeSessionId!, (msg) => ({
+            updateLastAssistant(targetSessionId, (msg) => ({
               ...msg,
               toolCalls: [...(msg.toolCalls ?? []), tc],
             }));
-            executeToolCall(activeSessionId!, toolCall.name, toolCall.arguments);
+            executeToolCall(targetSessionId, toolCall.name, toolCall.arguments);
           },
           onToolResult: (toolResult) => {
-            handleToolResult(activeSessionId!, toolResult.name, toolResult.result);
+            handleToolResult(targetSessionId, toolResult.name, toolResult.result);
           },
           onDone: () => {
-            flushBufferedTokens(activeSessionId!);
-            finishStreaming(activeSessionId!);
+            flushBufferedTokens(targetSessionId);
+            finishStreaming(targetSessionId);
           },
           onError: (error) => {
-            flushBufferedTokens(activeSessionId!);
-            appendToLastAssistant(activeSessionId!, `\n\n⚠️ ${error}`);
-            finishStreaming(activeSessionId!, 'error');
+            flushBufferedTokens(targetSessionId);
+            appendToLastAssistant(targetSessionId, `\n\n⚠️ ${error}`);
+            finishStreaming(targetSessionId, 'error');
           },
         },
       );
 
-      abortControllersRef.current.set(activeSessionId, abort);
+      abortControllersRef.current.set(targetSessionId, abort);
     },
     [
       currentProject,
-      sessionId,
+      activeSessionId,
       isStreaming,
       addMessage,
       setInputValue,
@@ -344,17 +368,19 @@ export function useChatStream(sessionId?: string) {
 
   // 스트리밍 중지
   const stopStreaming = useCallback(() => {
-    if (!sessionId) return;
-    flushBufferedTokens(sessionId);
-    abortControllersRef.current.get(sessionId)?.();
-    abortControllersRef.current.delete(sessionId);
-    finishStreaming(sessionId);
-  }, [sessionId, finishStreaming, flushBufferedTokens]);
+    if (!activeSessionId) return;
+    flushBufferedTokens(activeSessionId);
+    abortControllersRef.current.get(activeSessionId)?.();
+    abortControllersRef.current.delete(activeSessionId);
+    finishStreaming(activeSessionId);
+  }, [activeSessionId, finishStreaming, flushBufferedTokens]);
 
   // Cleanup on unmount
   useEffect(() => {
     const controllers = abortControllersRef.current;
     return () => {
+      // `/agent` -> `/agent/[sessionId]` route handoff 중에는
+      // 기존 스트림을 유지해야 하므로 실제 route param 기준으로만 정리한다.
       if (sessionId) {
         flushBufferedTokens(sessionId);
         controllers.get(sessionId)?.();

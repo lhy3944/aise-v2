@@ -488,3 +488,10 @@
 - [x] Enforced markdown table wrapper shell border removal with stronger selectors and Streamdown style override order.
 
 - [x] Aligned code-block header language/actions on the same line by overriding Streamdown action wrapper positioning (absolute top row).
+- [x] Mobile streaming UX hotfix: keep optimistic session state during `/agent -> /agent/[sessionId]` handoff so first-turn streaming stays visible without waiting for route hydration.
+- [x] Mobile/new-session loading guard: show full-page loading only when there are no messages and no active stream, preventing spinner from masking token-by-token rendering.
+
+## 2026-04-18 추가 작업: 백엔드 리팩토링 분석/하네스 설계
+- [x] backend/src 전 파일/함수 인벤토리 재점검
+- [x] 에이전트 일관성 이슈(P0/P1) 라인 기준 리뷰 정리
+- [x] Harness/Structured Output/Tool Gateway 중심 Phase-1 설계 초안 문서화 (`REFECTORING.md`)

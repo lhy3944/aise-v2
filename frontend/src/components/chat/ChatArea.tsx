@@ -38,6 +38,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     useTurnLayout(messages, scrollRef);
 
   const hasMessages = messages.length > 0;
+  const showLoadingScreen =
+    (isCreatingSession || isLoadingMessages) && !hasMessages && !isStreaming;
   const showEmptyScreen =
     !hasMessages && !isLoadingMessages && !isCreatingSession;
   const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
@@ -54,7 +56,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
       {/* === 상단 영역: 로딩 / 빈 화면 / 메시지 — AnimatePresence로 전환 === */}
       <div className="relative flex-1 overflow-hidden">
         <AnimatePresence mode="wait">
-          {isCreatingSession || isLoadingMessages ? (
+          {showLoadingScreen ? (
             /* 로딩 스피너 */
             <motion.div
               key="loading"
