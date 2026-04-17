@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { ProjectGlossaryTab } from "@/components/projects/ProjectGlossaryTab";
-import { ProjectKnowledgeTab } from "@/components/projects/ProjectKnowledgeTab";
-import { ProjectOverviewTab } from "@/components/projects/ProjectOverviewTab";
-import { ProjectSectionsTab } from "@/components/projects/ProjectSectionsTab";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { layoutMaxWNormal } from "@/config/layout";
-import { cn } from "@/lib/utils";
-import { projectService } from "@/services/project-service";
-import { usePanelStore } from "@/stores/panel-store";
-import { useProjectStore } from "@/stores/project-store";
+import { ProjectGlossaryTab } from '@/components/projects/ProjectGlossaryTab';
+import { ProjectKnowledgeTab } from '@/components/projects/ProjectKnowledgeTab';
+import { ProjectOverviewTab } from '@/components/projects/ProjectOverviewTab';
+import { ProjectSectionsTab } from '@/components/projects/ProjectSectionsTab';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { layoutMaxWNormal } from '@/config/layout';
+import { cn } from '@/lib/utils';
+import { projectService } from '@/services/project-service';
+import { usePanelStore } from '@/stores/panel-store';
+import { useProjectStore } from '@/stores/project-store';
 import {
   ArrowLeft,
   BookOpen,
@@ -19,24 +19,24 @@ import {
   FolderOpen,
   LayoutList,
   MessageSquareMore,
-} from "lucide-react";
-import Link from "next/link";
-import { use, useEffect } from "react";
+} from 'lucide-react';
+import Link from 'next/link';
+import { use, useEffect } from 'react';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 const TABS = [
-  { value: "overview", icon: Box, label: "기본 정보", shortLabel: "정보" },
+  { value: 'overview', icon: Box, label: '기본 정보', shortLabel: '정보' },
   {
-    value: "knowledge",
+    value: 'knowledge',
     icon: FolderOpen,
-    label: "지식 저장소",
-    shortLabel: "지식",
+    label: '지식 저장소',
+    shortLabel: '지식',
   },
-  { value: "glossary", icon: BookOpen, label: "용어 사전", shortLabel: "용어" },
-  { value: "sections", icon: LayoutList, label: "섹션", shortLabel: "섹션" },
+  { value: 'glossary', icon: BookOpen, label: '용어 사전', shortLabel: '용어' },
+  { value: 'sections', icon: LayoutList, label: '섹션', shortLabel: '섹션' },
 ];
 
 export default function ProjectDetailLayout({ params }: Props) {
@@ -68,52 +68,57 @@ export default function ProjectDetailLayout({ params }: Props) {
 
   return (
     <Tabs
-      defaultValue="overview"
-      className="flex flex-1 flex-col overflow-hidden"
+      defaultValue='overview'
+      className='flex flex-1 flex-col overflow-hidden'
     >
       {/* Tab Navigation */}
-      <div className="bg-canvas-primary">
+      <div className='bg-canvas-primary'>
         <div
           className={cn(
-            "mx-auto transition-[max-width] duration-300 ease-in-out sm:px-6",
+            'mx-auto transition-[max-width] duration-300 ease-in-out sm:px-6',
             maxW,
           )}
         >
-          <div className="flex items-center gap-2.5 pt-6 pb-1 max-sm:px-4">
-            <Button variant="outline" size="icon-sm" className="size-7" asChild>
-              <Link href="/projects" aria-label="프로젝트 목록으로">
-                <ArrowLeft className="size-4" />
+          <div className='flex items-center gap-2.5 pt-6 pb-1 max-sm:px-4'>
+            <Button variant='outline' size='icon-sm' className='size-7' asChild>
+              <Link href='/projects' aria-label='프로젝트 목록으로'>
+                <ArrowLeft className='size-4' />
               </Link>
             </Button>
 
-            <Badge variant="ghost">
+            <Badge variant='ghost'>
               {projectName && (
-                <span className="text-fg-secondary truncate text-xs font-medium">
+                <span className='text-fg-secondary truncate text-xs font-medium'>
                   {projectName}
                 </span>
               )}
             </Badge>
 
-            <Button variant="outline" className="ml-auto gap-1.5" asChild>
-              <Link href="/agent">
+            <Button
+              variant='outline'
+              className='ml-auto gap-1.5 py-3.5! px-7!'
+              asChild
+              size={'xs'}
+            >
+              <Link href='/agent'>
                 <MessageSquareMore />
-                <span>에이전트 대화</span>
+                <span className='text-xs'>에이전트 대화</span>
               </Link>
             </Button>
           </div>
           <TabsList
-            variant="line"
-            className="border-line-subtle w-full justify-start border-b"
+            variant='line'
+            className='border-line-subtle w-full justify-start border-b'
           >
             {TABS.map(({ value, icon: Icon, label, shortLabel }) => (
               <TabsTrigger
                 key={value}
                 value={value}
-                className="data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5"
+                className='data-[state=active]:text-accent-primary after:bg-accent-primary shrink-0 gap-1.5 px-3 md:px-5'
               >
-                <Icon className="size-4" />
-                <span className="md:hidden">{shortLabel}</span>
-                <span className="hidden md:inline">{label}</span>
+                <Icon className='size-4' />
+                <span className='md:hidden'>{shortLabel}</span>
+                <span className='hidden md:inline'>{label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -121,23 +126,23 @@ export default function ProjectDetailLayout({ params }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className='flex-1 overflow-y-auto'>
         <div
           className={cn(
-            "mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6",
+            'mx-auto px-4 py-6 transition-[max-width] duration-300 ease-in-out sm:px-6',
             maxW,
           )}
         >
-          <TabsContent value="overview">
+          <TabsContent value='overview'>
             <ProjectOverviewTab projectId={id} />
           </TabsContent>
-          <TabsContent value="knowledge">
+          <TabsContent value='knowledge'>
             <ProjectKnowledgeTab projectId={id} />
           </TabsContent>
-          <TabsContent value="glossary">
+          <TabsContent value='glossary'>
             <ProjectGlossaryTab projectId={id} />
           </TabsContent>
-          <TabsContent value="sections">
+          <TabsContent value='sections'>
             <ProjectSectionsTab projectId={id} />
           </TabsContent>
         </div>

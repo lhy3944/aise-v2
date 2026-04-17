@@ -31,6 +31,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ListSkeleton } from '@/components/shared/ListSkeleton';
+import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 
 interface ProjectSectionsTabProps {
   projectId: string;
@@ -295,6 +296,7 @@ function SortableSectionRow({ section, onToggle, onEdit, onDelete }: SortableSec
 export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDeferredLoading(loading);
   const [adding, setAdding] = useState(false);
   const overlay = useOverlay();
   const isMobile = useIsMobile();
@@ -492,9 +494,11 @@ export function ProjectSectionsTab({ projectId }: ProjectSectionsTabProps) {
     [projectId, overlay],
   );
 
-  if (loading) {
+  if (showSkeleton) {
     return <ListSkeleton />;
   }
+
+  if (loading) return null;
 
   return (
     <div className='flex flex-col gap-6'>

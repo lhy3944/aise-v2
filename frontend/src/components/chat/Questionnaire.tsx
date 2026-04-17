@@ -1,20 +1,25 @@
 'use client';
 
-import { AnimatePresence, motion } from 'motion/react';
-
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { ArrowRight, CheckSquare, ChevronLeft, Forward, HelpCircle, Square } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { Check, Forward } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 
 /* ── 타입 정의 ── */
 
 export interface QuestionData {
   id?: string;
+  /** 탭 헤더에 표시되는 짧은 주제 키워드 (2~8글자 권장) */
+  topic?: string;
   question: string;
   type?: 'single' | 'multi' | 'text';
   options?: string[];
   allow_custom?: boolean;
+  recommended?: number; // 추천 옵션 인덱스 (0-based)
 }
 
 interface QuestionnaireProps {
@@ -30,6 +35,7 @@ interface SingleAnswer {
 }
 
 const EMPTY_ANSWER: SingleAnswer = { selected: [], customText: '' };
+const AUTO_NEXT_DELAY_MS = 160;
 
 /* ── 개별 질문 렌더러 ── */
 
@@ -37,10 +43,12 @@ function QuestionItem({
   data,
   answer,
   onChange,
+  onAutoNext,
 }: {
   data: QuestionData;
   answer: SingleAnswer;
   onChange: (answer: SingleAnswer) => void;
+  onAutoNext: () => void;
 }) {
   const qType = data.type ?? 'single';
   const options = data.options ?? [];
@@ -49,7 +57,8 @@ function QuestionItem({
 
   const handleOptionClick = (option: string) => {
     if (qType === 'single') {
-      onChange({ ...answer, selected: [option] });
+      onChange({ ...answer, selected: [option], customText: '' });
+      window.setTimeout(onAutoNext, AUTO_NEXT_DELAY_MS);
     } else {
       const next = answer.selected.includes(option)
         ? answer.selected.filter((s) => s !== option)
@@ -60,87 +69,89 @@ function QuestionItem({
 
   const handleCustomToggle = () => {
     if (isCustomActive) {
-      onChange({ ...answer, selected: answer.selected.filter((s) => s !== '__custom__'), customText: '' });
+      onChange({
+        ...answer,
+        selected: answer.selected.filter((s) => s !== '__custom__'),
+        customText: '',
+      });
+    } else if (qType === 'single') {
+      onChange({ ...answer, selected: ['__custom__'] });
     } else {
-      if (qType === 'single') {
-        onChange({ ...answer, selected: ['__custom__'] });
-      } else {
-        onChange({ ...answer, selected: [...answer.selected, '__custom__'] });
-      }
+      onChange({ ...answer, selected: [...answer.selected, '__custom__'] });
     }
   };
 
   return (
-    <div className='flex flex-col gap-3'>
-      {/* 질문 */}
-      <div className='flex items-start gap-2'>
-        <HelpCircle className='text-accent-primary mt-0.5 size-4 shrink-0' />
-        <p className='text-fg-primary text-sm font-medium'>{data.question}</p>
-      </div>
+    <div className='flex flex-col gap-2.5'>
+      <Label className='text-fg-primary text-sm font-medium'>
+        {data.question}
+      </Label>
 
-      {/* 옵션 (single / multi) */}
       {qType !== 'text' && options.length > 0 && (
         <div className='flex flex-col gap-1.5'>
-          {options.map((option) => {
+          {options.map((option, idx) => {
             const isSelected = answer.selected.includes(option);
+            const isRecommended = data.recommended === idx;
             return (
-              <button
+              <Button
                 key={option}
-                type='button'
-                onClick={() => handleOptionClick(option)}
+                variant='outline'
                 className={cn(
-                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                  'h-auto justify-start gap-2.5 px-3 py-2.5 text-sm font-normal',
                   isSelected
-                    ? 'border-accent-primary text-fg-primary'
-                    : 'border-line-primary text-fg-secondary hover:bg-canvas-secondary',
+                    ? 'border-fg-primary text-fg-primary'
+                    : 'border-line-primary text-fg-secondary',
                 )}
+                onClick={() => handleOptionClick(option)}
               >
-                {qType === 'multi' ? (
-                  isSelected ? (
-                    <CheckSquare className='text-accent-primary size-4 shrink-0' />
-                  ) : (
-                    <Square className='text-fg-muted size-4 shrink-0' />
-                  )
-                ) : (
-                  <div
-                    className={cn(
-                      'flex size-4 shrink-0 items-center justify-center rounded-full border',
-                      isSelected ? 'border-accent-primary bg-accent-primary' : 'border-line-primary',
-                    )}
+                <div
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-full border',
+                    isSelected
+                      ? 'border-fg-primary bg-fg-primary'
+                      : 'border-fg-muted',
+                  )}
+                >
+                  {isSelected && (
+                    <Check className='text-canvas-primary size-2.5' strokeWidth={3} />
+                  )}
+                </div>
+                <span className='flex-1 text-left'>{option}</span>
+                {isRecommended && (
+                  <Badge
+                    variant='secondary'
+                    className='shrink-0 text-[10px] font-normal'
                   >
-                    {isSelected && <div className='size-1.5 rounded-full bg-white' />}
-                  </div>
+                    추천
+                  </Badge>
                 )}
-                {option}
-              </button>
+              </Button>
             );
           })}
         </div>
       )}
 
-      {/* 직접 입력 토글 (single/multi + allow_custom) */}
       {qType !== 'text' && allowCustom && (
         <div className='flex flex-col gap-1.5'>
-          <button
-            type='button'
-            onClick={handleCustomToggle}
+          <Button
+            variant='outline'
             className={cn(
-              'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+              'h-auto justify-start px-3 py-2.5 text-sm font-normal',
               isCustomActive
-                ? 'border-accent-primary text-accent-primary'
-                : 'border-line-primary text-fg-muted hover:bg-canvas-secondary',
+                ? 'border-fg-primary text-fg-primary'
+                : 'border-line-primary text-fg-muted',
             )}
+            onClick={handleCustomToggle}
           >
             직접 입력
-          </button>
+          </Button>
           {isCustomActive && (
-            <textarea
+            <Textarea
               value={answer.customText}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              onChange={(e) =>
                 onChange({ ...answer, customText: e.target.value })
               }
               placeholder='답변을 입력하세요...'
-              className='bg-canvas-primary border-line-primary text-fg-primary placeholder:text-fg-muted w-full rounded-lg border px-3 py-2 text-sm focus:outline-none'
               rows={2}
               autoFocus
             />
@@ -148,15 +159,11 @@ function QuestionItem({
         </div>
       )}
 
-      {/* 텍스트 전용 입력 */}
       {qType === 'text' && (
-        <textarea
+        <Textarea
           value={answer.customText}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            onChange({ ...answer, customText: e.target.value })
-          }
+          onChange={(e) => onChange({ ...answer, customText: e.target.value })}
           placeholder='답변을 입력하세요...'
-          className='bg-canvas-primary border-line-primary text-fg-primary placeholder:text-fg-muted w-full rounded-lg border px-3 py-2 text-sm focus:outline-none'
           rows={2}
         />
       )}
@@ -170,7 +177,9 @@ function isQuestionAnswered(data: QuestionData, answer: SingleAnswer): boolean {
   const qType = data.type ?? 'single';
   if (qType === 'text') return answer.customText.trim().length > 0;
   const hasOption = answer.selected.some((s) => s !== '__custom__');
-  const hasCustom = answer.selected.includes('__custom__') && answer.customText.trim().length > 0;
+  const hasCustom =
+    answer.selected.includes('__custom__') &&
+    answer.customText.trim().length > 0;
   return hasOption || hasCustom;
 }
 
@@ -197,130 +206,100 @@ function formatAnswers(questions: QuestionData[], answers: AnswerMap): string {
     .join('\n');
 }
 
-/* ── Questionnaire 메인 (스텝별 위저드) ── */
+/* ── Questionnaire 메인 ── */
 
 export function Questionnaire({ questions, onSubmit }: QuestionnaireProps) {
-  const [step, setStep] = useState(0);
+  const keys = useMemo(
+    () => questions.map((q, i) => q.id ?? `q${i}`),
+    [questions],
+  );
+
   const [answers, setAnswers] = useState<AnswerMap>(() => {
     const initial: AnswerMap = {};
-    questions.forEach((q, i) => {
-      initial[q.id ?? `q${i}`] = { ...EMPTY_ANSWER };
+    keys.forEach((k) => {
+      initial[k] = { ...EMPTY_ANSWER };
     });
     return initial;
   });
+  const [activeKey, setActiveKey] = useState<string>(keys[0]);
   const [submitted, setSubmitted] = useState(false);
-  const [direction, setDirection] = useState(1); // 1=forward, -1=back
 
-  const total = questions.length;
-  const isSingle = total === 1;
-  const isLast = step === total - 1;
-  const currentQ = questions[step];
-  const currentKey = currentQ.id ?? `q${step}`;
-  const currentAnswer = answers[currentKey] ?? EMPTY_ANSWER;
-  const currentAnswered = isQuestionAnswered(currentQ, currentAnswer);
-
-  const updateAnswer = useCallback(
-    (key: string, answer: SingleAnswer) => {
-      setAnswers((prev: AnswerMap) => ({ ...prev, [key]: answer }));
-    },
-    [],
+  const answeredList = questions.map((q, i) =>
+    isQuestionAnswered(q, answers[keys[i]] ?? EMPTY_ANSWER),
   );
+  const answeredCount = answeredList.filter(Boolean).length;
+  const allAnswered = answeredList.every(Boolean);
 
-  const goNext = () => {
-    if (!currentAnswered) return;
-    if (isLast) {
-      setSubmitted(true);
-      onSubmit(formatAnswers(questions, answers));
-    } else {
-      setDirection(1);
-      setStep((s) => s + 1);
-    }
+  const updateAnswer = useCallback((key: string, answer: SingleAnswer) => {
+    setAnswers((prev) => ({ ...prev, [key]: answer }));
+  }, []);
+
+  const goNext = useCallback(() => {
+    setActiveKey((curr) => {
+      const i = keys.indexOf(curr);
+      return i >= 0 && i < keys.length - 1 ? keys[i + 1] : curr;
+    });
+  }, [keys]);
+
+  const handleSubmit = () => {
+    if (!allAnswered) return;
+    setSubmitted(true);
+    onSubmit(formatAnswers(questions, answers));
   };
 
-  const goBack = () => {
-    if (step > 0) {
-      setDirection(-1);
-      setStep((s) => s - 1);
-    }
-  };
-
-  /* 제출 완료 — 질문지 숨김 (답변은 사용자 메시지로 전송됨) */
   if (submitted) return null;
 
-  /* 스텝별 위저드 */
   return (
-    <div className='bg-canvas-surface border-line-primary w-full overflow-hidden rounded-xl border'>
-      {/* 상단: 스텝 인디케이터 */}
-      {!isSingle && (
-        <div className='border-line-primary flex items-center gap-2 border-b px-4 py-2.5'>
-          {/* 스텝 도트 */}
-          <div className='flex items-center gap-1.5'>
-            {questions.map((_, i) => {
-              const key = questions[i].id ?? `q${i}`;
-              const answered = isQuestionAnswered(questions[i], answers[key] ?? EMPTY_ANSWER);
+    <div className='border-line-primary bg-canvas-surface w-full overflow-hidden rounded-xl border'>
+      <Tabs value={activeKey} onValueChange={setActiveKey} className='gap-0'>
+        <div className='border-line-primary border-b px-2 py-1.5'>
+          <TabsList
+            variant='line'
+            className='w-full justify-start overflow-x-auto overflow-y-hidden'
+          >
+            {questions.map((q, i) => {
+              const key = keys[i];
+              const answered = answeredList[i];
+              const label = q.topic?.trim() || `질문 ${i + 1}`;
               return (
-                <div
-                  key={i}
-                  className={cn(
-                    'size-2 rounded-full transition-colors',
-                    i === step
-                      ? 'bg-accent-primary'
-                      : answered
-                        ? 'bg-accent-primary/40'
-                        : 'bg-fg-muted/30',
+                <TabsTrigger key={key} value={key} className='shrink-0 gap-1.5'>
+                  {answered && (
+                    <Check className='text-accent-primary size-3' strokeWidth={3} />
                   )}
-                />
+                  <span className='max-w-40 truncate'>{label}</span>
+                </TabsTrigger>
               );
             })}
-          </div>
-          <span className='text-fg-muted text-xs'>
-            {step + 1} / {total}
-          </span>
+          </TabsList>
         </div>
-      )}
 
-      {/* 질문 영역 — 애니메이션 전환 */}
-      <div className='relative p-4'>
-        <AnimatePresence mode='wait' initial={false} custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -40 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-          >
-            <QuestionItem
-              data={currentQ}
-              answer={currentAnswer}
-              onChange={(a) => updateAnswer(currentKey, a)}
-            />
-          </motion.div>
-        </AnimatePresence>
-      </div>
+        {questions.map((q, i) => {
+          const key = keys[i];
+          return (
+            <TabsContent key={key} value={key} className='p-4'>
+              <QuestionItem
+                data={q}
+                answer={answers[key] ?? EMPTY_ANSWER}
+                onChange={(a) => updateAnswer(key, a)}
+                onAutoNext={goNext}
+              />
+            </TabsContent>
+          );
+        })}
+      </Tabs>
 
-      {/* 하단: 네비게이션 */}
       <div className='border-line-primary flex items-center justify-between border-t px-4 py-2.5'>
-        <div>
-          {!isSingle && step > 0 && (
-            <Button variant='ghost' size='sm' onClick={goBack} className='gap-1 text-xs'>
-              <ChevronLeft className='size-3.5' />
-              이전
-            </Button>
-          )}
-        </div>
-        <Button size='sm' onClick={goNext} disabled={!currentAnswered} className='gap-1.5'>
-          {isLast ? (
-            <>
-              <Forward className='size-3.5' />
-              답변하기
-            </>
-          ) : (
-            <>
-              다음
-              <ArrowRight className='size-3.5' />
-            </>
-          )}
+        <span className='text-fg-muted text-xs'>
+          {answeredCount}/{questions.length} 완료
+        </span>
+        <Button
+          size='sm'
+          onClick={handleSubmit}
+          disabled={!allAnswered}
+          className='gap-1.5'
+        >
+          <Forward className='size-3.5' />
+          답변하기
         </Button>
       </div>
     </div>

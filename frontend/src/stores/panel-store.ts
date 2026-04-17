@@ -37,6 +37,7 @@ interface PanelState {
   setRightPanelPreset: (preset: LayoutMode.WIDE | LayoutMode.SPLIT | LayoutMode.CLOSED) => void;
   openSourceViewer: (data: SourceViewerData) => void;
   closeSourceViewer: () => void;
+  resetRightPanelView: () => void;
   toggleNotification: () => void;
   toggleFullWidth: () => void;
   setViewport: (width: number) => void;
@@ -82,6 +83,12 @@ export const usePanelStore = create<PanelState>()(
       },
 
       closeSourceViewer: () => {
+        set({ rightPanelView: 'artifacts', sourceViewerData: null });
+      },
+
+      // 오른쪽 패널 위에 떠 있는 오버레이 뷰어들(출처 뷰어 등)만 닫고 기본 artifacts 패널로 복귀.
+      // 새 뷰어 추가 시 여기서 해당 상태 초기화를 함께 관리한다.
+      resetRightPanelView: () => {
         set({ rightPanelView: 'artifacts', sourceViewerData: null });
       },
 

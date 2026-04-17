@@ -3,13 +3,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.schemas.api.record import (
     RecordApproveRequest,
     RecordCreate,
-    RecordExtractResponse,
     RecordListResponse,
     RecordReorderRequest,
     RecordResponse,
@@ -81,14 +81,32 @@ async def delete_record(
     await record_svc.delete_record(db, project_id, record_id)
 
 
-@router.post("/extract", response_model=RecordExtractResponse)
+@router.post("/extract")
 async def extract_records(
     project_id: uuid.UUID,
     section_id: uuid.UUID | None = Query(default=None, description="특정 섹션만 추출"),
-    db: AsyncSession = Depends(get_db),
 ):
-    """지식 문서 기반 레코드 추출 (전체 또는 특정 섹션)"""
-    return await record_svc.extract_records(db, project_id, section_id)
+    """지식 문서 기반 레코드 추출 SSE 스트리밍 엔드포인트.
+
+    LLM 호출이 길어도 프록시 keep-alive 타임아웃이 발생하지 않도록
+    주기적으로 heartbeat를 보내고, 완료 시 candidates를 `done` 이벤트로 전달한다.
+
+    DB 세션은 service 레이어에서 자체 관리 (StreamingResponse 수명 이슈 방지).
+
+    이벤트:
+    - data: {"type": "progress", "stage": "...", "message": "..."}
+    - data: {"type": "done", "candidates": [...]}
+    - data: {"type": "error", "message": "..."}
+    """
+    return StreamingResponse(
+        record_svc.stream_extract_records(project_id, section_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/approve", response_model=RecordListResponse, status_code=201)

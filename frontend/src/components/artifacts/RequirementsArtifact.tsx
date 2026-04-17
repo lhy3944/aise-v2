@@ -16,7 +16,8 @@ import { useOverlayStore } from '@/stores/overlay-store';
 import { useReview } from '@/hooks/useReview';
 import { ApiError } from '@/lib/api';
 import { showToast } from '@/lib/toast';
-import { Save, Sparkles, ClipboardCheck, Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { Save, Sparkles, ClipboardCheck } from 'lucide-react';
 import type {
   Requirement,
   RequirementType,
@@ -398,7 +399,7 @@ export function RequirementsArtifact({ projectId }: RequirementsArtifactProps) {
                 className='h-7 px-2 text-xs'
               >
                 {review.isReviewing ? (
-                  <Loader2 className='size-3 animate-spin' />
+                  <Spinner size='size-3' />
                 ) : (
                   <ClipboardCheck className='size-3' />
                 )}

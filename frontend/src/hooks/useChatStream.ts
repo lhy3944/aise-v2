@@ -1,7 +1,7 @@
 'use client';
 
 import { streamAgentChat } from '@/services/agent-service';
-import { recordService } from '@/services/record-service';
+import { streamExtractRecords } from '@/services/record-service';
 import { sessionService } from '@/services/session-service';
 import { useArtifactStore } from '@/stores/artifact-store';
 import type { ChatMessage, ToolCallData } from '@/stores/chat-store';
@@ -113,40 +113,42 @@ export function useChatStream(sessionId?: string) {
     };
   }, [sessionId, setMessages]);
 
-  // 레코드 추출 실행
+  // 레코드 추출 실행 (SSE 스트리밍)
   const triggerExtractRecords = useCallback(
-    async (projectId: string, sid: string) => {
+    (projectId: string, sid: string) => {
       setExtracting(true);
       setActiveTab('records');
       setRightPanelPreset(LayoutMode.SPLIT);
       const updateLast = useChatStore.getState().updateLastAssistantMessage;
-      try {
-        const result = await recordService.extract(projectId);
-        setCandidates(result.candidates);
-        updateLast(sid, (msg) => ({
-          ...msg,
-          toolCalls: msg.toolCalls?.map((tc) =>
-            tc.name === 'extract_records'
-              ? {
-                  ...tc,
-                  state: 'completed' as const,
-                  result: `${result.candidates.length}개 후보 추출`,
-                }
-              : tc,
-          ),
-        }));
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : '레코드 추출 실패';
-        setExtractError(errorMsg);
-        updateLast(sid, (msg) => ({
-          ...msg,
-          toolCalls: msg.toolCalls?.map((tc) =>
-            tc.name === 'extract_records'
-              ? { ...tc, state: 'error' as const, error: errorMsg }
-              : tc,
-          ),
-        }));
-      }
+
+      streamExtractRecords(projectId, undefined, {
+        onDone: (candidates) => {
+          setCandidates(candidates);
+          updateLast(sid, (msg) => ({
+            ...msg,
+            toolCalls: msg.toolCalls?.map((tc) =>
+              tc.name === 'extract_records'
+                ? {
+                    ...tc,
+                    state: 'completed' as const,
+                    result: `${candidates.length}개 후보 추출`,
+                  }
+                : tc,
+            ),
+          }));
+        },
+        onError: (errorMsg) => {
+          setExtractError(errorMsg);
+          updateLast(sid, (msg) => ({
+            ...msg,
+            toolCalls: msg.toolCalls?.map((tc) =>
+              tc.name === 'extract_records'
+                ? { ...tc, state: 'error' as const, error: errorMsg }
+                : tc,
+            ),
+          }));
+        },
+      });
     },
     [setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset],
   );

@@ -49,7 +49,7 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
       {data.options.length > 0 && (
         <div className='mb-3 flex flex-col gap-1.5'>
           {data.options.map((option) => (
-            <button
+            <Button
               key={option}
               onClick={() => setSelected(option)}
               className={cn(
@@ -60,7 +60,7 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
               )}
             >
               {option}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -97,7 +97,9 @@ export function ClarifyQuestion({ data, onAnswer }: ClarifyQuestionProps) {
         <Button
           size='sm'
           onClick={handleSubmit}
-          disabled={!selected || (selected === '__custom__' && !customInput.trim())}
+          disabled={
+            !selected || (selected === '__custom__' && !customInput.trim())
+          }
           className='gap-1.5'
         >
           <Forward className='size-3.5' />

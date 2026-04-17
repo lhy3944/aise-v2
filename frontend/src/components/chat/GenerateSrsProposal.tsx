@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Loader2, Play } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { FileText, Play } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -57,7 +58,7 @@ export function GenerateSrsProposal({ data, onConfirm }: GenerateSrsProposalProp
 
       {confirmed ? (
         <div className='text-accent-primary flex items-center gap-2 text-sm'>
-          <Loader2 className='size-4 animate-spin' />
+          <Spinner />
           SRS 문서를 생성하고 있습니다...
         </div>
       ) : (

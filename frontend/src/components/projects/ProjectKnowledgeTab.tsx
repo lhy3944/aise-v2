@@ -18,6 +18,7 @@ import {
 import { useOverlay } from '@/hooks/useOverlay';
 import { cn } from '@/lib/utils';
 import { knowledgeService } from '@/services/knowledge-service';
+import { Spinner } from '@/components/ui/spinner';
 import { useProjectStore } from '@/stores/project-store';
 import { useReadinessStore } from '@/stores/readiness-store';
 import type {
@@ -37,6 +38,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDeferredLoading } from '@/hooks/useDeferredLoading';
 import { ListSkeleton } from '../shared/ListSkeleton';
 import { Textarea } from '../ui/textarea';
 
@@ -95,6 +97,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const showSkeleton = useDeferredLoading(loading);
   const [dragging, setDragging] = useState(false);
   const [previewTarget, setPreviewTarget] = useState<KnowledgeDocument | null>(
     null,
@@ -314,9 +317,11 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
     }
   }, []);
 
-  if (loading) {
+  if (showSkeleton) {
     return <ListSkeleton />;
   }
+
+  if (loading) return null;
 
   return (
     <div className='flex flex-col gap-6'>
@@ -368,7 +373,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
           >
             <div className='bg-canvas-surface mb-3 flex size-12 items-center justify-center rounded-full'>
               {uploading ? (
-                <Loader2 className='text-fg-muted size-5 animate-spin' />
+                <Spinner size='size-5' className='text-fg-muted' />
               ) : (
                 <Upload className='text-fg-muted size-5' />
               )}
@@ -428,7 +433,7 @@ export function ProjectKnowledgeTab({ projectId }: ProjectKnowledgeTabProps) {
                   className='gap-1.5'
                 >
                   {textSubmitting ? (
-                    <Loader2 className='size-4 animate-spin' />
+                    <Spinner />
                   ) : (
                     <Upload className='size-4' />
                   )}

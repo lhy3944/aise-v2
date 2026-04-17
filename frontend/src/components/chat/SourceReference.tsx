@@ -28,9 +28,9 @@ export function SourceReference({ sources }: SourceReferenceProps) {
     .sort((a, b) => a.ref - b.ref);
 
   return (
-    <div className="mt-2 space-y-1.5">
+    <div className="@container mt-2 space-y-1.5">
       <span className="text-fg-muted text-xs">출처</span>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="@md:grid-cols-2 grid grid-cols-1 gap-1.5">
         {sortedSources.map((s) => {
           const isActive =
             sourceViewerData?.documentId === s.document_id &&
@@ -51,12 +51,12 @@ export function SourceReference({ sources }: SourceReferenceProps) {
               }
               className={cn(
                 "border-line-primary text-fg-secondary hover:text-fg-primary",
-                "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors",
+                "flex w-full min-w-0 items-center justify-start gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors",
                 isActive && "border-accent-primary text-fg-primary",
               )}
             >
-              <FileText className="size-3.5" />
-              <span>
+              <FileText className="size-3.5 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">
                 [{s.ref}] {s.document_name}
               </span>
             </Button>

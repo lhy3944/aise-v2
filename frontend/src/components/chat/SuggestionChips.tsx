@@ -1,8 +1,7 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, Forward } from 'lucide-react';
+import { ArrowRight, MessageCircle, Sparkles } from 'lucide-react';
 
 interface SuggestionChipsProps {
   suggestions: string[];
@@ -16,21 +15,39 @@ export function SuggestionChips({
   if (suggestions.length === 0) return null;
 
   return (
-    <div className='mt-3 flex flex-col gap-1.5'>
-      {suggestions.map((text, i) => (
-        <Button
-          key={i}
-          variant='outline'
-          className={cn(
-            'border-line-primary text-fg-secondary hover:border-accent-primary hover:text-fg-primary',
-            'h-auto w-full justify-start gap-1.5 rounded-md px-6! py-3 text-xs',
-          )}
-          onClick={() => onSelect(text)}
-        >
-          <span className='truncate'>{text}</span>
-          <Forward className='size-3 shrink-0 opacity-50' />
-        </Button>
-      ))}
+    <div className='mt-3'>
+      <div className='text-fg-muted text-xs'>추천 후속 질문</div>
+      <div className='divide-line-primary divide-y'>
+        {suggestions.map((text, i) => {
+          const isCommand = text.trim().startsWith('/');
+          const LeadIcon = isCommand ? Sparkles : MessageCircle;
+          return (
+            <button
+              key={i}
+              type='button'
+              onClick={() => onSelect(text)}
+              className={cn(
+                'group flex w-full items-center gap-3 px-2 py-3 text-left text-sm',
+                'text-fg-secondary hover:text-fg-primary transition-colors',
+              )}
+            >
+              <LeadIcon
+                className={cn(
+                  'text-fg-muted size-4 shrink-0 transition-colors',
+                  'group-hover:text-accent-primary',
+                )}
+              />
+              <span className='flex-1 truncate'>{text}</span>
+              <ArrowRight
+                className={cn(
+                  'text-fg-muted size-4 shrink-0 transition-transform',
+                  'group-hover:text-fg-primary group-hover:translate-x-0.5',
+                )}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

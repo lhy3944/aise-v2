@@ -11,7 +11,8 @@
 /* ── 컨테이너 ── */
 
 .markdown-body {
-  line-height: 1.7;
+  font-size: calc(var(--md-font-size, 0.875rem) * var(--md-chat-scale, 1));
+  line-height: var(--md-line-height, 1.7);
   word-wrap: break-word;
   overflow-wrap: break-word;
   color: var(--color-fg-primary);
@@ -189,53 +190,62 @@
 
 /* ── 코드블록 ── */
 
+/* code-block을 grid로: header(좌) + actions(우)가 한 row, body가 다음 row */
 .markdown-body [data-streamdown='code-block'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   border-radius: 0.75rem;
   overflow: hidden;
   max-width: 100%;
   position: relative;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* 코드블록 액션 버튼: border 제거 */
 .markdown-body [data-streamdown='code-block-actions'] {
   border: none !important;
   box-shadow: none !important;
-}
-
-/* 코드블럭 헤더 정렬 */
-.markdown-body [data-streamdown='code-block-header'] {
-  min-height: 2.5rem;
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 0.25rem;
+}
+
+/* 헤더(language): grid row 1 / col 1 */
+.markdown-body [data-streamdown='code-block-header'] {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
   margin: 0 !important;
-  padding: 0 0.75rem;
-  padding-right: 4.75rem;
+  padding: 0 0.75rem !important;
   line-height: 1.2;
 }
 
+/* 액션 wrapper: grid row 1 / col 2 — header와 동일 row에 배치 */
 .markdown-body [data-streamdown='code-block'] > div:has(> [data-streamdown='code-block-actions']) {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0;
-  right: 0;
-  height: 2.5rem !important;
-  margin: 0 !important;
-  padding: 0 0.75rem !important;
+  grid-column: 2;
+  grid-row: 1;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  border-bottom: 1px solid var(--md-code-shell-border, var(--color-line-primary));
-  margin-top: 0 !important;
-  z-index: 2;
+  min-height: 2.5rem;
+  margin: 0 !important;
+  padding: 0 0.5rem !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  height: auto !important;
 }
 
-.markdown-body [data-streamdown='code-block-actions'] {
-  position: static;
-  transform: none;
-  display: flex;
-  align-items: center;
-  height: 100%;
+/* body: 전체 col 폭 차지, row 경계선은 body 상단에 그려 양끝까지 맞닿게 */
+.markdown-body [data-streamdown='code-block-body'] {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  border-top: 1px solid var(--md-code-shell-border, var(--color-line-primary)) !important;
+  min-width: 0;
+  border-radius: 0 !important;
 }
 
 /* ── 테이블 ── */
@@ -303,10 +313,6 @@
 }
 
 /* ── 머메이드 ── */
-
-.markdown-body [data-streamdown='mermaid-block'] {
-  /* border: none !important; */
-}
 
 .markdown-body [data-streamdown='mermaid'] {
   padding: 12px 0 !important;
@@ -513,7 +519,7 @@
    -------------------------------------------------------------------------- */
 
 :where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) {
-  --md-font-size: 0.96rem;
+  --md-font-size: 0.875rem; /* tailwind text-sm = 14px @ base 16 */
   --md-line-height: 1.72;
   --md-chat-scale: 1;
   --md-heading-weight: 700;
@@ -542,7 +548,6 @@
 }
 
 .markdown-theme-github {
-  --md-font-size: 0.95rem;
   --md-line-height: 1.66;
   --md-heading-weight: 600;
   --md-heading-track: 0;
@@ -557,7 +562,6 @@
 }
 
 .markdown-theme-dense {
-  --md-font-size: 0.9rem;
   --md-line-height: 1.58;
   --md-heading-weight: 650;
   --md-inline-code-bg: color-mix(in srgb, var(--color-canvas-surface) 88%, transparent);
@@ -565,19 +569,23 @@
   --md-table-header-bg: color-mix(in srgb, var(--color-canvas-surface) 96%, transparent);
 }
 
+/* 스케일은 사용자 메시지 Tailwind 클래스(text-xs/sm/base = 12/14/16px)와 일치시킴
+ * 기준: 중간 = text-sm(14px) = --md-font-size(0.875rem) × 1 */
 .chat-font-small {
-  --md-chat-scale: 0.9;
+  --md-chat-scale: 0.857; /* 14px × 0.857 ≈ 12px (text-xs) */
 }
 
 .chat-font-medium {
-  --md-chat-scale: 1;
+  --md-chat-scale: 1; /* 14px (text-sm) */
 }
 
 .chat-font-large {
-  --md-chat-scale: 1.1;
+  --md-chat-scale: 1.143; /* 14px × 1.143 ≈ 16px (text-base) */
 }
 
-:where(.markdown-theme-docs, .markdown-theme-github, .markdown-theme-dense) {
+.markdown-theme-docs,
+.markdown-theme-github,
+.markdown-theme-dense {
   font-size: calc(var(--md-font-size) * var(--md-chat-scale, 1));
   line-height: var(--md-line-height);
   color: var(--md-paragraph-color);

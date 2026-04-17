@@ -15,9 +15,11 @@ import { Ellipsis, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsDialog } from '@/components/overlay/SettingsDialog';
+import { usePanelStore } from '@/stores/panel-store';
 
 export function MobileBottomDrawer() {
   const router = useRouter();
+  const resetRightPanelView = usePanelStore((s) => s.resetRightPanelView);
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -31,6 +33,7 @@ export function MobileBottomDrawer() {
   }));
 
   const handleNewChat = () => {
+    resetRightPanelView();
     router.push('/agent');
     setOpen(false);
   };

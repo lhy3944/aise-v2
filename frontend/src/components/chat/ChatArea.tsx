@@ -10,7 +10,8 @@ import { useTurnLayout } from '@/hooks/useTurnLayout';
 import { cn } from '@/lib/utils';
 import { usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
-import { ArrowDown, Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { ArrowDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 interface ChatAreaProps {
@@ -40,6 +41,13 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     !hasMessages && !isLoadingMessages && !isCreatingSession;
   const maxW = fullWidthMode ? 'max-w-[896px]' : 'max-w-[768px]';
 
+  // 첫 세션 응답 대기 중인지 판단 — 사용자/스트리밍 어시스턴트 쌍만 존재하고 아직 내용이 없을 때
+  const isFirstSessionResponse =
+    messages.length === 2 &&
+    messages[0].role === 'user' &&
+    messages[1].role === 'assistant' &&
+    !messages[1].content;
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* === 상단 영역: 로딩 / 빈 화면 / 메시지 — AnimatePresence로 전환 === */}
@@ -54,7 +62,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
               exit={{ opacity: 0, transition: { duration: 0.2 } }}
               className="flex h-full items-center justify-center"
             >
-              <Loader2 className="text-fg-muted size-8 animate-spin" />
+              <Spinner size='size-8' className='text-fg-muted' />
             </motion.div>
           ) : showEmptyScreen ? (
             /* 빈 화면: 중앙 프롬프트 */
@@ -133,7 +141,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                   {pastMessages.length > 0 && (
                     <MessageRenderer
                       messages={pastMessages}
-                      onSendMessage={sendMessage}
+                      // 과거 메시지는 이미 답변이 이어진 상태 → Clarify/Suggestions 등 인터랙티브 블록 비활성화
                     />
                   )}
 
@@ -148,13 +156,13 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
                       <div className="shrink-0">
                         <MessageRenderer
                           messages={[currentTurn.question]}
-                          onSendMessage={sendMessage}
                         />
                       </div>
                       <div ref={answerAreaRef}>
                         <MessageRenderer
                           messages={[currentTurn.answer]}
                           onSendMessage={sendMessage}
+                          firstResponseSkeleton={isFirstSessionResponse}
                         />
                       </div>
                     </section>

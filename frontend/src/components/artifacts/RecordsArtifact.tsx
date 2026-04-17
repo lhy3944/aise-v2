@@ -15,15 +15,16 @@ import { recordService } from '@/services/record-service';
 import { useRecordStore } from '@/stores/record-store';
 import type { RecordCreate, RecordStatus, Record as RecordType } from '@/types/project';
 import {
+  Check,
   CheckCircle2,
   Database,
   FileText,
   Filter,
-  Loader2,
   MinusCircle,
   Trash2,
   XCircle,
 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { useCallback, useEffect, useState } from 'react';
 
 interface RecordsArtifactProps {
@@ -39,16 +40,17 @@ const STATUS_CONFIG: Record<
   excluded: { icon: MinusCircle, label: '제외', color: 'text-red-500' },
 };
 
-function ConfidenceBadge({ score }: { score: number | null }) {
+function ConfidenceIndicator({ score }: { score: number | null }) {
   if (score === null) return null;
   const pct = Math.round(score * 100);
-  const color =
-    pct >= 80
-      ? 'text-green-600 bg-green-500/10'
-      : pct >= 50
-        ? 'text-amber-600 bg-amber-500/10'
-        : 'text-red-600 bg-red-500/10';
-  return <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', color)}>{pct}%</span>;
+  const dot =
+    pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+  return (
+    <span className='text-fg-muted inline-flex items-center gap-1 text-[11px] tabular-nums'>
+      <span className={cn('size-1.5 rounded-full', dot)} />
+      {pct}%
+    </span>
+  );
 }
 
 export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
@@ -178,7 +180,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
   if (loading) {
     return (
       <div className='flex h-full items-center justify-center'>
-        <Loader2 className='text-fg-muted size-6 animate-spin' />
+        <Spinner size='size-6' className='text-fg-muted' />
       </div>
     );
   }
@@ -187,7 +189,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
   if (extracting) {
     return (
       <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
-        <Loader2 className='text-accent-primary mb-3 size-10 animate-spin' />
+        <Spinner size='size-10' className='text-accent-primary mb-3' />
         <p className='text-fg-primary text-sm font-medium'>레코드 추출 중...</p>
         <p className='text-fg-muted mt-1 text-xs'>지식 문서를 분석하고 있습니다</p>
       </div>
@@ -227,7 +229,7 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
               onClick={handleApproveCandidates}
               disabled={selectedCandidates.size === 0 || approving}
             >
-              {approving ? <Loader2 className='mr-1 size-3 animate-spin' /> : null}
+              {approving ? <Spinner size='size-3' className='mr-1' /> : null}
               {selectedCandidates.size}개 승인
             </Button>
             <Button
@@ -242,50 +244,58 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
         </div>
 
         {/* Candidate list */}
-        <ScrollArea className='flex-1 overflow-hidden'>
-          <div className='p-3'>
-            <div className='flex flex-col gap-1.5'>
-              {candidates.map((candidate, idx) => (
+        <ScrollArea className='min-h-0 flex-1'>
+          <div className='flex flex-col gap-1.5 p-3 pb-4'>
+            {candidates.map((candidate, idx) => {
+              const selected = selectedCandidates.has(idx);
+              return (
                 <button
                   key={idx}
                   onClick={() => toggleCandidate(idx)}
                   className={cn(
-                    'border-line-primary flex items-start gap-2 rounded-md border px-3 py-2 text-left transition-colors',
-                    selectedCandidates.has(idx)
-                      ? 'border-accent-primary/50'
-                      : 'hover:bg-canvas-surface/50',
+                    'group flex items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors',
+                    selected
+                      ? 'border-fg-primary/30 bg-canvas-primary/60'
+                      : 'border-line-primary hover:border-fg-muted/50 hover:bg-canvas-primary/30',
                   )}
                 >
                   <div
                     className={cn(
-                      'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border',
-                      selectedCandidates.has(idx)
-                        ? 'border-accent-primary bg-accent-primary text-white'
-                        : 'border-line-primary',
+                      'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors',
+                      selected
+                        ? 'border-fg-primary bg-fg-primary text-canvas-primary'
+                        : 'border-fg-muted/50 group-hover:border-fg-muted',
                     )}
                   >
-                    {selectedCandidates.has(idx) && <CheckCircle2 className='size-3' />}
+                    {selected && <Check className='size-3' strokeWidth={3} />}
                   </div>
-                  <div className='min-w-0 flex-1'>
-                    <div className='mb-1 flex items-center gap-2'>
-                      {candidate.section_name && (
-                        <Badge variant='outline' className='text-[10px]'>
-                          {candidate.section_name}
-                        </Badge>
-                      )}
-                      <ConfidenceBadge score={candidate.confidence_score} />
-                    </div>
-                    <p className='text-fg-primary text-xs leading-relaxed'>{candidate.content}</p>
+                  <div className='min-w-0 flex-1 space-y-1.5'>
+                    {(candidate.section_name || candidate.confidence_score != null) && (
+                      <div className='text-fg-muted flex items-center gap-2 text-[11px]'>
+                        {candidate.section_name && (
+                          <span className='text-fg-secondary font-medium'>
+                            {candidate.section_name}
+                          </span>
+                        )}
+                        {candidate.section_name && candidate.confidence_score != null && (
+                          <span className='opacity-40'>·</span>
+                        )}
+                        <ConfidenceIndicator score={candidate.confidence_score} />
+                      </div>
+                    )}
+                    <p className='text-fg-primary text-sm leading-relaxed'>{candidate.content}</p>
                     {candidate.source_document_name && (
-                      <p className='text-fg-muted mt-1 text-[10px]'>
-                        출처: {candidate.source_document_name}
-                        {candidate.source_location && ` · ${candidate.source_location}`}
+                      <p className='text-fg-muted truncate text-[11px]'>
+                        {candidate.source_document_name}
+                        {candidate.source_location && (
+                          <span className='opacity-70'> · {candidate.source_location}</span>
+                        )}
                       </p>
                     )}
                   </div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </ScrollArea>
       </div>
@@ -351,8 +361,8 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
       </div>
 
       {/* Record list */}
-      <ScrollArea className='flex-1 h-full'>
-        <div className='p-3'>
+      <ScrollArea className='min-h-0 flex-1'>
+        <div className='p-3 pb-4'>
           {Object.entries(grouped).map(([sectionName, sectionRecords]) => (
             <div key={sectionName} className='mb-4'>
               <h4 className='text-fg-muted mb-1.5 px-1 text-[10px] font-semibold tracking-wider uppercase'>
@@ -366,33 +376,42 @@ export function RecordsArtifact({ projectId }: RecordsArtifactProps) {
                     <div
                       key={record.record_id}
                       className={cn(
-                        'group border-line-primary hover:bg-canvas-surface/50 rounded-md border px-3 py-2 transition-colors',
+                        'group border-line-primary hover:border-fg-muted/50 hover:bg-canvas-primary/30 space-y-1.5 rounded-lg border px-3.5 py-3 transition-colors',
                         record.status === 'excluded' && 'opacity-50',
                       )}
                     >
                       {/* Top row: ID + confidence + status */}
-                      <div className='mb-1 flex items-center gap-2'>
-                        <span className='text-fg-muted font-mono text-[10px]'>
+                      <div className='text-fg-muted flex items-center gap-2 text-[11px]'>
+                        <span className='text-fg-secondary font-mono font-medium'>
                           {record.display_id}
                         </span>
-                        <ConfidenceBadge score={record.confidence_score} />
-                        <Badge
-                          variant='outline'
-                          className={cn('ml-auto text-[10px] [&>svg]:size-3', statusCfg.color)}
+                        {record.confidence_score != null && (
+                          <>
+                            <span className='opacity-40'>·</span>
+                            <ConfidenceIndicator score={record.confidence_score} />
+                          </>
+                        )}
+                        <span
+                          className={cn(
+                            'ml-auto inline-flex items-center gap-1 [&>svg]:size-3',
+                            statusCfg.color,
+                          )}
                         >
                           <StatusIcon />
                           {statusCfg.label}
-                        </Badge>
+                        </span>
                       </div>
 
                       {/* Content */}
-                      <p className='text-fg-primary text-xs leading-relaxed'>{record.content}</p>
+                      <p className='text-fg-primary text-sm leading-relaxed'>{record.content}</p>
 
                       {/* Source */}
                       {record.source_document_name && (
-                        <p className='text-fg-muted mt-1 text-[10px]'>
-                          출처: {record.source_document_name}
-                          {record.source_location && ` · ${record.source_location}`}
+                        <p className='text-fg-muted truncate text-[11px]'>
+                          {record.source_document_name}
+                          {record.source_location && (
+                            <span className='opacity-70'> · {record.source_location}</span>
+                          )}
                         </p>
                       )}
 

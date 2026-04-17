@@ -1,6 +1,9 @@
 """Record 비즈니스 로직 서비스 — CRUD + 추출 + 승인"""
 
+import asyncio
+import json
 import uuid
+from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 
 from loguru import logger
@@ -8,6 +11,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.core.database import async_session
 from src.core.exceptions import AppException
 from src.models.glossary import GlossaryItem
 from src.models.knowledge import KnowledgeChunk, KnowledgeDocument
@@ -411,6 +415,68 @@ async def extract_records(
 
     logger.info(f"레코드 추출 완료: {len(candidates)}개 후보")
     return RecordExtractResponse(candidates=candidates)
+
+
+# ── 추출 (SSE 스트리밍) ──
+
+def _sse(event_type: str, payload: dict | None = None) -> str:
+    """SSE data line 직렬화."""
+    data = {"type": event_type}
+    if payload:
+        data.update(payload)
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def stream_extract_records(
+    project_id: uuid.UUID,
+    section_id: uuid.UUID | None = None,
+) -> AsyncGenerator[str, None]:
+    """레코드 추출을 SSE로 스트리밍.
+
+    LLM 호출 중에도 주기적으로 heartbeat(`progress`) 이벤트를 보내 프록시 keep-alive
+    타임아웃을 방지하고, 완료 시 `done` 이벤트로 candidates를 한 번에 전달한다.
+
+    DB 세션은 generator 내부에서 자체 관리한다 — StreamingResponse 수명 이슈 방지용.
+
+    이벤트:
+    - progress: 진행 단계 알림 + heartbeat
+    - done: {candidates: [...]}
+    - error: {message: "..."}
+    """
+    HEARTBEAT_INTERVAL = 2.0  # 초 — 프록시 타임아웃 방지 목적
+
+    try:
+        yield _sse("progress", {"stage": "start", "message": "레코드 추출을 시작합니다"})
+
+        async with async_session() as db:
+            # 실제 추출 작업을 백그라운드 태스크로 실행하고, 대기 중 heartbeat 전송
+            extract_task = asyncio.create_task(
+                extract_records(db, project_id, section_id)
+            )
+
+            while not extract_task.done():
+                try:
+                    await asyncio.wait_for(
+                        asyncio.shield(extract_task), timeout=HEARTBEAT_INTERVAL
+                    )
+                except asyncio.TimeoutError:
+                    # LLM 호출 진행 중 — heartbeat 전송
+                    yield _sse(
+                        "progress",
+                        {"stage": "llm", "message": "LLM이 응답을 생성하고 있습니다"},
+                    )
+
+            result: RecordExtractResponse = extract_task.result()
+
+        yield _sse(
+            "done",
+            {"candidates": [c.model_dump(mode="json") for c in result.candidates]},
+        )
+    except AppException as e:
+        yield _sse("error", {"message": e.detail, "status": e.status_code})
+    except Exception as e:  # noqa: BLE001
+        logger.exception("레코드 추출 스트리밍 실패")
+        yield _sse("error", {"message": str(e) or "레코드 추출에 실패했습니다"})
 
 
 async def get_record_by_display_id(

@@ -405,11 +405,17 @@ export function ProjectOverviewTab({ projectId }: ProjectOverviewTabProps) {
             <div className='grid grid-cols-2 gap-3 py-5'>
               <div className='flex flex-col gap-1'>
                 <Label variant='field'>수정일</Label>
-                <span className='text-sm'>{formatDateTime(project.updated_at)}</span>
+                <span className='hidden text-sm md:inline'>{formatDateTime(project.updated_at)}</span>
+                <span className='text-sm md:hidden'>
+                  {formatDateTime(project.updated_at, { hour12: false })}
+                </span>
               </div>
               <div className='flex flex-col gap-1'>
                 <Label variant='field'>생성일</Label>
-                <span className='text-sm'>{formatDateTime(project.created_at)}</span>
+                <span className='hidden text-sm md:inline'>{formatDateTime(project.created_at)}</span>
+                <span className='text-sm md:hidden'>
+                  {formatDateTime(project.created_at, { hour12: false })}
+                </span>
               </div>
             </div>
           </div>

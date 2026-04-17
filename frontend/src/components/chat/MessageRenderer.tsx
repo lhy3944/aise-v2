@@ -19,13 +19,18 @@ import {
 } from '@/components/ui/ai-elements/message';
 import { ToolCall } from '@/components/ui/ai-elements/tool-call';
 import { WaveDots } from '@/components/ui/ai-elements/wave-dots';
-import { usePanelStore } from '@/stores/panel-store';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import type { ChatMessage } from '@/stores/chat-store';
+import { usePanelStore } from '@/stores/panel-store';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Shimmer } from '../ui/ai-elements/shimmer';
 
 interface MessageRendererProps {
   messages: ChatMessage[];
   onSendMessage?: (text: string) => void;
+  /** 첫 세션 응답 대기 중일 때 skeleton UI 표시 여부 */
+  firstResponseSkeleton?: boolean;
 }
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
@@ -137,24 +142,68 @@ interface MessageItemProps {
   message: ChatMessage;
   isLast: boolean;
   onSendMessage?: (text: string) => void;
+  firstResponseSkeleton?: boolean;
 }
 
 const MessageItem = memo(
-  function MessageItem({ message, isLast, onSendMessage }: MessageItemProps) {
+  function MessageItem({
+    message,
+    isLast,
+    onSendMessage,
+    firstResponseSkeleton,
+  }: MessageItemProps) {
     const isUser = message.role === 'user';
     const showCursor = !isUser && message.status === 'streaming';
 
-    // 스트리밍 중이 아닐 때만 구조화 블록 파싱 (스트리밍 중에는 불완전한 JSON일 수 있음)
+    // 스트리밍 중에도 불완전한 구조화 블록을 감지하여 숨기고,
+    // 완료 후에는 정식 파싱으로 컴포넌트 렌더링
     const parsed = useMemo(() => {
-      if (isUser || message.status === 'streaming')
+      if (isUser)
         return {
           clarifyItems: [],
           requirementItems: [],
           suggestions: [],
           sources: [],
           cleanContent: message.content,
+          hasIncompleteBlock: false,
         };
-      return parseStructuredBlocks(message.content);
+      if (message.status === 'streaming') {
+        // 스트리밍 중: 열린 블록 태그가 있지만 닫는 태그가 없으면 불완전
+        const blockTags = ['CLARIFY', 'REQUIREMENTS', 'SUGGESTIONS', 'SOURCES'];
+        let cleanContent = message.content;
+        let hasIncompleteBlock = false;
+
+        for (const tag of blockTags) {
+          // 완성된 블록은 제거 (JSON이 노출되지 않도록)
+          const completeRe = new RegExp(
+            `\`\`\`[\\w]*\\s*\\[${tag}\\]\\s*[\\s\\S]*?\\[/${tag}\\]\\s*\`\`\`|\\[${tag}\\]\\s*[\\s\\S]*?\\[/${tag}\\]`,
+            'g',
+          );
+          cleanContent = cleanContent.replace(completeRe, '');
+
+          // 열린 블록이 남아있으면 불완전
+          const openRe = new RegExp(`\\[${tag}\\]`);
+          if (openRe.test(cleanContent)) {
+            hasIncompleteBlock = true;
+            // 열린 태그부터 끝까지 제거
+            const openIdx = cleanContent.search(openRe);
+            cleanContent = cleanContent.slice(0, openIdx);
+          }
+        }
+
+        return {
+          clarifyItems: [],
+          requirementItems: [],
+          suggestions: [],
+          sources: [],
+          cleanContent: cleanContent.trim(),
+          hasIncompleteBlock,
+        };
+      }
+      return {
+        ...parseStructuredBlocks(message.content),
+        hasIncompleteBlock: false,
+      };
     }, [message.content, message.status, isUser]);
 
     const displayContent = parsed.cleanContent;
@@ -244,13 +293,23 @@ const MessageItem = memo(
             <MessageBubble>{message.content}</MessageBubble>
           ) : (
             <>
+              {/* 첫 세션 응답 대기 중 skeleton — 첫 메시지 도착 전까지 */}
+              {showCursor && !message.content && firstResponseSkeleton && (
+                <div className='mb-3 flex w-full flex-col gap-2'>
+                  <Skeleton className='h-4 w-[85%]' />
+                  <Skeleton className='h-4 w-[70%]' />
+                  <Skeleton className='h-4 w-[55%]' />
+                </div>
+              )}
+
               {/* 스트림 응답 대기 중 shimmer */}
               {showCursor && !message.content && (
                 <div className='flex items-center gap-2'>
-                  <Spinner className='size-4' />
+                  <Spinner variant='ring' />
                   <Shimmer className='text-sm' duration={1.5} spread={1.5}>
-                    응답을 생성하고 있습니다...
+                    응답을 생성하고 있습니다
                   </Shimmer>
+                  <WaveDots />
                 </div>
               )}
 
@@ -304,6 +363,16 @@ const MessageItem = memo(
                 />
               )}
 
+              {/* 스트리밍 중 구조화 블록 생성 인디케이터 */}
+              {parsed.hasIncompleteBlock && (
+                <div className='border-line-primary w-full bg-canvas-surface flex items-center gap-1 rounded-lg border px-4 py-3'>
+                  <span className='text-fg-muted text-xs'>
+                    처리중입니다. 잠시만 기다려주세요
+                  </span>
+                  <WaveDots />
+                </div>
+              )}
+
               {/* CLARIFY 질문지 — 마지막 메시지에서만 표시 (제출 후 새 메시지 추가되면 자동 소멸) */}
               {isLast && parsed.clarifyItems.length > 0 && onSendMessage && (
                 <Questionnaire
@@ -342,12 +411,14 @@ const MessageItem = memo(
   (prev, next) =>
     prev.message === next.message &&
     prev.isLast === next.isLast &&
-    prev.onSendMessage === next.onSendMessage,
+    prev.onSendMessage === next.onSendMessage &&
+    prev.firstResponseSkeleton === next.firstResponseSkeleton,
 );
 
 export function MessageRenderer({
   messages,
   onSendMessage,
+  firstResponseSkeleton,
 }: MessageRendererProps) {
   if (messages.length === 0) return null;
 
@@ -369,14 +440,20 @@ export function MessageRenderer({
     <div className='flex flex-col gap-12'>
       {turns.map((turn) => (
         <div key={turn[0].id} className='flex flex-col gap-5'>
-          {turn.map((msg) => (
-            <MessageItem
-              key={msg.id}
-              message={msg}
-              isLast={messages[lastIndex] === msg}
-              onSendMessage={onSendMessage}
-            />
-          ))}
+          {turn.map((msg) => {
+            const msgIsLast = messages[lastIndex] === msg;
+            return (
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isLast={msgIsLast}
+                onSendMessage={onSendMessage}
+                firstResponseSkeleton={
+                  msgIsLast ? firstResponseSkeleton : false
+                }
+              />
+            );
+          })}
         </div>
       ))}
     </div>

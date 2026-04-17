@@ -12,7 +12,8 @@ import type {
   KnowledgeDocument,
   KnowledgeDocumentFileType,
 } from '@/types/project';
-import { FileText, Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { FileText } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -95,7 +96,7 @@ export function KnowledgePreviewModal({
         <div className='flex min-h-0 flex-1 flex-col'>
           {loading ? (
             <div className='flex items-center justify-center py-12'>
-              <Loader2 className='text-fg-muted size-6 animate-spin' />
+              <Spinner size='size-6' className='text-fg-muted' />
             </div>
           ) : canRender ? (
             <Tabs

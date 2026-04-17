@@ -28,7 +28,7 @@ export function formatRelativeTime(dateStr: string) {
   return `${years}년 전`;
 }
 
-export function formatDateTime(dateStr: string) {
+export function formatDateTime(dateStr: string, options?: { hour12?: boolean }) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('ko-KR', {
     year: 'numeric',
@@ -36,6 +36,7 @@ export function formatDateTime(dateStr: string) {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: options?.hour12,
   });
 }
 

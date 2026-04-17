@@ -18,9 +18,11 @@ export function LeftSidebar() {
   const router = useRouter();
   const leftSidebarOpen = usePanelStore((s) => s.leftSidebarOpen);
   const toggleLeftSidebar = usePanelStore((s) => s.toggleLeftSidebar);
+  const resetRightPanelView = usePanelStore((s) => s.resetRightPanelView);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleNewChat = () => {
+    resetRightPanelView();
     router.push('/agent');
   };
 

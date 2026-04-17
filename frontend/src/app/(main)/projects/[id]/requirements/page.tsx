@@ -17,7 +17,8 @@ import { useOverlayStore } from '@/stores/overlay-store';
 import { useReview } from '@/hooks/useReview';
 import { ApiError } from '@/lib/api';
 import { showToast } from '@/lib/toast';
-import { Save, Sparkles, List, MessageSquare, ClipboardCheck, Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { Save, Sparkles, List, MessageSquare, ClipboardCheck } from 'lucide-react';
 import type {
   Requirement,
   RequirementType,
@@ -499,7 +500,7 @@ export default function RequirementsPage({ params }: Props) {
                 disabled={review.isReviewing}
               >
                 {review.isReviewing ? (
-                  <Loader2 className='size-3.5 animate-spin' />
+                  <Spinner size='size-3.5' />
                 ) : (
                   <ClipboardCheck className='size-3.5' />
                 )}

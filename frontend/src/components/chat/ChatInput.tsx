@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { recordService } from '@/services/record-service';
+import { streamExtractRecords } from '@/services/record-service';
 import { useArtifactStore } from '@/stores/artifact-store';
 import { LayoutMode, usePanelStore } from '@/stores/panel-store';
 import { useProjectStore } from '@/stores/project-store';
@@ -188,20 +188,21 @@ function ActionsButton({ onAction }: { onAction?: (text: string) => void }) {
 
   const isReady = readiness?.is_ready ?? false;
 
-  const handleExtractRecords = useCallback(async () => {
+  const handleExtractRecords = useCallback(() => {
     if (!currentProject || extracting) return;
     setExtracting(true);
     onAction?.('레코드 추출을 시작합니다...');
-    try {
-      const result = await recordService.extract(currentProject.project_id);
-      setCandidates(result.candidates);
-      setActiveTab('records');
-      setRightPanelPreset(LayoutMode.SPLIT);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '레코드 추출에 실패했습니다.';
-      setExtractError(msg);
-      onAction?.(`레코드 추출 실패: ${msg}`);
-    }
+    streamExtractRecords(currentProject.project_id, undefined, {
+      onDone: (candidates) => {
+        setCandidates(candidates);
+        setActiveTab('records');
+        setRightPanelPreset(LayoutMode.SPLIT);
+      },
+      onError: (msg) => {
+        setExtractError(msg);
+        onAction?.(`레코드 추출 실패: ${msg}`);
+      },
+    });
   }, [currentProject, extracting, onAction, setExtracting, setCandidates, setExtractError, setActiveTab, setRightPanelPreset]);
 
   const actions = [
