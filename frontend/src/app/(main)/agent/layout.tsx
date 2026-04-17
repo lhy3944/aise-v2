@@ -5,6 +5,7 @@ import { MobileRightDrawer } from '@/components/layout/MobileRightDrawer';
 import { PanelToggleBar } from '@/components/layout/PanelToggleBar';
 import { ResizeHandle } from '@/components/layout/ResizeHandle';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
+import { useFocusPromptInput } from '@/hooks/useFocusPromptInput';
 import { useResponsivePanel } from '@/hooks/useMediaQuery';
 import { useResize } from '@/hooks/useResize';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   const isMobile = usePanelStore((s) => s.isMobile);
 
   useResponsivePanel();
+  useFocusPromptInput();
 
   const showLeftPanel = !isMobile;
   const showSidebar = leftSidebarOpen && !isMobile;
