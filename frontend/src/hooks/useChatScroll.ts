@@ -6,22 +6,29 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const BOTTOM_THRESHOLD = 80;
 
 export function useChatScroll(messages: ChatMessage[]) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [mountVersion, setMountVersion] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setIsAtBottom(distanceFromBottom <= BOTTOM_THRESHOLD);
+  // callback ref — AnimatePresence 등으로 ScrollArea 마운트가 지연되어도
+  // viewport가 attach되는 시점에 리렌더를 유발해서 scroll listener 등록을 보장.
+  const setScrollEl = useCallback((el: HTMLDivElement | null) => {
+    scrollRef.current = el;
+    setMountVersion((v) => v + 1);
   }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setIsAtBottom(distanceFromBottom <= BOTTOM_THRESHOLD);
+    };
+    // 마운트 직후 초기 상태 반영 (스크롤 이벤트 없이도 버튼 표시 여부 결정)
+    handleScroll();
     el.addEventListener('scroll', handleScroll, { passive: true });
     return () => el.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  }, [mountVersion]);
 
   const hasCurrentTurn =
     messages.length >= 2 &&
@@ -33,7 +40,7 @@ export function useChatScroll(messages: ChatMessage[]) {
     if (isAtBottom && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isAtBottom, hasCurrentTurn]);
+  }, [messages, isAtBottom, hasCurrentTurn, mountVersion]);
 
   const scrollToBottom = useCallback(() => {
     scrollRef.current?.scrollTo({
@@ -42,5 +49,5 @@ export function useChatScroll(messages: ChatMessage[]) {
     });
   }, []);
 
-  return { scrollRef, isAtBottom, scrollToBottom };
+  return { scrollRef, setScrollEl, isAtBottom, scrollToBottom };
 }

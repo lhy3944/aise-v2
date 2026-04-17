@@ -32,7 +32,8 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
     setInputValue,
   } = useChatStream(sessionId);
 
-  const { scrollRef, isAtBottom, scrollToBottom } = useChatScroll(messages);
+  const { scrollRef, setScrollEl, isAtBottom, scrollToBottom } =
+    useChatScroll(messages);
   const { pastMessages, currentTurn, currentTurnRef, answerAreaRef } =
     useTurnLayout(messages, scrollRef);
 
@@ -131,7 +132,7 @@ export function ChatArea({ sessionId }: ChatAreaProps) {
               animate={{ opacity: 1, transition: { duration: 0.3 } }}
               className="relative h-full"
             >
-              <ScrollArea className="h-full" viewportRef={scrollRef}>
+              <ScrollArea className="h-full" viewportRef={setScrollEl}>
                 <div
                   className={cn(
                     'mx-auto px-4 sm:px-6 pt-6 transition-[max-width] duration-300',
